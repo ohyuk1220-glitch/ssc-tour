@@ -322,7 +322,7 @@ let W=0,H=0,DPR=1;
 let floorIdx=+(safeGet("ufo_floor")||1);   // 시작 1층
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
-if(floorIdx<0||floorIdx>=FLOORS.length||isNaN(floorIdx))floorIdx=1;
+if(!Number.isInteger(floorIdx)||floorIdx<0||floorIdx>=FLOORS.length)floorIdx=1;
 const player={px:0.5,py:0.5,vx:0,vy:0};
 let bgRect={x:0,y:0,w:0,h:0};
 const images={}; let curImg=null;
@@ -372,7 +372,12 @@ function preload(){
 function boot(){
   document.getElementById("boot").style.display="none";
   enterFloor(floorIdx,true);
-  if(_q.has("room")&&ROOMS[_q.get("room")]) enterRoom(_q.get("room"));   // ?room=room_G 딥링크/테스트
+  if(_q.has("room")&&ROOMS[_q.get("room")]){                            // ?room=room_G 딥링크/테스트
+    const _rid=_q.get("room");
+    const _own=FLOORS.findIndex(f=>f.spots.some(s=>s.kind==="door"&&s.room===_rid));  // 방 소유 층 동기화
+    if(_own>=0){ floorIdx=_own; safeSet("ufo_floor",_own); }
+    enterRoom(_rid);
+  }
   loop();
 }
 
