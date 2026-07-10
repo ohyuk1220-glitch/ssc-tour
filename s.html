@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>별자리 잇기 — 천문대 BOOT · 서울시립과학관</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c1024; --bg2:#171c38; --line:#2b3158;
+    --ink:#f2f4ff; --muted:#9aa3cf;
+    --orange:#ff9a3c; --orange-d:#e07f22;
+    --cyan:#6fe3ff; --cyan-d:#2fa9c9;
+    --gold:#ffd24a; --gold-d:#e0ac2a;
+    --bad:#ff5f5f;
+    --num:"Baloo 2","Pretendard",sans-serif;
+    --kr:"Pretendard",-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;word-break:keep-all;overflow-wrap:break-word;overflow:hidden}
+  /* position:fixed = 모바일 스크롤/바운스 완전 잠금 */
+  body{background:var(--bg);color:var(--ink);font-family:var(--kr);line-height:1.6;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    position:fixed;inset:0;height:100dvh;
+    padding:calc(8px + env(safe-area-inset-top)) 8px calc(10px + env(safe-area-inset-bottom));gap:7px;
+    user-select:none;-webkit-user-select:none;touch-action:none}
+
+  .backBtn{position:fixed;left:calc(8px + env(safe-area-inset-left));top:calc(8px + env(safe-area-inset-top));
+    z-index:25;background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
+    border-radius:11px;height:32px;padding:0 12px;font-size:12.5px;font-weight:700;
+    cursor:pointer;font-family:var(--kr)}
+
+  .hud{width:min(94vw,430px,calc((100dvh - 185px)*0.706));display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:26px}
+  .score-box{display:flex;flex-direction:column;gap:1px}
+  .score-row{display:flex;align-items:baseline;gap:5px}
+  .score{font-family:var(--num);font-weight:800;font-size:26px;line-height:1;color:var(--ink)}
+  .score-of{font-family:var(--num);font-weight:600;font-size:14px;color:var(--muted)}
+  .best{font-family:var(--num);font-weight:600;font-size:11.5px;color:var(--muted)}
+  .prog-pill{background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;
+    padding:6px 12px;display:flex;flex-direction:column;gap:4px;min-width:96px}
+  .prog-txt{font-family:var(--num);font-weight:800;font-size:13px;color:var(--gold);text-align:center;white-space:nowrap}
+  .prog-txt b{color:var(--ink);font-size:16px;margin-right:1px}
+  .prog-bar{width:100%;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+  .prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--cyan),var(--gold));transition:width .4s ease}
+  .btn-ic{background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
+    border-radius:12px;height:38px;padding:0 12px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:var(--kr);white-space:nowrap}
+
+  /* 도감 사다리 (별자리 아이콘, 미발견=흐리게) */
+  .ladder{width:min(94vw,430px,calc((100dvh - 185px)*0.706));display:flex;justify-content:space-between;align-items:flex-end;
+    gap:2px;background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;padding:8px 6px 6px}
+  .lad{display:flex;flex-direction:column;align-items:center;
+    gap:2px;cursor:pointer;flex:1;transition:transform .15s;min-width:0}
+  .lad:active{transform:scale(1.12)}
+  .lad .orb-box{height:30px;display:flex;align-items:center;justify-content:center}
+  .lad .ic{font-size:19px;line-height:1;opacity:.28;filter:grayscale(1);transition:opacity .3s,filter .3s}
+  .lad.got .ic{opacity:1;filter:none;text-shadow:0 0 8px rgba(255,210,74,.5)}
+  .lad .nm{font-size:8.5px;color:var(--muted);white-space:nowrap;line-height:1.2}
+  .lad.got .nm{color:var(--ink);font-weight:700}
+
+  .stage{position:relative}
+  canvas#game{display:block;background:radial-gradient(ellipse at 50% 0%, #1a2044 0%, var(--bg) 62%);
+    border:2px solid var(--line);border-radius:18px;width:min(94vw,430px,calc((100dvh - 185px)*0.706));height:auto;touch-action:none}
+
+  /* 팩트 토스트 */
+  .toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(90px);
+    width:calc(100% - 28px);max-width:390px;background:rgba(20,24,50,.94);
+    border:1.5px solid var(--gold);border-radius:14px;padding:11px 14px;
+    display:flex;gap:11px;align-items:center;opacity:0;visibility:hidden;
+    transition:transform .35s cubic-bezier(.2,.9,.3,1.2),opacity .3s,visibility .3s;
+    pointer-events:none;z-index:5}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
+  .toast .dot{width:36px;height:36px;border-radius:50%;flex-shrink:0;background:var(--bg2);border:1.5px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;font-size:18px}
+  .toast b{font-size:13.5px;display:block;color:var(--gold)}
+  .toast p{font-size:12.5px;color:#d9def5;line-height:1.45;margin-top:1px}
+
+  /* 오버레이 */
+  .ov{position:fixed;inset:0;background:rgba(9,11,26,.86);backdrop-filter:blur(5px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:26px;z-index:20;transition:opacity .25s;overflow-y:auto}
+  .ov.hide{opacity:0;pointer-events:none}
+  .ov h1{font-size:28px;font-weight:900;letter-spacing:-.02em;line-height:1.3}
+  .ov h1 em{font-style:normal;color:var(--gold)}
+  .ov .sub{margin-top:12px;font-size:12.5px;color:var(--muted)}
+  .go{margin-top:22px;font-family:var(--kr);font-weight:800;font-size:17px;
+    background:var(--orange);color:#2a1804;border:none;border-radius:16px;
+    padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 var(--orange-d);transition:transform .08s}
+  .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--orange-d)}
+  .howto{display:flex;align-items:center;gap:7px;margin:18px 0 6px}
+  .step{background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;
+    padding:12px 9px;width:94px}
+  .step-ic{font-size:25px;margin-bottom:5px}
+  .step p{font-size:11.5px;color:#d9def5;line-height:1.45}
+  .step p b{color:var(--gold)}
+  .step-arrow{color:var(--muted);font-size:15px;font-weight:800}
+  .evo-box{margin-top:16px;background:var(--bg2);border:1.5px solid var(--line);
+    border-radius:14px;padding:12px 12px 10px;width:min(90vw,360px)}
+  .evo-title{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+  .evo{display:flex;align-items:stretch;justify-content:space-between;gap:2px;flex-wrap:wrap}
+  .evo .col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:52px}
+  .orb-box{height:34px;display:flex;align-items:center;justify-content:center}
+  .ic-lg{font-size:25px;line-height:1}
+  .evo .nm{font-size:9.5px;color:var(--muted);white-space:nowrap;line-height:1.25}
+  @media (max-height:760px){
+    .ov h1{font-size:22px}
+    .howto{margin:12px 0 4px}
+    .step{padding:9px 7px;width:86px}
+    .step-ic{font-size:20px;margin-bottom:4px}
+    .go{margin-top:14px;padding:12px 38px}
+    .ov .sub{margin-top:6px}
+  }
+  .ov .final-score{font-family:var(--num);font-weight:800;font-size:46px;color:var(--gold);line-height:1.1}
+  .ov .final-label{font-size:13px;color:var(--muted);letter-spacing:.08em}
+  .ov .final-max{margin-top:8px;font-size:15px;color:#d9def5}
+</style>
+</head>
+<body>
+
+<button class="backBtn" id="backBtn">← 허브</button>
+
+<div class="hud">
+  <div class="score-box">
+    <div class="score-row"><div class="score" id="constNum">1</div><div class="score-of">/ <span id="totalNum">6</span></div></div>
+    <div class="best">최고 <span id="bestNum">0</span>개</div>
+  </div>
+  <div class="prog-pill">
+    <div class="prog-txt"><b id="doneCount">0</b>/<span id="totalCount">6</span> 완성</div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+  </div>
+  <button class="btn-ic" id="muteBtn" aria-label="효과음 켜기/끄기">🔊</button>
+</div>
+
+<div class="ladder" id="ladder"></div>
+
+<div class="stage">
+  <canvas id="game"></canvas>
+  <div class="toast" id="toast"><div class="dot" id="toastDot"></div><div><b id="toastTitle"></b><p id="toastBody"></p></div></div>
+</div>
+
+<div class="ov" id="intro">
+  <h1>별자리 잇기<br><em>— 천문대 BOOT 관측일지</em></h1>
+  <div class="howto">
+    <div class="step"><div class="step-ic">⭐</div><p><b>반짝이는 별</b>부터</p></div>
+    <div class="step-arrow">→</div>
+    <div class="step"><div class="step-ic">👆</div><p><b>순서대로</b><br>이어서</p></div>
+    <div class="step-arrow">→</div>
+    <div class="step"><div class="step-ic">🔭</div><p>별자리<br><b>완성!</b></p></div>
+  </div>
+  <div class="evo-box">
+    <p class="evo-title">오늘 밤 만날 별자리</p>
+    <div class="evo" id="evoStrip"></div>
+  </div>
+  <p class="sub">틀려도 괜찮아요 — 시간 제한도, 실패도 없이 자유롭게 관측해요</p>
+  <button class="go" id="startBtn">관측 시작</button>
+</div>
+
+<div class="ov hide" id="over">
+  <div class="final-label" id="overTitle">🔭 관측 완료!</div>
+  <div class="final-score" id="finalScore">0/6</div>
+  <div class="final-max" id="finalBadge" style="font-family:var(--num);font-weight:800;font-size:19px;color:var(--gold)"></div>
+  <div class="evo-box" style="margin-top:14px">
+    <p class="evo-title">오늘의 관측 기록</p>
+    <div class="evo" id="overIcons"></div>
+  </div>
+  <button class="go" id="retryBtn">계속 관측</button>
+  <a href="h.html" style="margin-top:16px;font-size:13px;color:var(--muted);text-decoration:none">🏛 허브로 돌아가기</a>
+</div>
+
+<script>
+"use strict";
+const VERSION="v1.0"; // 별자리 잇기 — 천문대 BOOT 미니게임 (m.html DNA 계승, fitLayout v1.1 이식)
+
+// ===== 별자리 데이터 (좌표는 0~1 정규화, 실제 형태 근사) =====
+const SKY=[
+ {name:"카시오페이아", icon:"👑",
+  fact:"W자 모양의 별자리예요. 북두칠성과 반대편에서 북극성을 찾는 또 하나의 길잡이가 되어줘요.",
+  stars:[[0.05,0.62],[0.28,0.20],[0.50,0.58],[0.72,0.16],[0.95,0.52]],
+  order:[0,1,2,3,4]},
+ {name:"북두칠성", icon:"🥄",
+  fact:"큰곰자리 꼬리 부분의 일곱 별이에요. 국자 앞쪽 두 별 사이 거리를 5배 늘리면 북극성이 나와요.",
+  stars:[[0.95,0.14],[0.76,0.24],[0.58,0.18],[0.40,0.30],[0.44,0.62],[0.14,0.58],[0.10,0.24]],
+  order:[0,1,2,3,4,5,6]},
+ {name:"작은곰자리", icon:"🧭",
+  fact:"손잡이 맨 끝 별이 바로 북극성이에요! 지구 자전축이 가리키는 방향이라 하늘에서 거의 움직이지 않아요.",
+  stars:[[0.10,0.10],[0.30,0.20],[0.46,0.34],[0.56,0.48],[0.82,0.38],[0.88,0.66],[0.62,0.72]],
+  order:[0,1,2,3,4,5,6]},
+ {name:"백조자리", icon:"🦢",
+  fact:"‘북십자성’이라고도 불려요. 은하수 한복판에서 날개를 활짝 편 백조 모양을 찾아보세요.",
+  stars:[[0.15,0.38],[0.50,0.08],[0.85,0.42],[0.50,0.48],[0.50,0.90]],
+  order:[0,1,2,3,4]},
+ {name:"오리온자리", icon:"🏹",
+  fact:"겨울철 대표 별자리예요. 허리에 나란히 뜬 삼태성(벨트) 세 별이 한눈에 들어와요.",
+  stars:[[0.18,0.08],[0.82,0.10],[0.60,0.40],[0.48,0.44],[0.36,0.40],[0.78,0.85],[0.20,0.82]],
+  order:[0,1,2,3,4,5,6]},
+ {name:"전갈자리", icon:"🦂",
+  fact:"여름철 남쪽 하늘 낮게 뜨는 별자리예요. 붉은 심장별 안타레스와 구부러진 꼬리의 독침이 특징이에요.",
+  stars:[[0.15,0.10],[0.28,0.20],[0.42,0.15],[0.46,0.36],[0.56,0.50],[0.68,0.62],[0.80,0.55],[0.90,0.38]],
+  order:[0,1,2,3,4,5,6,7]}
+];
+const HALF=Math.ceil(SKY.length/2);
+
+// ===== 레이아웃 상수 =====
+const W=480,H=680,PAD_X=58,PAD_TOP=95,PAD_BOTTOM=75,HIT_R=32;
+function mapStar(nx,ny){ return {x:PAD_X+nx*(W-2*PAD_X), y:PAD_TOP+ny*(H-PAD_TOP-PAD_BOTTOM)}; }
+
+addEventListener("load",()=>scrollTo(0,0));
+addEventListener("resize",()=>scrollTo(0,0));
+
+// ===== fitLayout: HUD·도감 실측 높이를 재서 캔버스 폭 역산 (m.html v1.1 기법 이식) =====
+function fitLayout(){
+  const hud=document.querySelector(".hud"),lad=document.querySelector(".ladder"),cvEl=document.getElementById("game");
+  if(!hud||!lad||!cvEl)return;
+  for(let pass=0;pass<2;pass++){
+    const bs=getComputedStyle(document.body);
+    const padV=parseFloat(bs.paddingTop)+parseFloat(bs.paddingBottom);
+    const availH=window.innerHeight-hud.offsetHeight-lad.offsetHeight-padV-14/*gap*/-4/*border*/-8/*여유*/;
+    const w=Math.min(window.innerWidth*0.94,430,Math.max(220,availH*0.706));
+    const wpx=Math.round(w)+"px";
+    hud.style.width=wpx;lad.style.width=wpx;cvEl.style.width=wpx;
+  }
+}
+addEventListener("resize",fitLayout);
+addEventListener("orientationchange",()=>setTimeout(fitLayout,120));
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitLayout);
+addEventListener("load",fitLayout);
+fitLayout();
+
+// ===== 상태 =====
+let best=+(localStorage.getItem("astro_best")||0),
+    discovered=new Set(),badgeShown=false,
+    curIdx=0,stepIndex=0,curStars=[],wrongFlash=null,
+    particles=[],shake=0,
+    started=false,overFlag=false,muted=false;
+let toastTimer=null;
+
+// ===== 캔버스 =====
+const cv=document.getElementById("game"),ctx=cv.getContext("2d");
+const DPR=Math.min(window.devicePixelRatio||1,2);
+cv.width=W*DPR; cv.height=H*DPR;
+
+// ===== 사운드 (WebAudio 합성 — 에셋 0개) =====
+let AC=null;
+function ac(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return AC; }
+function beep(f0,f1,dur,type,vol){
+  if(muted)return; const a=ac(); if(!a)return;
+  const o=a.createOscillator(),g=a.createGain();
+  o.type=type||"sine"; o.frequency.setValueAtTime(f0,a.currentTime);
+  o.frequency.exponentialRampToValueAtTime(Math.max(f1,1),a.currentTime+dur);
+  g.gain.setValueAtTime(vol||.15,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);
+  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur);
+}
+const sConnect=n=>beep(480+n*40,860+n*50,.12,"triangle",.14);
+const sWrong=()=>beep(260,120,.22,"sawtooth",.11);
+const sComplete=()=>{beep(500,900,.22,"triangle",.15);beep(750,1300,.18,"sine",.1);};
+const sBadge=()=>{beep(600,1000,.16,"triangle",.15);setTimeout(()=>beep(800,1300,.18,"triangle",.15),140);};
+const sOver=()=>beep(500,850,.4,"sine",.12);
+
+// ===== 파티클 =====
+function burst(x,y,color,n,sp){
+  for(let i=0;i<n;i++){const a=Math.random()*6.283,s=(.4+Math.random())*sp;
+    particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,c:color,r:2+Math.random()*4});}
+}
+
+// ===== 토스트 =====
+function showToast(icon,title,body){
+  const el=document.getElementById("toast");
+  document.getElementById("toastDot").textContent=icon;
+  document.getElementById("toastTitle").textContent=title;
+  document.getElementById("toastBody").textContent=body;
+  el.classList.add("show");
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),3000);
+}
+function showFact(c){ showToast(c.icon,`${c.name} 발견!`,c.fact); }
+
+// ===== 배경 미립자 (은하수 느낌) =====
+const bgStars=Array.from({length:70},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.3+.35,tw:Math.random()*6.283}));
+
+// ===== 그리기 헬퍼 =====
+function drawLine(a,b,color,alpha,width){
+  ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();
+}
+function drawStar(s,r,color,glow,ring,ringR){
+  ctx.save();
+  if(glow){ctx.shadowColor=color;ctx.shadowBlur=14;}
+  ctx.beginPath();ctx.arc(s.x,s.y,r,0,6.283);ctx.fillStyle=color;ctx.fill();
+  ctx.restore();
+  if(ring){
+    ctx.save();ctx.globalAlpha=.55;ctx.strokeStyle=color;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(s.x,s.y,r+(ringR||4),0,6.283);ctx.stroke();ctx.restore();
+  }
+}
+
+// ===== 별자리 로드/진행 =====
+function loadConstellation(idx){
+  curIdx=idx; stepIndex=0; wrongFlash=null;
+  const c=SKY[idx];
+  curStars=c.stars.map(([nx,ny])=>mapStar(nx,ny));
+  document.getElementById("constNum").textContent=idx+1;
+}
+function updateDoneUI(){
+  document.getElementById("doneCount").textContent=discovered.size;
+  document.getElementById("progFill").style.width=(discovered.size/SKY.length*100)+"%";
+}
+function checkHalfBadge(){
+  if(discovered.size>=HALF){
+    if(discovered.size>best){best=discovered.size;localStorage.setItem("astro_best",best);
+      document.getElementById("bestNum").textContent=best;}
+    if(!badgeShown){
+      badgeShown=true;
+      setTimeout(()=>{ if(overFlag)return; showToast("🎫","관측 배지 획득!",`별자리 ${HALF}개 이상 완성! 허브에서 스탬프를 확인해보세요.`); sBadge(); },3100);
+    }
+  }
+}
+function completeConstellation(){
+  const idx=curIdx,c=SKY[idx];
+  discovered.add(idx);
+  renderLadder();
+  updateDoneUI();
+  sComplete();shake=8;
+  curStars.forEach((s,i)=>burst(s.x,s.y,i%2?"#6fe3ff":"#ffd24a",10,3));
+  showFact(c);
+  checkHalfBadge();
+  setTimeout(()=>{
+    if(idx+1<SKY.length)loadConstellation(idx+1);
+    else sessionEnd();
+  },2600);
+}
+function sessionEnd(){
+  overFlag=true;sOver();
+  document.getElementById("finalScore").textContent=discovered.size+"/"+SKY.length;
+  document.getElementById("finalBadge").textContent=discovered.size>=HALF?"🎫 관측 배지 획득!":"다음엔 더 모아보세요!";
+  renderOverIcons();
+  document.getElementById("over").classList.remove("hide");
+}
+
+// ===== 탭 처리 =====
+function evPt(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H};}
+function handleTap(p){
+  const c=SKY[curIdx];
+  let bi=-1,bd=Infinity;
+  curStars.forEach((s,i)=>{const dx=p.x-s.x,dy=p.y-s.y,d=Math.hypot(dx,dy);if(d<HIT_R&&d<bd){bd=d;bi=i;}});
+  if(bi<0)return;
+  if(bi===c.order[stepIndex]){
+    stepIndex++;
+    sConnect(stepIndex);
+    burst(curStars[bi].x,curStars[bi].y,"#ffd24a",14,3.2);
+    if(stepIndex>=c.order.length)completeConstellation();
+  } else {
+    if(stepIndex>0){
+      const prev=curStars[c.order[stepIndex-1]];
+      wrongFlash={x1:prev.x,y1:prev.y,x2:curStars[bi].x,y2:curStars[bi].y,t:.4};
+    } else {
+      wrongFlash={x1:curStars[bi].x,y1:curStars[bi].y,x2:curStars[bi].x,y2:curStars[bi].y,t:.4};
+    }
+    sWrong();shake=3;
+  }
+}
+cv.addEventListener("pointerdown",e=>{
+  e.preventDefault();ac()&&AC.resume&&AC.resume();
+  if(!started||overFlag)return;
+  handleTap(evPt(e));
+});
+
+// ===== 렌더 루프 =====
+let lastT=performance.now();
+function frame(now){
+  const dt=Math.min((now-lastT)/1000,.05);lastT=now;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,W,H);
+  if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;if(shake<.4)shake=0;}
+  // 배경 별
+  for(const s of bgStars){s.tw+=dt*1.4;ctx.globalAlpha=.25+Math.sin(s.tw)*.2;
+    ctx.fillStyle="#cdd6ff";ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.283);ctx.fill();}
+  ctx.globalAlpha=1;
+  if(started&&curStars.length){
+    const c=SKY[curIdx];
+    // 완성된 선
+    for(let i=1;i<stepIndex;i++){
+      drawLine(curStars[c.order[i-1]],curStars[c.order[i]],"#ffd24a",.85,2.6);
+    }
+    // 오답 깜빡임
+    if(wrongFlash){
+      wrongFlash.t-=dt;
+      if(wrongFlash.t<=0)wrongFlash=null;
+      else{
+        ctx.save();ctx.globalAlpha=Math.max(0,wrongFlash.t/.4);ctx.setLineDash([5,5]);
+        ctx.strokeStyle="#ff5f5f";ctx.lineWidth=2.4;
+        ctx.beginPath();ctx.moveTo(wrongFlash.x1,wrongFlash.y1);ctx.lineTo(wrongFlash.x2,wrongFlash.y2);ctx.stroke();
+        ctx.restore();
+      }
+    }
+    // 별
+    const doneSet=new Set(c.order.slice(0,stepIndex));
+    const targetIdx=stepIndex<c.order.length?c.order[stepIndex]:-1;
+    curStars.forEach((s,i)=>{
+      if(doneSet.has(i)) drawStar(s,7,"#ffd24a",true);
+      else if(i===targetIdx){
+        const pulse=3+Math.sin(now/180)*2.4;
+        drawStar(s,8,"#6fe3ff",true,true,pulse);
+      } else drawStar(s,4.5,"#d9def5",false);
+    });
+  }
+  // 파티클
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.1;p.life-=dt*1.5;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    ctx.globalAlpha=p.life;ctx.fillStyle=p.c;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,6.283);ctx.fill();}
+  ctx.globalAlpha=1;
+  requestAnimationFrame(frame);
+}
+
+// ===== 도감 UI =====
+function renderLadder(){
+  const el=document.getElementById("ladder");el.innerHTML="";
+  SKY.forEach((c,i)=>{
+    const got=discovered.has(i);
+    const d=document.createElement("div");d.className="lad"+(got?" got":"");
+    const box=document.createElement("div");box.className="orb-box";
+    const ic=document.createElement("span");ic.className="ic";ic.textContent=c.icon;
+    box.appendChild(ic);
+    const nm=document.createElement("span");nm.className="nm";nm.textContent=got?c.name:"???";
+    d.appendChild(box);d.appendChild(nm);
+    d.onclick=()=>{
+      if(got)showFact(c);
+      else showToast("❓","미발견 별자리","별을 순서대로 이어서 직접 찾아보세요!");
+    };
+    el.appendChild(d);
+  });
+}
+function renderEvo(){
+  const el=document.getElementById("evoStrip");if(!el)return;
+  el.innerHTML="";
+  SKY.forEach(c=>{
+    const col=document.createElement("div");col.className="col";
+    const box=document.createElement("div");box.className="orb-box";
+    const ic=document.createElement("span");ic.className="ic-lg";ic.textContent=c.icon;
+    box.appendChild(ic);
+    const nm=document.createElement("span");nm.className="nm";nm.textContent=c.name;
+    col.appendChild(box);col.appendChild(nm);
+    el.appendChild(col);
+  });
+}
+function renderOverIcons(){
+  const el=document.getElementById("overIcons");if(!el)return;
+  el.innerHTML="";
+  SKY.forEach((c,i)=>{
+    const got=discovered.has(i);
+    const col=document.createElement("div");col.className="col";
+    const box=document.createElement("div");box.className="orb-box";
+    const ic=document.createElement("span");ic.className="ic-lg";ic.style.opacity=got?"1":".25";ic.textContent=c.icon;
+    box.appendChild(ic);
+    const nm=document.createElement("span");nm.className="nm";nm.textContent=got?c.name:"???";
+    col.appendChild(box);col.appendChild(nm);
+    el.appendChild(col);
+  });
+}
+
+// ===== 시작/리셋 =====
+function restart(){
+  discovered=new Set();badgeShown=false;overFlag=false;
+  document.getElementById("over").classList.add("hide");
+  renderLadder();updateDoneUI();
+  loadConstellation(0);
+}
+
+// ===== 초기화 =====
+document.getElementById("bestNum").textContent=best;
+document.getElementById("totalNum").textContent=SKY.length;
+document.getElementById("totalCount").textContent=SKY.length;
+const vTag=document.createElement("div");
+vTag.textContent=VERSION;
+vTag.style.cssText="position:fixed;right:8px;bottom:6px;font-size:10px;color:#4a5180;font-family:var(--num);z-index:50";
+document.body.appendChild(vTag);
+document.getElementById("muteBtn").onclick=function(){muted=!muted;this.textContent=muted?"🔇":"🔊";};
+document.getElementById("backBtn").onclick=()=>{location.href="h.html";};
+document.getElementById("startBtn").onclick=()=>{
+  ac()&&AC.resume&&AC.resume();
+  document.getElementById("intro").classList.add("hide");
+  started=true;discovered=new Set();badgeShown=false;
+  renderLadder();updateDoneUI();
+  loadConstellation(0);
+};
+document.getElementById("retryBtn").onclick=restart;
+renderEvo();renderLadder();updateDoneUI();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

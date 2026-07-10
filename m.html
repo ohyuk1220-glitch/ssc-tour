@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>우주 합체 실험실 — 먼지에서 블랙홀까지</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c1024; --bg2:#171c38; --line:#2b3158;
+    --ink:#f2f4ff; --muted:#9aa3cf;
+    /* B전시실(연결)=공식색 Blue. 강조색을 파랑으로 (전시실 아이덴티티) + 배경 #0c1024 통일 */
+    --orange:#4a90e2; --orange-d:#3268b4; --blue:#4a90e2;
+    --ok:#7fd48f;
+    --num:"Baloo 2","Pretendard",sans-serif;
+    --kr:"Pretendard",-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;word-break:keep-all;overflow-wrap:break-word;overflow:hidden}
+  /* position:fixed = 모바일 스크롤/바운스 완전 잠금 (점수줄 밀림 방지) */
+  body{background:var(--bg);color:var(--ink);font-family:var(--kr);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    position:fixed;inset:0;height:100dvh;width:100vw;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    user-select:none;-webkit-user-select:none;touch-action:none}
+
+  /* HUD: 캔버스 위 반투명 오버레이 — 게임 화면을 세로 공간에서 빼앗지 않음 */
+  .hud{position:absolute;top:0;left:0;right:0;z-index:6;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:12px 14px 22px;border-radius:18px 18px 0 0;
+    background:linear-gradient(180deg, rgba(9,11,26,.6) 0%, rgba(9,11,26,.28) 60%, transparent 100%);
+    -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+    pointer-events:none}
+  .score-box{display:flex;align-items:baseline;gap:8px}
+  .score{font-family:var(--num);font-weight:800;font-size:30px;line-height:1;color:var(--ink);
+    text-shadow:0 2px 10px rgba(0,0,0,.7),0 1px 3px rgba(0,0,0,.9)}
+  .best{font-family:var(--num);font-weight:600;font-size:13px;color:var(--muted);
+    text-shadow:0 1px 6px rgba(0,0,0,.8)}
+  .btn-ic{pointer-events:auto;background:rgba(23,28,56,.78);border:1.5px solid var(--line);color:var(--muted);
+    border-radius:12px;height:38px;padding:0 12px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:var(--kr);white-space:nowrap;
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+  .timer{font-family:var(--num);font-weight:800;font-size:26px;line-height:1;
+    background:rgba(23,28,56,.78);border:1.5px solid var(--line);border-radius:12px;
+    padding:6px 14px;color:var(--ink);min-width:64px;text-align:center;
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+  .timer.low{color:#ff5f5f;border-color:#ff5f5f;animation:pulse .5s infinite alternate}
+  @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.1)}}
+
+  /* 진행 사다리: 인트로(.evo-box)에 이미 안내가 있어 플레이 중엔 걷어냄 — 세로 공간을 게임에 전량 할당 */
+  .ladder{display:none}
+  .lad{display:flex;flex-direction:column;align-items:center;
+    gap:3px;cursor:pointer;flex:1;transition:transform .15s;min-width:0}
+  .lad:active{transform:scale(1.12)}
+  .lad .orb-box{height:34px}
+  .lad i{border-radius:50%;display:block;flex-shrink:0;transition:opacity .3s,box-shadow .3s}
+  .lad.got i{box-shadow:0 0 8px rgba(255,255,255,.25)}
+  .lad .nm{font-size:9px;color:var(--muted);white-space:nowrap;line-height:1.2}
+  .lad.got .nm{color:var(--ink);font-weight:700}
+  .lad .nm.ex{font-size:8.5px;color:var(--orange);font-weight:500;min-height:10px}
+
+  .stage{position:relative}
+  canvas#game{display:block;background:radial-gradient(ellipse at 50% 0%, #1a2044 0%, var(--bg) 62%);
+    border:2px solid var(--line);border-radius:18px;width:min(98vw,calc(100dvh*0.706));height:auto;touch-action:none}
+
+  /* 팩트 토스트 */
+  .toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(90px);
+    width:calc(100% - 28px);max-width:390px;background:rgba(20,24,50,.94);
+    border:1.5px solid var(--orange);border-radius:14px;padding:11px 14px;
+    display:flex;gap:11px;align-items:center;opacity:0;visibility:hidden;
+    transition:transform .35s cubic-bezier(.2,.9,.3,1.2),opacity .3s,visibility .3s;
+    pointer-events:none;z-index:5}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
+  .toast .dot{width:34px;height:34px;border-radius:50%;flex-shrink:0}
+  .toast b{font-size:13.5px;display:block;color:var(--orange)}
+  .toast p{font-size:12.5px;color:#d9def5;line-height:1.45;margin-top:1px}
+
+  /* 오버레이 */
+  .ov{position:fixed;inset:0;background:rgba(9,11,26,.86);backdrop-filter:blur(5px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:28px;z-index:20;transition:opacity .25s}
+  .ov.hide{opacity:0;pointer-events:none}
+  .ov .logo{display:flex;gap:6px;align-items:center;margin-bottom:18px}
+  .ov h1{font-size:29px;font-weight:900;letter-spacing:-.02em;line-height:1.3}
+  .ov h1 em{font-style:normal;color:var(--orange)}
+  .ov .rule{margin:14px 0 4px;font-size:15.5px;color:#d9def5;line-height:1.6}
+  .ov .rule b{color:var(--orange)}
+  .ov .sub{font-size:12.5px;color:var(--muted);margin-top:8px}
+  .go{margin-top:24px;font-family:var(--kr);font-weight:800;font-size:17px;
+    background:var(--orange);color:#2a1804;border:none;border-radius:16px;
+    padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 var(--orange-d);transition:transform .08s}
+  .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--orange-d)}
+  .howto{display:flex;align-items:center;gap:8px;margin:20px 0 6px}
+  .step{background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;
+    padding:12px 10px;width:96px}
+  .step-ic{font-size:26px;margin-bottom:6px}
+  .step p{font-size:11.5px;color:#d9def5;line-height:1.45}
+  .step p b{color:var(--orange)}
+  .step-arrow{color:var(--muted);font-size:15px;font-weight:800}
+  .evo-box{margin-top:16px;background:var(--bg2);border:1.5px solid var(--line);
+    border-radius:14px;padding:12px 16px 10px;width:min(88vw,340px)}
+  .evo-title{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+  .evo{display:flex;align-items:stretch;justify-content:space-between;gap:2px}
+  .evo .col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+  .orb-box{height:36px;display:flex;align-items:center;justify-content:center}
+  .evo i{border-radius:50%;display:block;flex-shrink:0}
+  .evo .nm{font-size:9.5px;color:var(--muted);white-space:nowrap;line-height:1.25}
+  .evo .nm.ex{font-size:9px;color:var(--orange);margin-top:-2px;min-height:11px}
+  .grade-box{margin-top:10px;padding-bottom:12px}
+  .grades{display:flex;justify-content:space-between;gap:6px}
+  .grades span{font-size:11.5px;color:#d9def5;white-space:nowrap}
+  .grades b{color:var(--orange);font-family:var(--num);font-size:13px}
+  @media (max-height:760px){
+    .ov h1{font-size:23px}
+    .howto{margin:12px 0 4px}
+    .step{padding:9px 8px;width:88px}
+    .step-ic{font-size:21px;margin-bottom:4px}
+    .go{margin-top:14px;padding:12px 38px}
+    .ov .sub{margin-top:5px}
+  }
+  .ov .final-score{font-family:var(--num);font-weight:800;font-size:52px;color:var(--orange);line-height:1.1}
+  .ov .final-label{font-size:13px;color:var(--muted);letter-spacing:.08em}
+  .ov .final-max{margin-top:10px;font-size:14.5px;color:#d9def5}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <canvas id="game"></canvas>
+  <div class="hud">
+    <div class="score-box"><div class="score" id="score">0</div><div class="best" id="best">최고 0</div></div>
+    <div class="timer" id="timer">90</div>
+    <button class="btn-ic" id="muteBtn" aria-label="효과음 켜기/끄기">🔊 소리</button>
+  </div>
+  <div class="ladder" id="ladder"></div>
+  <div class="toast" id="toast"><div class="dot" id="toastDot"></div><div><b id="toastTitle"></b><p id="toastBody"></p></div></div>
+</div>
+
+<div class="ov" id="intro">
+  <h1>우주 합체 실험실<br><em>먼지에서 블랙홀까지</em></h1>
+  <div class="howto">
+    <div class="step"><div class="step-ic">👆</div><p><b>탭</b>해서<br>떨어뜨리고</p></div>
+    <div class="step-arrow">→</div>
+    <div class="step"><div class="step-ic">💥</div><p><b>같은 천체</b>끼리<br>부딪히면 합체!</p></div>
+    <div class="step-arrow">→</div>
+    <div class="step"><div class="step-ic">⏱</div><p><b>90초</b> 안에<br>최대한 크게</p></div>
+  </div>
+  <div class="evo-box">
+    <p class="evo-title">합체 진화 순서</p>
+    <div class="evo" id="evoStrip"></div>
+  </div>
+  <div class="evo-box grade-box">
+    <p class="evo-title">등급 — 가장 큰 천체까지 만들면</p>
+    <div class="grades">
+      <span>🌙 위성 <b>B</b></span>
+      <span>🌍 행성 <b>A</b></span>
+      <span>⭐ 별 <b>S</b></span>
+      <span>🕳️ 블랙홀 <b>SS</b></span>
+    </div>
+  </div>
+  <p class="sub">진짜 우주도 이렇게 만들어졌어요 — 중력 응집</p>
+  <button class="go" id="startBtn">실험 시작</button>
+</div>
+
+<div class="ov hide" id="over">
+  <div class="final-label" id="overTitle">실험 종료!</div>
+  <div class="final-score" id="finalScore">0</div>
+  <div class="final-max" id="finalGrade" style="font-family:var(--num);font-weight:800;font-size:22px;color:var(--ink)"></div>
+  <div class="final-max" id="finalMax"></div>
+  <button class="go" id="retryBtn">한 판 더!</button>
+  <a href="h.html" style="margin-top:16px;font-size:13px;color:var(--muted);text-decoration:none">🏛 과학관 허브로 돌아가기</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+<script>
+"use strict";
+const {Engine,Bodies,Body,Composite,Events} = Matter;
+
+// ===== 천체 사다리 (중력 응집 + 별의 일생) =====
+const TIERS=[
+ {name:"우주먼지", r:16, c:"#c4b39a", d:"#9a8a72", face:1,
+  fact:"모든 것의 시작. 우주는 티끌 같은 먼지로 가득해요."},
+ {name:"소행성",   r:24, c:"#c08a4e", d:"#96652f", face:1,
+  fact:"먼지가 뭉쳐 돌덩이로! 서로의 중력으로 점점 크게 — '강착'이에요."},
+ {name:"위성", ex:"달", r:34, c:"#dfe0ec", d:"#b3b5c9", face:1,
+  fact:"행성 주위를 도는 천체. 달도 지구의 위성이에요!"},
+ {name:"암석행성", ex:"지구", r:47, c:"#4a90e2", d:"#3268b4", face:1,
+  fact:"단단한 땅이 있는 행성 — 지구도 46억 년 전 이렇게 뭉쳐 태어났어요."},
+ {name:"가스행성", ex:"목성", r:62, c:"#e8a35a", d:"#c17d35", face:1,
+  fact:"가스가 뭉친 거대 행성. 목성엔 지구가 1,300개 들어가요."},
+ {name:"별", ex:"태양", r:80, c:"#ffd24a", d:"#e0a92a", face:1,
+  fact:"가스가 아주 많이 모이면 스스로 빛나요 — 태양도 별이랍니다!"},
+ {name:"블랙홀",   r:100,c:"#241f3d", d:"#161226", face:2,
+  fact:"무거운 별의 최후. 빛조차 빠져나가지 못해요!"}
+];
+const W=480,H=680,DANGER_Y=120,SPAWN_Y=64;
+
+// ===== 천체 스프라이트 (TIERS index와 1:1 대응, 로드 전엔 drawOrb가 도형 폴백) =====
+const SPRITE_FILES=["t1_dust.png","t2_asteroid.png","t3_moon.png","t4_earth.png","t5_gas.png","t6_star.png","t7_blackhole.png"];
+const sprites=SPRITE_FILES.map(f=>{
+  const img=new Image(),o={img,loaded:false};
+  img.onload=()=>{o.loaded=true;};
+  img.onerror=()=>{o.loaded=false;};
+  img.src="sprites/"+f;
+  return o;
+});
+
+// ===== 상태 =====
+const VERSION="v2.0-art"; // v2.0-art: 천체를 코드 도형→일러스트 스프라이트로 교체(drawOrb). 물리·점수·티어진화·juice 로직 무변경
+// 페이지가 밀린 채 고정되는 것 방지
+addEventListener("load",()=>scrollTo(0,0));
+addEventListener("resize",()=>scrollTo(0,0));
+
+// ===== 레이아웃: HUD가 캔버스 위 오버레이라 별도 세로공간 계산 불필요 — 뷰포트 높이 기준으로 캔버스를 최대화 =====
+function fitLayout(){
+  const cvEl=document.getElementById("game");
+  if(!cvEl)return;
+  const bs=getComputedStyle(document.body);
+  const padV=parseFloat(bs.paddingTop)+parseFloat(bs.paddingBottom);
+  const padH=parseFloat(bs.paddingLeft)+parseFloat(bs.paddingRight);
+  const availH=window.innerHeight-padV-6/*border+여유*/;
+  const availW=window.innerWidth-padH-6;
+  const w=Math.max(220,Math.min(availW,availH*0.706));
+  cvEl.style.width=Math.round(w)+"px";
+}
+addEventListener("resize",fitLayout);
+addEventListener("orientationchange",()=>setTimeout(fitLayout,120));
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitLayout);
+addEventListener("load",fitLayout);
+fitLayout();
+const TIME_LIMIT=90;
+let engine,world,score=0,best=+(localStorage.getItem("cosmo_best")||0),
+    discovered=new Set(),particles=[],floats=[],shake=0,
+    current=null,nextTier=0,canDrop=false,aimX=W/2,pointerDown=false,
+    overFlag=false,started=false,muted=false,
+    combo=1,lastMergeAt=0,maxTierMade=0,dangerT=0,timeLeft=TIME_LIMIT;
+const mergeQueue=[];
+// ===== juice 전용 상태 (연출만. particles/floats 배열은 재사용) =====
+const MAX_PARTICLES=160;      // 파티클 상한 — 프레임 안정용
+const BIG_IMPACT_MIN=4;       // 이 티어 이상에서 "신기록" 임팩트 연출 (가스행성/별/블랙홀)
+let flashA=0;                 // 화면 플래시 알파(0~1), 매 프레임 감쇠
+
+// ===== 캔버스 =====
+const cv=document.getElementById("game"),ctx=cv.getContext("2d");
+const DPR=Math.min(window.devicePixelRatio||1,2);
+cv.width=W*DPR; cv.height=H*DPR;
+
+// ===== 사운드 (WebAudio 합성 — 에셋 0개) =====
+let AC=null;
+function ac(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return AC; }
+function beep(f0,f1,dur,type,vol){
+  if(muted)return; const a=ac(); if(!a)return;
+  const o=a.createOscillator(),g=a.createGain();
+  o.type=type||"sine"; o.frequency.setValueAtTime(f0,a.currentTime);
+  o.frequency.exponentialRampToValueAtTime(Math.max(f1,1),a.currentTime+dur);
+  g.gain.setValueAtTime(vol||.15,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);
+  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur);
+}
+const sDrop=()=>beep(300,180,.09,"sine",.08);
+// 합체 티어가 오를수록 음정이 더 높게 (기존에 tier를 받던 구조를 강화)
+const sMerge=t=>{beep(380+t*74,760+t*95,.16,"triangle",.16); if(t>=3)beep(760+t*95,1100+t*60,.1,"sine",.07);};
+// heavy=true(신기록급 임팩트)일 때 더 묵직하게
+const sBig=(heavy)=>{beep(heavy?85:120,heavy?26:40,heavy?.62:.5,"sawtooth",heavy?.17:.14);
+  beep(heavy?420:500,heavy?840:900,heavy?.36:.3,"triangle",.12);};
+const sOver=()=>beep(400,80,.7,"sawtooth",.1);
+// 콤보 2+ 전용 짧은 상승 아르페지오 (muted 존중은 beep 내부에서 처리)
+function sComboArp(lvl){
+  if(muted)return;
+  const notes=[560,680,800,900,1010,1180];
+  const n=Math.min(Math.max(lvl-1,1),notes.length);
+  for(let i=0;i<n;i++) setTimeout(()=>beep(notes[i],notes[i]*1.08,.09,"square",.08),i*55);
+}
+
+// ===== 물리 세팅 =====
+function setup(){
+  engine=Engine.create(); world=engine.world; engine.gravity.y=1.15;
+  const wall={isStatic:true,label:"wall"};
+  Composite.add(world,[
+    Bodies.rectangle(W/2,H+30,W+120,60,wall),
+    Bodies.rectangle(-30,H/2,60,H*2,wall),
+    Bodies.rectangle(W+30,H/2,60,H*2,wall)
+  ]);
+  Events.on(engine,"collisionStart",e=>{
+    for(const p of e.pairs){
+      const a=p.bodyA,b=p.bodyB;
+      if(a.label!=="orb"||b.label!=="orb")continue;
+      if(a.tier!==b.tier)continue;
+      if(a.merging||b.merging)continue;
+      a.merging=b.merging=true;
+      mergeQueue.push([a,b]);
+    }
+  });
+}
+function spawnOrb(tier,x,y,vx,vy){
+  const t=TIERS[tier];
+  const bd=Bodies.circle(x,y,t.r,{label:"orb",restitution:.15,friction:.25,frictionStatic:.4,density:.0012,slop:.02});
+  bd.tier=tier; bd.merging=false; bd.bornAt=performance.now();
+  if(vx!==undefined)Body.setVelocity(bd,{x:vx,y:vy});
+  Composite.add(world,bd); return bd;
+}
+function processMerges(){
+  while(mergeQueue.length){
+    const [a,b]=mergeQueue.shift();
+    if(!Composite.get(world,a.id,"body")||!Composite.get(world,b.id,"body"))continue;
+    const mx=(a.position.x+b.position.x)/2,my=(a.position.y+b.position.y)/2;
+    const vx=(a.velocity.x+b.velocity.x)/2,vy=(a.velocity.y+b.velocity.y)/2-1.5;
+    const tier=a.tier;
+    Composite.remove(world,a);Composite.remove(world,b);
+    // 콤보
+    const now=performance.now();
+    combo=(now-lastMergeAt<1600)?combo+1:1; lastMergeAt=now;
+    if(tier>=TIERS.length-1){ // 블랙홀 × 블랙홀 = 빅뱅
+      addScore(3000,mx,my,"빅뱅!!");
+      burst(mx,my,TIERS[tier].c,60,9); burst(mx,my,"#ffffff",40,7); shake=16; sBig();
+      continue;
+    }
+    const nt=tier+1;
+    spawnOrb(nt,mx,my,vx,vy);
+    const isNewRecord=nt>maxTierMade; // 신기록 여부만 미리 판단 (연출 트리거용, 로직엔 무영향)
+    maxTierMade=Math.max(maxTierMade,nt);
+    const base=(nt+1)*12;
+    addScore(base*combo,mx,my,combo>1?`x${combo} 콤보!`:null,combo);
+    burst(mx,my,TIERS[nt].c,18+nt*4,4+nt*.5);
+    mergeBurst(mx,my,nt); // juice: 색 파편+반짝이 추가 (기존 burst는 그대로 유지)
+    shake=Math.min(3+nt*1.2,12);
+    sMerge(nt);
+    if(combo>=2)sComboArp(combo);
+    if(isNewRecord&&nt>=BIG_IMPACT_MIN){
+      // 상위 티어 신기록: 플래시+강한 흔들림+링 웨이브
+      flashA=Math.min(flashA+.55,.85);
+      shake=Math.min(shake+8,20);
+      addRing(mx,my,TIERS[nt].c,150+nt*10);
+      addRing(mx,my,"#ffffff",110+nt*8);
+      sBig(true);
+    } else if(nt>=5){
+      sBig(false);
+    }
+    if(nt===TIERS.length-1)blackHoleSuck(mx,my); // 블랙홀 탄생: 흡입 연출
+    if(!discovered.has(nt)){discovered.add(nt);renderLadder();showFact(nt);}
+  }
+}
+function addScore(v,x,y,label,comboLevel){
+  score+=v; document.getElementById("score").textContent=score;
+  floats.push({x,y,txt:`+${v}`,life:1,big:!!label});
+  if(label){
+    if(comboLevel&&comboLevel>1){
+      // 콤보 팝업: scale up→fade + 레벨별 색 (렌더는 아래 frame()에서 처리)
+      floats.push({x,y:y-30,txt:label,life:1.15,big:true,combo:true,lvl:comboLevel,t0:performance.now()});
+    } else {
+      floats.push({x,y:y-30,txt:label,life:1.2,big:true});
+    }
+  }
+  if(score>best){best=score;localStorage.setItem("cosmo_best",best);
+    document.getElementById("best").textContent="최고 "+best;}
+}
+
+// ===== 파티클/juice (particles 배열 하나를 여러 이펙트가 공유 — 상한으로 프레임 보호) =====
+function addParticles(arr){
+  particles.push(...arr);
+  if(particles.length>MAX_PARTICLES)particles.splice(0,particles.length-MAX_PARTICLES);
+}
+function burst(x,y,color,n,sp){
+  const arr=[];
+  for(let i=0;i<n;i++){const a=Math.random()*6.283,s=(.4+Math.random())*sp;
+    arr.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,c:color,r:2+Math.random()*4});}
+  addParticles(arr);
+}
+// 합체 파티클 다양화: 그 천체 색 계열 파편(회전 조각) 8~14개 + 반짝이 몇 개
+function mergeBurst(x,y,tier){
+  const t=TIERS[tier],n=8+Math.floor(Math.random()*7),arr=[];
+  for(let i=0;i<n;i++){
+    const a=Math.random()*6.283,s=1.2+Math.random()*3.4;
+    arr.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.4,life:1,
+      c:Math.random()<.5?t.d:t.c,r:2+Math.random()*5,
+      rot:Math.random()*6.283,vr:(Math.random()-.5)*.5,shard:true});
+  }
+  const ns=3+Math.floor(Math.random()*3);
+  for(let i=0;i<ns;i++){
+    const a=Math.random()*6.283,s=.6+Math.random()*2.2;
+    arr.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1.1,c:"#ffffff",r:1+Math.random()*1.8,sparkle:true});
+  }
+  addParticles(arr);
+}
+// 링 웨이브 (원이 커지며 페이드) — particles 배열에 ring 플래그로 얹음, 새 배열 안 만듦
+function addRing(x,y,color,maxR){
+  addParticles([{x,y,r:10,maxR:maxR||140,life:1,c:color,ring:true}]);
+}
+// 블랙홀 탄생: 주변 파티클이 중심으로 빨려드는 연출 (1초 이내, target으로 수렴)
+function blackHoleSuck(x,y){
+  const n=16+Math.floor(Math.random()*10),arr=[];
+  for(let i=0;i<n;i++){
+    const a=Math.random()*6.283,dist=60+Math.random()*90;
+    arr.push({x:x+Math.cos(a)*dist,y:y+Math.sin(a)*dist,life:1,
+      c:i%3===0?"#ff9a3c":"#cdd6ff",r:1.5+Math.random()*3,
+      target:{x,y},pull:1.6+Math.random()*1.2});
+  }
+  addParticles(arr);
+  addRing(x,y,"#161226",130);
+}
+
+// ===== 천체 드로잉 (일러스트 스프라이트, 로드 전엔 플랫 도형 폴백) =====
+function drawOrb(x,y,tier,angle,ghost){
+  const t=TIERS[tier],r=t.r,sp=sprites[tier];
+  ctx.save();ctx.translate(x,y);
+  if(ghost)ctx.globalAlpha=.45;
+  if(sp&&sp.loaded){
+    // 스프라이트: 표정 포함 완성 그림 — 회전만 유지, 지름은 2.1r로 살짝 여유
+    ctx.save();ctx.rotate(angle*.4);
+    const d=r*2.1;
+    ctx.drawImage(sp.img,-d/2,-d/2,d,d);
+    ctx.restore();
+  } else {
+    // 폴백(스프라이트 로드 전 짧은 순간용): 본체 + 2톤 셀셰이딩만, 얼굴/무늬는 생략
+    ctx.beginPath();ctx.arc(0,0,r,0,6.283);ctx.fillStyle=t.c;ctx.fill();
+    ctx.save();ctx.clip();
+    ctx.beginPath();ctx.arc(r*.18,r*.22,r,0,6.283);ctx.fillStyle=t.d;ctx.fill();
+    ctx.beginPath();ctx.arc(-r*.12,-r*.15,r*.92,0,6.283);ctx.fillStyle=t.c;ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+// ===== 별 배경 =====
+const stars=Array.from({length:46},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.4,tw:Math.random()*6.283}));
+
+// ===== 렌더 루프 =====
+let lastT=performance.now();
+function frame(now){
+  const dt=Math.min((now-lastT)/1000,.05);lastT=now;
+  if(started&&!overFlag){
+    Engine.update(engine,1000/60);processMerges();checkDanger(dt);
+    timeLeft-=dt;
+    const tl=Math.max(0,Math.ceil(timeLeft)),tEl=document.getElementById("timer");
+    tEl.textContent=tl;
+    tEl.classList.toggle("low",timeLeft<=10);
+    if(timeLeft<=0)gameOver(true);
+  }
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,W,H);
+  if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;if(shake<.4)shake=0;}
+  // 별
+  for(const s of stars){s.tw+=dt*2;ctx.globalAlpha=.35+Math.sin(s.tw)*.25;
+    ctx.fillStyle="#cdd6ff";ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.283);ctx.fill();}
+  ctx.globalAlpha=1;
+  // 위험선
+  const nearDanger=dangerT>0;
+  ctx.strokeStyle=nearDanger?`rgba(255,90,90,${.5+Math.sin(now/90)*.4})`:"rgba(154,163,207,.28)";
+  ctx.lineWidth=nearDanger?3:2;ctx.setLineDash([10,8]);
+  ctx.beginPath();ctx.moveTo(0,DANGER_Y);ctx.lineTo(W,DANGER_Y);ctx.stroke();ctx.setLineDash([]);
+  // 조준선 + 대기 천체
+  if(started&&!overFlag&&canDrop){
+    ctx.strokeStyle="rgba(255,154,60,.35)";ctx.lineWidth=2;ctx.setLineDash([4,7]);
+    ctx.beginPath();ctx.moveTo(aimX,SPAWN_Y+TIERS[nextTier].r);ctx.lineTo(aimX,H);ctx.stroke();ctx.setLineDash([]);
+    drawOrb(aimX,SPAWN_Y,nextTier,0,true);
+  }
+  // 물리 천체
+  for(const b of Composite.allBodies(world)){
+    if(b.label!=="orb")continue;
+    drawOrb(b.position.x,b.position.y,b.tier,b.angle,false);
+  }
+  // 파티클 (일반 파편/합체 파편(shard)/반짝이(sparkle)/링웨이브(ring)/블랙홀 흡입(target) — 배열 하나 공유)
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];
+    if(p.ring){
+      p.r+=(p.maxR-p.r)*dt*4+40*dt; p.life-=dt*1.3;
+      if(p.life<=0){particles.splice(i,1);continue;}
+      ctx.globalAlpha=Math.max(0,p.life)*.8;ctx.strokeStyle=p.c;
+      ctx.lineWidth=Math.max(1,4*p.life);
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.stroke();
+      continue;
+    }
+    if(p.target){
+      const dx=p.target.x-p.x,dy=p.target.y-p.y;
+      p.pull=(p.pull||1.6)+dt*6;
+      p.x+=dx*Math.min(dt*p.pull,.9); p.y+=dy*Math.min(dt*p.pull,.9);
+      p.life-=dt*1.1;
+    } else {
+      p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.life-=dt*1.6;
+      if(p.rot!==undefined)p.rot+=p.vr;
+    }
+    if(p.life<=0){particles.splice(i,1);continue;}
+    const life=Math.max(0,p.life);
+    if(p.shard&&p.rot!==undefined){
+      ctx.save();ctx.globalAlpha=life;ctx.fillStyle=p.c;
+      ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      const rr=p.r*life;ctx.fillRect(-rr,-rr*.6,rr*2,rr*1.2);
+      ctx.restore();
+    } else {
+      ctx.globalAlpha=p.sparkle?life*(.5+Math.sin(now/60+p.x)*.5)*.9+.1:life;
+      ctx.fillStyle=p.c;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r*life,0,6.283);ctx.fill();
+    }
+  }
+  ctx.globalAlpha=1;
+  // 점수 플로팅 (콤보 팝업은 scale up→fade + 레벨별 색)
+  for(let i=floats.length-1;i>=0;i--){const f=floats[i];
+    f.y-=dt*46;f.life-=dt*1.1;
+    if(f.life<=0){floats.splice(i,1);continue;}
+    if(f.combo){
+      ctx.save();
+      const age=(performance.now()-f.t0)/1000,sc=age<.18?age/.18:1;
+      const lvl=Math.min(f.lvl,6),col=lvl<=2?"#ff9a3c":lvl<=4?"#ffd24a":"#ffffff";
+      ctx.globalAlpha=Math.min(f.life,1);
+      ctx.translate(f.x,f.y);ctx.scale(sc*(1+lvl*.05),sc*(1+lvl*.05));
+      ctx.font=`800 ${22+lvl*2}px 'Baloo 2',sans-serif`;
+      ctx.fillStyle=col;ctx.textAlign="center";ctx.fillText(f.txt,0,0);
+      ctx.restore();
+    } else {
+      ctx.globalAlpha=Math.min(f.life,1);
+      ctx.font=(f.big?"800 22px":"600 16px")+" 'Baloo 2',sans-serif";
+      ctx.fillStyle=f.big?"#ff9a3c":"#f2f4ff";ctx.textAlign="center";
+      ctx.fillText(f.txt,f.x,f.y);
+    }
+  }
+  ctx.globalAlpha=1;
+  // 신기록 임팩트 화면 플래시 (짧게 감쇠)
+  if(flashA>0){
+    ctx.globalAlpha=flashA;ctx.fillStyle="#ffffff";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
+    flashA=Math.max(0,flashA-dt*2.4);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ===== 게임오버 판정 =====
+function checkDanger(dt){
+  let over=false;
+  for(const b of Composite.allBodies(world)){
+    if(b.label!=="orb")continue;
+    if(performance.now()-b.bornAt<1200)continue;
+    if(b.position.y-TIERS[b.tier].r<DANGER_Y && Math.hypot(b.velocity.x,b.velocity.y)<.6){over=true;break;}
+  }
+  dangerT=over?dangerT+dt:0;
+  if(dangerT>1.4)gameOver(false);
+}
+function grade(){
+  if(maxTierMade>=6)return"SS · 블랙홀 마스터 🕳️";
+  if(maxTierMade>=5)return"S · 별의 창조자 ⭐";
+  if(maxTierMade>=3)return"A · 행성 건축가 🌍";
+  if(maxTierMade>=2)return"B · 우주 견습생 🌙";
+  return"C · 먼지 수집가 ✨";
+}
+function gameOver(byTime){
+  overFlag=true;sOver();
+  document.getElementById("overTitle").textContent=byTime?"⏱ 실험 종료!":"💥 실험실이 가득!";
+  document.getElementById("finalScore").textContent=score;
+  document.getElementById("finalGrade").textContent=grade();
+  document.getElementById("finalMax").textContent=
+    maxTierMade>0?`최고 도달: ${fullName(TIERS[maxTierMade])} · 발견한 천체 ${discovered.size}/${TIERS.length}`:"다음엔 합체를 노려보세요!";
+  document.getElementById("over").classList.remove("hide");
+}
+function reset(){
+  Composite.allBodies(world).filter(b=>b.label==="orb").forEach(b=>Composite.remove(world,b));
+  particles.length=0;floats.length=0;mergeQueue.length=0;flashA=0;
+  score=0;combo=1;maxTierMade=0;dangerT=0;overFlag=false;timeLeft=TIME_LIMIT;
+  discovered=new Set([0]);renderLadder(); // 발견 기록도 새 판마다 리셋
+  document.getElementById("score").textContent="0";
+  document.getElementById("timer").textContent=TIME_LIMIT;
+  document.getElementById("timer").classList.remove("low");
+  queueNext();canDrop=true;
+}
+
+// ===== 드롭 조작 (Pointer Events = 터치+마우스 통합) =====
+function queueNext(){
+  // 룰: 내가 합체로 발견한 천체까지만 떨어진다 (스포일러 방지, 상한=위성)
+  const cap=Math.min(2,Math.max(...discovered));
+  const r=Math.random();
+  nextTier=cap===0?0:(cap===1?(r<.6?0:1):(r<.5?0:(r<.8?1:2)));
+}
+function px(e){const r=cv.getBoundingClientRect();return (e.clientX-r.left)/r.width*W;}
+function clampAim(x){const r=TIERS[nextTier].r;return Math.max(r+6,Math.min(W-r-6,x));}
+cv.addEventListener("pointerdown",e=>{e.preventDefault();ac()&&AC.resume&&AC.resume();
+  if(!started||overFlag)return;pointerDown=true;aimX=clampAim(px(e));});
+cv.addEventListener("pointermove",e=>{if(!pointerDown)return;aimX=clampAim(px(e));});
+cv.addEventListener("pointerup",e=>{
+  if(!pointerDown)return;pointerDown=false;
+  if(!started||overFlag||!canDrop)return;
+  aimX=clampAim(px(e));
+  spawnOrb(nextTier,aimX,SPAWN_Y,0,1.5);sDrop();
+  canDrop=false;queueNext();
+  setTimeout(()=>canDrop=true,420);
+});
+cv.addEventListener("pointercancel",()=>pointerDown=false);
+
+// ===== 사다리 UI (이름+크기 비례, 미발견=흐리게) =====
+function renderLadder(){
+  const el=document.getElementById("ladder");el.innerHTML="";
+  TIERS.forEach((t,i)=>{
+    const got=discovered.has(i);
+    const d=document.createElement("div");
+    d.className="lad"+(got?" got":"");
+    const box=document.createElement("div");box.className="orb-box";
+    const sz=12+i*3.2;
+    const c=document.createElement("i");
+    c.style.width=sz+"px";c.style.height=sz+"px";c.style.background=t.c;
+    if(!got)c.style.opacity=".25";
+    box.appendChild(c);
+    const nm=document.createElement("span");nm.className="nm";
+    nm.textContent=got?t.name:"???";
+    if(!got)nm.style.opacity=".45";
+    const ex=document.createElement("span");ex.className="nm ex";
+    ex.textContent=(got&&t.ex)?`(${t.ex})`:" ";
+    d.appendChild(box);d.appendChild(nm);d.appendChild(ex);
+    d.onclick=()=>{
+      if(got)showFact(i);
+      else showToast(t.c,"??? 미발견 천체","합체로 직접 만들어서 발견해보세요!");
+    };
+    el.appendChild(d);
+  });
+}
+// ===== 인트로 진화 차트 (크기 점점 커지는 원) =====
+function renderEvo(){
+  const el=document.getElementById("evoStrip");if(!el)return;
+  el.innerHTML="";
+  TIERS.forEach((t,i)=>{
+    const col=document.createElement("div");col.className="col";
+    const box=document.createElement("div");box.className="orb-box";
+    const sz=12+i*3.5;
+    const c=document.createElement("i");
+    c.style.width=sz+"px";c.style.height=sz+"px";c.style.background=t.c;
+    box.appendChild(c);
+    const nm=document.createElement("span");nm.className="nm";nm.textContent=t.name;
+    const ex=document.createElement("span");ex.className="nm ex";ex.textContent=t.ex?`(${t.ex})`:" ";
+    col.appendChild(box);col.appendChild(nm);col.appendChild(ex);
+    el.appendChild(col);
+  });
+}
+let toastTimer=null;
+function showToast(color,title,body){
+  const el=document.getElementById("toast");
+  document.getElementById("toastDot").style.background=color;
+  document.getElementById("toastTitle").textContent=title;
+  document.getElementById("toastBody").textContent=body;
+  el.classList.add("show");
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),3000);
+}
+function fullName(t){return t.ex?`${t.name}(${t.ex})`:t.name;}
+function showFact(i){
+  const t=TIERS[i];
+  showToast(t.c,`${fullName(t)} 발견!`,t.fact);
+}
+
+// ===== 시작 =====
+document.getElementById("best").textContent="최고 "+best;
+// 버전 표시 (캐시 확인용)
+const vTag=document.createElement("div");
+vTag.textContent=VERSION;
+vTag.style.cssText="position:fixed;right:8px;bottom:6px;font-size:10px;color:#4a5180;font-family:var(--num);z-index:50";
+document.body.appendChild(vTag);
+document.getElementById("muteBtn").onclick=function(){muted=!muted;this.textContent=muted?"🔇 무음":"🔊 소리";};
+document.getElementById("startBtn").onclick=()=>{
+  document.getElementById("intro").classList.add("hide");
+  started=true;discovered.add(0);renderLadder();reset();
+};
+document.getElementById("retryBtn").onclick=()=>{
+  document.getElementById("over").classList.add("hide");reset();
+};
+setup();renderLadder();renderEvo();requestAnimationFrame(frame);
+</script>
+</body>
+</html>

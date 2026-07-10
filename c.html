@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>화학 실험실 — 물질 조합</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c1024; --bg2:#151a34; --line:#2b3158;
+    --ink:#f2f4ff; --muted:#9aa3cf;
+    --cyan:#3ecbd9; --cyan-d:#2a9aa6;
+    --violet:#9b6bd6; --violet-d:#7449b3;
+    --bad:#ff5f5f;
+    --num:"Baloo 2","Pretendard",sans-serif;
+    --kr:"Pretendard",-apple-system,sans-serif;
+    --toastBottom:100px;
+  }
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;word-break:keep-all;overflow-wrap:break-word;overflow:hidden}
+  body{background:var(--bg);color:var(--ink);font-family:var(--kr);
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    position:fixed;inset:0;height:100dvh;
+    padding:calc(8px + env(safe-area-inset-top)) 8px calc(10px + env(safe-area-inset-bottom));gap:8px;
+    user-select:none;-webkit-user-select:none;touch-action:none}
+
+  .backBtn{position:fixed;left:calc(8px + env(safe-area-inset-left));top:calc(8px + env(safe-area-inset-top));
+    z-index:25;background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
+    border-radius:12px;height:36px;padding:0 13px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:var(--kr);display:flex;align-items:center;gap:4px}
+  .backBtn:active{transform:scale(.96)}
+
+  .hud{width:min(94vw,430px);display:flex;align-items:center;justify-content:space-between;gap:8px;
+    margin-top:34px}
+  .hud-left{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+  .hud-row{display:flex;align-items:baseline;gap:7px}
+  .hud-title{font-size:13px;font-weight:700;color:var(--muted)}
+  .hud-count{font-family:var(--num);font-weight:800;font-size:20px;color:var(--ink)}
+  .hud-total{font-family:var(--num);font-weight:600;font-size:13px;color:var(--muted)}
+  .hud-best{font-family:var(--num);font-weight:600;font-size:11px;color:var(--muted);margin-left:auto}
+  .progress{height:8px;border-radius:5px;background:var(--bg2);border:1.5px solid var(--line);overflow:hidden}
+  .progress i{display:block;height:100%;width:0%;border-radius:5px;
+    background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .4s cubic-bezier(.2,.9,.3,1.2)}
+  .btn-ic{background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
+    border-radius:12px;height:38px;width:38px;flex-shrink:0;font-size:15px;
+    cursor:pointer;font-family:var(--kr);display:flex;align-items:center;justify-content:center}
+
+  .lbl{width:min(94vw,430px);font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--muted);
+    padding-left:2px}
+
+  .board{width:min(94vw,430px);flex:1;min-height:120px;overflow-y:auto;
+    background:var(--bg2);border:1.5px solid var(--line);border-radius:16px;padding:10px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-content:start}
+  .card{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;
+    padding:8px 2px;border-radius:12px;transition:transform .12s,background .2s}
+  .card:active{transform:scale(.93)}
+  .card.new{background:rgba(155,107,214,.18)}
+  .c-orb{width:38px;height:38px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,.12)}
+  .c-orb.locked{background:transparent!important;border:2px dashed var(--line);
+    display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px;font-weight:800}
+  .c-name{font-size:10px;color:var(--ink);font-weight:700;text-align:center;line-height:1.25}
+  .c-name.locked{color:var(--muted);font-weight:500}
+
+  .palette{width:min(94vw,430px);flex-shrink:0;display:flex;gap:10px;overflow-x:auto;
+    padding:10px 8px;background:var(--bg2);border:1.5px solid var(--line);border-radius:16px}
+  .chip{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;width:58px;
+    cursor:pointer;padding:4px 0;border-radius:12px;transition:transform .12s}
+  .chip:active{transform:scale(.92)}
+  .chip-orb{width:46px;height:46px;border-radius:50%;border:2.5px solid rgba(255,255,255,.14);
+    transition:box-shadow .2s,transform .2s}
+  .chip.sel .chip-orb{box-shadow:0 0 0 3px var(--cyan),0 0 14px rgba(62,203,217,.55);transform:scale(1.06)}
+  .chip.ok .chip-orb{box-shadow:0 0 0 3px var(--violet),0 0 18px rgba(155,107,214,.7);animation:pop .4s}
+  .chip.bad .chip-orb{animation:shakeX .4s ease}
+  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.22)}100%{transform:scale(1.06)}}
+  @keyframes shakeX{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}
+    40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  .chip-name{font-size:10.5px;color:var(--ink);font-weight:700;text-align:center;line-height:1.2}
+
+  /* 결과 플래시 */
+  .flash{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%) scale(.5);
+    display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;pointer-events:none;
+    transition:transform .3s cubic-bezier(.2,.9,.3,1.2),opacity .25s;z-index:14}
+  .flash.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .flash-orb{width:84px;height:84px;border-radius:50%;border:3px solid rgba(255,255,255,.2);
+    box-shadow:0 0 30px rgba(0,0,0,.4)}
+  .flash-tag{font-size:12px;font-weight:800;color:var(--violet);letter-spacing:.05em}
+  .flash-name{font-size:19px;font-weight:800;color:var(--ink)}
+
+  /* 팩트 토스트 */
+  .toast{position:fixed;left:50%;bottom:var(--toastBottom);transform:translateX(-50%) translateY(90px);
+    width:calc(100% - 28px);max-width:390px;background:rgba(20,24,50,.95);
+    border:1.5px solid var(--cyan);border-radius:14px;padding:11px 14px;
+    display:flex;gap:11px;align-items:center;opacity:0;visibility:hidden;
+    transition:transform .35s cubic-bezier(.2,.9,.3,1.2),opacity .3s,visibility .3s;
+    pointer-events:none;z-index:12}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
+  .toast.fail{border-color:var(--line)}
+  .toast .dot{width:34px;height:34px;border-radius:50%;flex-shrink:0}
+  .toast b{font-size:13.5px;display:block;color:var(--cyan)}
+  .toast.fail b{color:var(--muted)}
+  .toast p{font-size:12.5px;color:#d9def5;line-height:1.45;margin-top:1px}
+
+  /* 오버레이 */
+  .ov{position:fixed;inset:0;background:rgba(9,11,26,.88);backdrop-filter:blur(5px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:28px;z-index:20;transition:opacity .25s;overflow-y:auto}
+  .ov.hide{opacity:0;pointer-events:none}
+  .ov h1{font-size:28px;font-weight:900;letter-spacing:-.02em;line-height:1.3}
+  .ov h1 em{font-style:normal;color:var(--cyan)}
+  .ov .sub{font-size:12.5px;color:var(--muted);margin-top:10px}
+  .go{margin-top:22px;font-family:var(--kr);font-weight:800;font-size:17px;
+    background:var(--cyan);color:#052226;border:none;border-radius:16px;
+    padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 var(--cyan-d);transition:transform .08s}
+  .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--cyan-d)}
+  .go2{margin-top:12px;font-family:var(--kr);font-weight:700;font-size:14px;
+    background:transparent;color:var(--muted);border:1.5px solid var(--line);border-radius:14px;
+    padding:11px 30px;cursor:pointer}
+  .howto{display:flex;align-items:center;gap:8px;margin:20px 0 6px}
+  .step{background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;
+    padding:12px 9px;width:100px}
+  .step-ic{font-size:26px;margin-bottom:6px}
+  .step p{font-size:11.5px;color:#d9def5;line-height:1.45}
+  .step p b{color:var(--cyan)}
+  .step-arrow{color:var(--muted);font-size:15px;font-weight:800}
+  .starter-box{margin-top:16px;background:var(--bg2);border:1.5px solid var(--line);
+    border-radius:14px;padding:12px 16px 10px;width:min(88vw,340px)}
+  .starter-title{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);margin-bottom:9px}
+  .starter{display:flex;align-items:flex-start;justify-content:space-around;gap:6px}
+  .starter .col{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .starter i{width:34px;height:34px;border-radius:50%;display:block;border:2px solid rgba(255,255,255,.14)}
+  .starter span{font-size:10.5px;color:#d9def5}
+  @media (max-height:760px){
+    .ov h1{font-size:22px}
+    .howto{margin:12px 0 4px}
+    .step{padding:9px 7px;width:92px}
+    .step-ic{font-size:21px;margin-bottom:4px}
+    .go{margin-top:14px;padding:12px 38px}
+    .starter-box{margin-top:10px;padding:9px 14px 8px}
+  }
+  .final-badge{font-size:13px;font-weight:800;color:var(--violet);letter-spacing:.1em}
+  .final-score{font-family:var(--num);font-weight:800;font-size:54px;color:var(--cyan);line-height:1.15;margin-top:6px}
+  .final-label{font-size:13.5px;color:#d9def5;margin-top:2px}
+  .final-list{margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:340px}
+  .final-list span{font-size:11px;background:var(--bg2);border:1px solid var(--line);
+    border-radius:20px;padding:5px 11px;color:#d9def5}
+  .hub-link{margin-top:16px;font-size:13px;color:var(--muted);text-decoration:none}
+</style>
+</head>
+<body>
+
+<button class="backBtn" id="backBtn">← 뒤로</button>
+
+<div class="hud">
+  <div class="hud-left">
+    <div class="hud-row">
+      <span class="hud-title">🔬 발견</span>
+      <span class="hud-count" id="hudCount">0</span>
+      <span class="hud-total">/ 총 <span id="hudTotal">16</span></span>
+      <span class="hud-best" id="hudBest">최고 0</span>
+    </div>
+    <div class="progress"><i id="progressFill"></i></div>
+  </div>
+  <button class="btn-ic" id="muteBtn" aria-label="효과음 켜기/끄기">🔊</button>
+</div>
+
+<div class="lbl">도감 — 탭해서 발견 노트 보기</div>
+<div class="board" id="board"></div>
+
+<div class="lbl">재료 — 두 개를 탭해서 합치기</div>
+<div class="palette" id="palette"></div>
+
+<div class="flash" id="flash">
+  <div class="flash-orb" id="flashOrb"></div>
+  <div class="flash-tag" id="flashTag"></div>
+  <div class="flash-name" id="flashName"></div>
+</div>
+<div class="toast" id="toast"><div class="dot" id="toastDot"></div><div><b id="toastTitle"></b><p id="toastBody"></p></div></div>
+
+<div class="ov" id="intro">
+  <h1>화학 실험실<br><em>물질 조합</em></h1>
+  <div class="howto">
+    <div class="step"><div class="step-ic">👆</div><p><b>물질</b> 두 개를<br>골라</p></div>
+    <div class="step-arrow">→</div>
+    <div class="step"><div class="step-ic">🔀</div><p><b>합치면</b></p></div>
+    <div class="step-arrow">→</div>
+    <div class="step"><div class="step-ic">🔬</div><p>새 <b>물질</b> 발견!<br>도감을 채워요</p></div>
+  </div>
+  <div class="starter-box">
+    <p class="starter-title">시작 물질 4가지</p>
+    <div class="starter" id="starterStrip"></div>
+  </div>
+  <p class="sub">실제 화학·지구과학 반응을 바탕으로 만들었어요. 시간 제한도, 실패도 없어요 — 마음껏 실험해보세요.</p>
+  <button class="go" id="startBtn">실험 시작</button>
+</div>
+
+<div class="ov hide" id="clearOv">
+  <div class="final-badge">🔬 실험 완료!</div>
+  <div class="final-score" id="finalScore">0</div>
+  <div class="final-label">종 발견! (총 <span id="finalTotal">16</span>종 중)</div>
+  <div class="final-list" id="finalList"></div>
+  <button class="go" id="continueBtn">계속 실험</button>
+  <a href="h.html" class="hub-link">🏛 허브로 돌아가기</a>
+</div>
+
+<script>
+"use strict";
+const VERSION="v1.0";
+addEventListener("load",()=>scrollTo(0,0));
+addEventListener("resize",()=>scrollTo(0,0));
+
+// ===== 물질 정의 =====
+const MATERIALS={
+  water:{name:"물",color:"#4dd8e8",base:true},
+  fire:{name:"불",color:"#ff6a4d",base:true},
+  earth:{name:"흙",color:"#a9784f",base:true},
+  air:{name:"공기",color:"#cfd0ea",base:true},
+  steam:{name:"수증기",color:"#d7f3f5"},
+  mud:{name:"진흙",color:"#6b4a2f"},
+  lava:{name:"용암",color:"#ff5a36"},
+  cloud:{name:"구름",color:"#e8e8f2"},
+  smoke:{name:"연기",color:"#8a8a99"},
+  dust:{name:"먼지",color:"#c2a878"},
+  basalt:{name:"현무암",color:"#3a3a42"},
+  rain:{name:"비",color:"#5a9fd6"},
+  brick:{name:"벽돌",color:"#b5502e"},
+  sand:{name:"모래",color:"#e0c078"},
+  glass:{name:"유리",color:"#a8e6e0"},
+  smog:{name:"스모그",color:"#9a9a6a"},
+  fog:{name:"안개",color:"#cfe0e8"},
+  snow:{name:"눈",color:"#f4f8ff"},
+  ash:{name:"화산재",color:"#5a5560"},
+  dew:{name:"이슬",color:"#8fd8d0"}
+};
+// 조합 레시피 (실제 화학·지구과학 반응만)
+const RECIPES=[
+ {a:"water",b:"fire",r:"steam",fact:"물이 뜨거운 열을 받으면 기체인 수증기가 돼요."},
+ {a:"water",b:"earth",r:"mud",fact:"흙에 물이 스며들면 찐득한 진흙이 돼요."},
+ {a:"fire",b:"earth",r:"lava",fact:"뜨거운 열이 암석을 녹이면 시뻘건 용암이 돼요."},
+ {a:"water",b:"air",r:"cloud",fact:"물이 증발해 하늘로 오르면 작은 물방울이 뭉쳐 구름이 돼요."},
+ {a:"fire",b:"air",r:"smoke",fact:"불이 타면서 생긴 미세 입자가 공기와 섞이면 연기가 돼요."},
+ {a:"earth",b:"air",r:"dust",fact:"흙이 바람에 날리면 작은 먼지가 돼요."},
+ {a:"lava",b:"water",r:"basalt",fact:"용암이 물을 만나 급히 식으면 검은 현무암이 돼요."},
+ {a:"cloud",b:"water",r:"rain",fact:"구름 속 물방울이 무거워지면 비가 되어 떨어져요."},
+ {a:"mud",b:"fire",r:"brick",fact:"진흙을 불에 구우면 단단한 벽돌이 돼요."},
+ {a:"basalt",b:"water",r:"sand",fact:"바위가 오랫동안 물에 깎이면 작은 모래알이 돼요."},
+ {a:"sand",b:"fire",r:"glass",fact:"모래를 아주 높은 열로 녹이면 투명한 유리가 돼요."},
+ {a:"smoke",b:"air",r:"smog",fact:"연기가 공기 중에 오래 머무르면 뿌연 스모그가 돼요."},
+ {a:"steam",b:"air",r:"fog",fact:"수증기가 차가운 공기를 만나면 낮게 깔린 안개가 돼요."},
+ {a:"cloud",b:"air",r:"snow",fact:"구름이 아주 차가워지면 물방울이 얼어 눈 결정이 돼요."},
+ {a:"lava",b:"air",r:"ash",fact:"용암이 공기 중에서 식으며 부서지면 고운 화산재가 돼요."},
+ {a:"fog",b:"earth",r:"dew",fact:"안개가 차가운 흙 표면에 맺히면 이슬방울이 돼요."}
+];
+const TOTAL=RECIPES.length;
+const CLEAR_THRESHOLD=Math.ceil(TOTAL/2);
+// 조합 룩업: 정렬된 키("공기+물")로 순서 무관 매칭
+const RECIPE_MAP={};
+RECIPES.forEach(rec=>{
+  RECIPE_MAP[[rec.a,rec.b].sort().join("+")]=rec;
+  MATERIALS[rec.r].fact=rec.fact;
+});
+const BASE_IDS=["water","fire","earth","air"];
+
+// ===== 상태 =====
+let discovered=new Set(); // 발견된 compound id
+let selected=[]; // 선택된 material id (최대 2)
+let processing=false;
+let clearShown=false;
+let muted=false;
+
+// ===== 사운드 (WebAudio 합성) =====
+let AC=null;
+function ac(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return AC; }
+function beep(f0,f1,dur,type,vol){
+  if(muted)return; const a=ac(); if(!a)return;
+  const o=a.createOscillator(),g=a.createGain();
+  o.type=type||"sine"; o.frequency.setValueAtTime(f0,a.currentTime);
+  o.frequency.exponentialRampToValueAtTime(Math.max(f1,1),a.currentTime+dur);
+  g.gain.setValueAtTime(vol||.15,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);
+  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur);
+}
+const sSelect=()=>beep(520,650,.06,"sine",.07);
+const sDiscover=()=>{beep(420,900,.18,"triangle",.16);setTimeout(()=>beep(620,1250,.16,"triangle",.12),90);};
+const sKnown=()=>beep(430,430,.09,"sine",.08);
+const sFail=()=>beep(220,120,.13,"sawtooth",.08);
+const sClear=()=>{beep(320,700,.2,"triangle",.15);setTimeout(()=>beep(520,1000,.22,"triangle",.14),120);setTimeout(()=>beep(720,1300,.28,"triangle",.13),260);};
+
+// ===== 레이아웃 실측 맞춤 (m.html fitLayout 이식) =====
+function fitLayout(){
+  const hud=document.querySelector(".hud"),board=document.getElementById("board"),pal=document.querySelector(".palette");
+  if(!hud||!board||!pal)return;
+  for(let pass=0;pass<2;pass++){
+    const bs=getComputedStyle(document.body);
+    const padV=parseFloat(bs.paddingTop)+parseFloat(bs.paddingBottom);
+    const lbls=[...document.querySelectorAll(".lbl")].reduce((s,e)=>s+e.offsetHeight,0);
+    const gaps=8*4;
+    const availH=window.innerHeight-hud.offsetHeight-pal.offsetHeight-lbls-padV-gaps-6;
+    const w=Math.min(window.innerWidth*0.94,430);
+    const wpx=Math.round(w)+"px";
+    hud.style.width=wpx;board.style.width=wpx;pal.style.width=wpx;
+    board.style.height=Math.max(140,Math.round(availH))+"px";
+    document.documentElement.style.setProperty("--toastBottom",(pal.offsetHeight+18)+"px");
+  }
+}
+addEventListener("resize",fitLayout);
+addEventListener("orientationchange",()=>setTimeout(fitLayout,120));
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitLayout);
+addEventListener("load",fitLayout);
+
+// ===== 렌더 =====
+function sortedKey(a,b){return [a,b].sort().join("+");}
+function paletteIds(){return [...BASE_IDS,...discovered];}
+
+function renderPalette(){
+  const el=document.getElementById("palette");el.innerHTML="";
+  paletteIds().forEach(id=>{
+    const m=MATERIALS[id];
+    const chip=document.createElement("div");
+    chip.className="chip"+(selected.includes(id)?" sel":"");
+    chip.dataset.id=id;
+    const orb=document.createElement("div");orb.className="chip-orb";orb.style.background=m.color;
+    const nm=document.createElement("div");nm.className="chip-name";nm.textContent=m.name;
+    chip.appendChild(orb);chip.appendChild(nm);
+    chip.onclick=()=>onTapMaterial(id);
+    el.appendChild(chip);
+  });
+}
+function renderBoard(){
+  const el=document.getElementById("board");el.innerHTML="";
+  RECIPES.forEach(rec=>{
+    const got=discovered.has(rec.r);
+    const m=MATERIALS[rec.r];
+    const card=document.createElement("div");card.className="card";
+    const orb=document.createElement("div");
+    if(got){orb.className="c-orb";orb.style.background=m.color;}
+    else{orb.className="c-orb locked";orb.textContent="?";}
+    const nm=document.createElement("div");
+    nm.className="c-name"+(got?"":" locked");
+    nm.textContent=got?m.name:"???";
+    card.appendChild(orb);card.appendChild(nm);
+    card.onclick=()=>{
+      if(got)showFact(m,m.fact,false);
+      else showToast(null,"??? 미발견 물질","재료를 조합해서 직접 찾아보세요!",true);
+    };
+    el.appendChild(card);
+  });
+}
+function renderStarter(){
+  const el=document.getElementById("starterStrip");if(!el)return;
+  el.innerHTML="";
+  BASE_IDS.forEach(id=>{
+    const m=MATERIALS[id];
+    const col=document.createElement("div");col.className="col";
+    const i=document.createElement("i");i.style.background=m.color;
+    const sp=document.createElement("span");sp.textContent=m.name;
+    col.appendChild(i);col.appendChild(sp);
+    el.appendChild(col);
+  });
+}
+function updateHud(){
+  document.getElementById("hudCount").textContent=discovered.size;
+  document.getElementById("hudTotal").textContent=TOTAL;
+  document.getElementById("progressFill").style.width=(discovered.size/TOTAL*100)+"%";
+}
+function updateBest(){
+  // 스탬프 정합성: 미션 완수(절반 발견) 이후에만 허브 스탬프 키 저장
+  const best=Math.max(+(localStorage.getItem("chem_best")||0),discovered.size);
+  if(discovered.size>=CLEAR_THRESHOLD)localStorage.setItem("chem_best",best);
+  document.getElementById("hudBest").textContent="최고 "+discovered.size;
+}
+
+// ===== 조합 로직 =====
+function onTapMaterial(id){
+  if(processing)return;
+  ac()&&AC.resume&&AC.resume();
+  const idx=selected.indexOf(id);
+  if(idx>-1){selected.splice(idx,1);renderPalette();return;}
+  if(selected.length>=2)return;
+  selected.push(id);sSelect();renderPalette();
+  if(selected.length===2){
+    processing=true;
+    setTimeout(resolveSelection,380);
+  }
+}
+function resolveSelection(){
+  const [a,b]=selected;
+  const key=sortedKey(a,b);
+  const rec=RECIPE_MAP[key];
+  const elA=document.querySelector(`.chip[data-id="${a}"]`),elB=document.querySelector(`.chip[data-id="${b}"]`);
+  if(rec){
+    const isNew=!discovered.has(rec.r);
+    if(isNew){discovered.add(rec.r);}
+    elA&&elA.classList.add("ok");elB&&elB.classList.add("ok");
+    flashResult(MATERIALS[rec.r],isNew);
+    showFact(MATERIALS[rec.r],rec.fact,isNew);
+    if(isNew){
+      sDiscover();renderBoard();updateHud();updateBest();
+      const cards=[...document.querySelectorAll("#board .card")];
+      const idx2=RECIPES.findIndex(r=>r.r===rec.r);
+      if(cards[idx2]){cards[idx2].classList.add("new");setTimeout(()=>cards[idx2]&&cards[idx2].classList.remove("new"),1200);}
+      checkClear();
+    }else{
+      sKnown();
+    }
+  }else{
+    elA&&elA.classList.add("bad");elB&&elB.classList.add("bad");
+    showToast(null,"안 섞여요","이 조합은 반응하지 않아요. 다른 재료로 시도해보세요!",true);
+    sFail();
+  }
+  setTimeout(()=>{selected=[];processing=false;renderPalette();},520);
+}
+function checkClear(){
+  if(clearShown||discovered.size<CLEAR_THRESHOLD)return;
+  clearShown=true;
+  setTimeout(showClearOverlay,900);
+}
+function showClearOverlay(){
+  sClear();
+  document.getElementById("finalScore").textContent=discovered.size;
+  document.getElementById("finalTotal").textContent=TOTAL;
+  const list=document.getElementById("finalList");list.innerHTML="";
+  [...discovered].forEach(id=>{
+    const sp=document.createElement("span");sp.textContent=MATERIALS[id].name;list.appendChild(sp);
+  });
+  document.getElementById("clearOv").classList.remove("hide");
+}
+
+// ===== 연출 =====
+let flashTimer=null;
+function flashResult(m,isNew){
+  const el=document.getElementById("flash");
+  document.getElementById("flashOrb").style.background=m.color;
+  document.getElementById("flashTag").textContent=isNew?"NEW 발견!":"다시 조합";
+  document.getElementById("flashName").textContent=m.name;
+  el.classList.add("show");
+  clearTimeout(flashTimer);flashTimer=setTimeout(()=>el.classList.remove("show"),900);
+}
+let toastTimer=null;
+function showToast(color,title,body,fail){
+  const el=document.getElementById("toast");
+  const dot=document.getElementById("toastDot");
+  if(color){dot.style.display="block";dot.style.background=color;}
+  else{dot.style.display="none";}
+  document.getElementById("toastTitle").textContent=title;
+  document.getElementById("toastBody").textContent=body;
+  el.classList.toggle("fail",!!fail);
+  el.classList.add("show");
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2800);
+}
+function showFact(m,fact,isNew){
+  showToast(m.color,isNew?`${m.name} 발견!`:`${m.name} (다시 조합)`,fact,false);
+}
+
+// ===== 시작 =====
+document.getElementById("hudBest").textContent="최고 "+(+(localStorage.getItem("chem_best")||0));
+const vTag=document.createElement("div");
+vTag.textContent=VERSION;
+vTag.style.cssText="position:fixed;right:8px;bottom:6px;font-size:10px;color:#4a5180;font-family:var(--num);z-index:2";
+document.body.appendChild(vTag);
+document.getElementById("backBtn").onclick=()=>location.href="h.html";
+document.getElementById("muteBtn").onclick=function(){muted=!muted;this.textContent=muted?"🔇":"🔊";};
+document.getElementById("startBtn").onclick=()=>{
+  document.getElementById("intro").classList.add("hide");
+};
+document.getElementById("continueBtn").onclick=()=>{
+  document.getElementById("clearOv").classList.add("hide");
+};
+renderStarter();renderPalette();renderBoard();updateHud();fitLayout();
+</script>
+</body>
+</html>

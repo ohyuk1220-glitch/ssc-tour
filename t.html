@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>지구과학 실험실 — 모래 상자</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c1024; --bg2:#171c38; --line:#2b3158;
+    --ink:#f2f4ff; --muted:#9aa3cf;
+    --orange:#ff9a3c; --orange-d:#e07f22;
+    --lava:#ff5a2e; --lava-d:#c93f18; --earth:#a9784a;
+    --num:"Baloo 2","Pretendard",sans-serif;
+    --kr:"Pretendard",-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;word-break:keep-all;overflow-wrap:break-word;overflow:hidden}
+  body{background:var(--bg);color:var(--ink);font-family:var(--kr);
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    position:fixed;inset:0;height:100dvh;
+    padding:calc(8px + env(safe-area-inset-top)) 8px calc(10px + env(safe-area-inset-bottom));gap:7px;
+    user-select:none;-webkit-user-select:none;touch-action:none;line-height:1.6}
+
+  .hud{width:min(94vw,430px);display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .left-group{display:flex;align-items:center;gap:8px;min-width:0}
+  .btn-ic{background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
+    border-radius:12px;height:36px;padding:0 12px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:var(--kr);white-space:nowrap}
+  .disc-count{font-family:var(--num);font-weight:800;font-size:17px;color:var(--ink);white-space:nowrap}
+  .disc-best{font-size:11px;color:var(--muted);margin-top:1px}
+
+  .ladder{width:min(94vw,430px);display:flex;justify-content:space-between;align-items:flex-end;
+    gap:2px;background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;padding:8px 8px 6px}
+  .lad{display:flex;flex-direction:column;align-items:center;
+    gap:3px;cursor:pointer;flex:1;transition:transform .15s;min-width:0}
+  .lad:active{transform:scale(1.12)}
+  .lad .orb-box{height:28px;display:flex;align-items:center;justify-content:center}
+  .lad i{border-radius:50%;display:block;flex-shrink:0;transition:opacity .3s,box-shadow .3s}
+  .lad.got i{box-shadow:0 0 8px rgba(255,255,255,.25)}
+  .lad .nm{font-size:8.5px;color:var(--muted);white-space:nowrap;line-height:1.2}
+  .lad.got .nm{color:var(--ink);font-weight:700}
+
+  .stage{position:relative}
+  canvas#game{display:block;
+    background:linear-gradient(to bottom,#1a2044 0%,#232a4d 55%,#171c38 100%);
+    border:2px solid var(--line);border-radius:16px;width:min(94vw,430px);height:auto;
+    touch-action:none;image-rendering:pixelated;image-rendering:crisp-edges}
+  canvas#game.flash{animation:flashPulse .5s ease-out}
+  @keyframes flashPulse{0%{box-shadow:0 0 0 0 rgba(255,90,46,.55)}100%{box-shadow:0 0 0 16px rgba(255,90,46,0)}}
+
+  .palette{width:min(94vw,430px);display:flex;justify-content:space-between;gap:4px;
+    background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;padding:8px 6px}
+  .pal-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;
+    cursor:pointer;padding:5px 2px;border-radius:10px;border:1.5px solid transparent;
+    transition:transform .12s,background .15s,border-color .15s}
+  .pal-item:active{transform:scale(.92)}
+  .pal-item.active{background:rgba(255,90,46,.14);border-color:var(--lava)}
+  .pal-ic{font-size:19px;line-height:1}
+  .pal-nm{font-size:9.5px;color:var(--muted);white-space:nowrap}
+  .pal-item.active .pal-nm{color:var(--ink);font-weight:700}
+
+  /* 팩트 토스트 */
+  .toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(90px);
+    width:calc(100% - 28px);max-width:390px;background:rgba(20,24,50,.94);
+    border:1.5px solid var(--lava);border-radius:14px;padding:11px 14px;
+    display:flex;gap:11px;align-items:center;opacity:0;visibility:hidden;
+    transition:transform .35s cubic-bezier(.2,.9,.3,1.2),opacity .3s,visibility .3s;
+    pointer-events:none;z-index:5}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
+  .toast .dot{width:34px;height:34px;border-radius:50%;flex-shrink:0}
+  .toast b{font-size:13.5px;display:block;color:var(--orange)}
+  .toast p{font-size:12.5px;color:#d9def5;line-height:1.45;margin-top:1px}
+
+  /* 오버레이 */
+  .ov{position:fixed;inset:0;background:rgba(9,11,26,.86);backdrop-filter:blur(5px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:28px;z-index:20;transition:opacity .25s}
+  .ov.hide{opacity:0;pointer-events:none}
+  .ov h1{font-size:27px;font-weight:900;letter-spacing:-.02em;line-height:1.3}
+  .ov h1 em{font-style:normal;color:var(--lava)}
+  .ov .sub{font-size:12.5px;color:var(--muted);margin-top:8px}
+  .go{margin-top:22px;font-family:var(--kr);font-weight:800;font-size:17px;
+    background:var(--orange);color:#2a1804;border:none;border-radius:16px;
+    padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 var(--orange-d);transition:transform .08s}
+  .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--orange-d)}
+  .howto{display:flex;align-items:center;gap:8px;margin:18px 0 6px}
+  .step{background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;
+    padding:12px 9px;width:96px}
+  .step-ic{font-size:26px;margin-bottom:6px}
+  .step p{font-size:11.5px;color:#d9def5;line-height:1.45}
+  .step p b{color:var(--lava)}
+  .step-arrow{color:var(--muted);font-size:15px;font-weight:800}
+  @media (max-height:760px){
+    .ov h1{font-size:22px}
+    .howto{margin:12px 0 4px}
+    .step{padding:9px 7px;width:86px}
+    .step-ic{font-size:21px;margin-bottom:4px}
+    .go{margin-top:14px;padding:12px 38px}
+  }
+  .ov .final-label{font-size:15px;color:var(--muted);letter-spacing:.04em}
+  .ov .final-score{font-family:var(--num);font-weight:800;font-size:46px;color:var(--lava);line-height:1.15;margin-top:4px}
+  .ov .final-max{margin-top:10px;font-size:14.5px;color:#d9def5}
+  .hub-link{margin-top:16px;font-size:13px;color:var(--muted);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hud">
+  <div class="left-group">
+    <button class="btn-ic" id="backBtn" aria-label="허브로 돌아가기">← 뒤로</button>
+    <div>
+      <div class="disc-count" id="discCount">0 / 6</div>
+      <div class="disc-best" id="discBest">최고 0</div>
+    </div>
+  </div>
+  <button class="btn-ic" id="muteBtn" aria-label="효과음 켜기/끄기">🔊 소리</button>
+</div>
+
+<div class="ladder" id="discbar"></div>
+
+<div class="stage">
+  <canvas id="game"></canvas>
+  <div class="toast" id="toast"><div class="dot" id="toastDot"></div><div><b id="toastTitle"></b><p id="toastBody"></p></div></div>
+</div>
+
+<div class="palette" id="palette"></div>
+
+<div class="ov" id="intro">
+  <h1>지구과학 실험실<br><em>모래 상자</em></h1>
+  <div class="howto">
+    <div class="step"><div class="step-ic">👆</div><p><b>재료</b>를<br>골라</p></div>
+    <div class="step-arrow">→</div>
+    <div class="step"><div class="step-ic">🖐</div><p><b>문질러</b><br>쏟고</p></div>
+    <div class="step-arrow">→</div>
+    <div class="step"><div class="step-ic">🌋</div><p><b>섞이는 현상</b>을<br>발견!</p></div>
+  </div>
+  <p class="sub">타이머 없어요, 마음껏 실험하세요</p>
+  <button class="go" id="startBtn">실험 시작</button>
+</div>
+
+<div class="ov hide" id="over">
+  <div class="final-label">🏅 절반 발견!</div>
+  <div class="final-score" id="overCount">3</div>
+  <div class="final-max" id="overDesc">현상 3 / 6 발견 — 지구과학 견습생</div>
+  <button class="go" id="continueBtn">계속 실험하기</button>
+  <a href="h.html" class="hub-link">🏛 과학관 허브로 돌아가기</a>
+</div>
+
+<script>
+"use strict";
+const VERSION="v1.0";
+
+// ===== 재료 상수 =====
+const EMPTY=0,SAND=1,WATER=2,LAVA=3,SEED=4,STONE=5,GRASS=6,SANDSTONE=7,STEAM=8,GLASS=9;
+const GRID_W=90, GRID_H=130, RATIO=GRID_W/GRID_H; // 90×130 셀, 캔버스 비율 = 셀 비율
+const PSTEP=1/30, SAND_REST_THRESH=70, SEED_GERM_THRESH=50, STEAM_LIFE=70;
+
+// ===== 발견 도감 (실제 지구과학 현상 6종) =====
+const DISCOVERIES=[
+  {name:"급냉각 화성암", color:"#ff5a2e",
+   fact:"뜨거운 용암이 물을 만나면 순식간에 식어 굳어요. 하와이 해안에서 용암이 바다로 흘러들 때 실제로 이런 급냉각 현무암이 만들어져요."},
+  {name:"수증기 (증발)", color:"#dfe6f5",
+   fact:"물이 뜨거운 열을 만나면 기체인 수증기로 변해요. 이게 바로 물의 순환에서 '증발' 단계예요."},
+  {name:"사암 (퇴적암)", color:"#c99b5e",
+   fact:"모래가 오랫동안 쌓이고 눌리면 단단한 돌이 돼요. 실제 사암은 수백만 년에 걸친 압축(고결작용)으로 만들어져요."},
+  {name:"풀 (발아)", color:"#4caf50",
+   fact:"씨앗은 물과 흙(양분)을 동시에 만나면 싹을 틔워요. 비가 온 뒤 사막에 순식간에 풀이 돋는 것도 같은 원리예요."},
+  {name:"서냉각 화성암", color:"#6b6f7a",
+   fact:"용암은 물이 없어도 공기 중에서 서서히 식어 단단한 돌이 돼요. 천천히 식을수록 알갱이가 더 크고 단단해져요 — 화강암이 그 예예요."},
+  {name:"유리질암", color:"#2e3a3f",
+   fact:"아주 뜨거운 용암이 모래와 만나면 유리처럼 매끈한 암석이 만들어져요. 번개가 모래에 떨어져도 비슷한 '섬전암'이 생겨요."}
+];
+const TOTAL=DISCOVERIES.length, HALF=Math.ceil(TOTAL/2);
+const discoveredSet=new Set();
+let halfShown=false;
+
+// ===== 팔레트 =====
+const PALETTE=[
+  {mat:SAND, ic:"🟨", nm:"모래"},
+  {mat:WATER, ic:"🟦", nm:"물"},
+  {mat:LAVA, ic:"🌋", nm:"용암"},
+  {mat:SEED, ic:"🌱", nm:"씨앗"},
+  {mat:STONE, ic:"🪨", nm:"돌"},
+  {mat:-1, ic:"🧹", nm:"지우개"}
+];
+let selectedMat=SAND;
+
+// ===== 격자 데이터 (Uint8Array — 성능) =====
+const grid=new Uint8Array(GRID_W*GRID_H);
+const moved=new Uint8Array(GRID_W*GRID_H);
+const sandRest=new Uint8Array(GRID_W*GRID_H);
+const heatArr=new Uint8Array(GRID_W*GRID_H);
+const seedGrow=new Uint8Array(GRID_W*GRID_H);
+const steamLife=new Uint8Array(GRID_W*GRID_H);
+let physStep=0;
+
+function I(x,y){return y*GRID_W+x;}
+function inBounds(x,y){return x>=0&&x<GRID_W&&y>=0&&y<GRID_H;}
+function canFall(x,y){return inBounds(x,y)&&grid[I(x,y)]===EMPTY;}
+function move(fx,fy,tx,ty){const fi=I(fx,fy),ti=I(tx,ty);grid[ti]=grid[fi];grid[fi]=EMPTY;moved[ti]=1;}
+
+// 초기 모래 바닥 (모래 상자다운 시작 지형)
+(function initGround(){
+  const floorFrom=GRID_H-18;
+  for(let y=floorFrom;y<GRID_H;y++)for(let x=0;x<GRID_W;x++)grid[I(x,y)]=SAND;
+})();
+
+// ===== 캔버스 (그리드 해상도 그대로 = 픽셀아트 렌더링) =====
+const cv=document.getElementById("game"),ctx=cv.getContext("2d");
+cv.width=GRID_W; cv.height=GRID_H;
+const imgData=ctx.createImageData(GRID_W,GRID_H);
+const pix=imgData.data;
+const MAT_RGBA={
+  [EMPTY]:[0,0,0,0],
+  [SAND]:[217,181,107,255],
+  [WATER]:[63,127,209,232],
+  [SEED]:[138,106,60,255],
+  [STONE]:[107,111,122,255],
+  [GRASS]:[76,175,80,255],
+  [SANDSTONE]:[201,155,94,255],
+  [GLASS]:[46,58,63,235]
+};
+
+// ===== 사운드 (WebAudio 합성 — 에셋 0개) =====
+let AC=null,muted=false;
+function ac(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return AC; }
+function beep(f0,f1,dur,type,vol){
+  if(muted)return; const a=ac(); if(!a)return;
+  const o=a.createOscillator(),g=a.createGain();
+  o.type=type||"sine"; o.frequency.setValueAtTime(f0,a.currentTime);
+  o.frequency.exponentialRampToValueAtTime(Math.max(f1,1),a.currentTime+dur);
+  g.gain.setValueAtTime(vol||.15,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);
+  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur);
+}
+const sPaint=()=>beep(300,220,.05,"sine",.05);
+const sDiscover=()=>beep(360,760,.18,"triangle",.17);
+
+// ===== 물리 갱신: 격자 갱신 → 상호작용 → 발견 =====
+function updateGrid(){
+  physStep++;
+  moved.fill(0);
+  for(let y=GRID_H-1;y>=0;y--){
+    const l2r=(y%2===0);
+    for(let xi=0;xi<GRID_W;xi++){
+      const x=l2r?xi:(GRID_W-1-xi);
+      const idx=I(x,y);
+      if(moved[idx])continue;
+      const m=grid[idx];
+      if(m===EMPTY||m===STONE||m===GRASS||m===SANDSTONE||m===GLASS)continue;
+      if(m===SAND)updateSand(x,y,idx);
+      else if(m===WATER)updateWater(x,y,idx);
+      else if(m===LAVA)updateLava(x,y,idx);
+      else if(m===SEED)updateSeed(x,y,idx);
+      else if(m===STEAM)updateSteam(x,y,idx);
+    }
+  }
+}
+function sandPacked(x,y){
+  const spots=[[x,y+1],[x-1,y+1],[x+1,y+1],[x-1,y],[x+1,y]];
+  let cnt=0;
+  for(const [nx,ny] of spots){
+    if(!inBounds(nx,ny)){cnt++;continue;}
+    const nm=grid[I(nx,ny)];
+    if(nm===SAND||nm===SANDSTONE||nm===STONE)cnt++;
+  }
+  return cnt>=4;
+}
+function updateSand(x,y,idx){
+  if(canFall(x,y+1)){move(x,y,x,y+1);sandRest[I(x,y+1)]=0;sandRest[idx]=0;return;}
+  const dl=canFall(x-1,y+1),dr=canFall(x+1,y+1);
+  if(dl||dr){
+    const tx=(dl&&dr)?(Math.random()<.5?x-1:x+1):(dl?x-1:x+1);
+    move(x,y,tx,y+1);sandRest[I(tx,y+1)]=0;sandRest[idx]=0;return;
+  }
+  sandRest[idx]=Math.min(255,sandRest[idx]+1);
+  if(sandRest[idx]>SAND_REST_THRESH&&sandPacked(x,y)&&Math.random()<.03){
+    grid[idx]=SANDSTONE;sandRest[idx]=0;discover(2,x,y);
+  }
+}
+function updateWater(x,y,idx){
+  if(canFall(x,y+1)){move(x,y,x,y+1);return;}
+  const dl=canFall(x-1,y+1),dr=canFall(x+1,y+1);
+  if(dl||dr){const tx=(dl&&dr)?(Math.random()<.5?x-1:x+1):(dl?x-1:x+1);move(x,y,tx,y+1);return;}
+  const l=canFall(x-1,y),r=canFall(x+1,y);
+  if(l||r){const tx=(l&&r)?(Math.random()<.5?x-1:x+1):(l?x-1:x+1);move(x,y,tx,y);return;}
+}
+function updateLava(x,y,idx){
+  if(((physStep+x+y)%3)!==0)return; // 용암은 느리게 — 3틱에 한 번만 행동
+  const neigh=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+  for(const [nx,ny] of neigh){
+    if(!inBounds(nx,ny))continue;
+    const ni=I(nx,ny),nm=grid[ni];
+    if(nm===WATER){
+      grid[ni]=STEAM;steamLife[ni]=STEAM_LIFE;
+      heatArr[idx]=Math.max(0,heatArr[idx]-120);
+      discover(1,nx,ny);
+      if(heatArr[idx]<=0){grid[idx]=STONE;discover(0,x,y);return;}
+    } else if(nm===SAND&&Math.random()<.02){
+      grid[ni]=GLASS;
+      heatArr[idx]=Math.max(0,heatArr[idx]-8);
+      discover(5,nx,ny);
+    }
+  }
+  heatArr[idx]=Math.max(0,heatArr[idx]-1);
+  if(heatArr[idx]<=0){grid[idx]=STONE;discover(4,x,y);return;}
+  if(canFall(x,y+1)){const h=heatArr[idx];move(x,y,x,y+1);heatArr[I(x,y+1)]=h;heatArr[idx]=0;return;}
+  const dl=canFall(x-1,y+1),dr=canFall(x+1,y+1);
+  if(dl||dr){
+    const tx=(dl&&dr)?(Math.random()<.5?x-1:x+1):(dl?x-1:x+1);
+    const h=heatArr[idx];move(x,y,tx,y+1);heatArr[I(tx,y+1)]=h;heatArr[idx]=0;return;
+  }
+}
+function updateSeed(x,y,idx){
+  if(canFall(x,y+1)){move(x,y,x,y+1);seedGrow[I(x,y+1)]=0;seedGrow[idx]=0;return;}
+  const dl=canFall(x-1,y+1),dr=canFall(x+1,y+1);
+  if(dl||dr){
+    const tx=(dl&&dr)?(Math.random()<.5?x-1:x+1):(dl?x-1:x+1);
+    move(x,y,tx,y+1);seedGrow[I(tx,y+1)]=0;seedGrow[idx]=0;return;
+  }
+  const neigh=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+  for(const [nx,ny] of neigh){
+    if(inBounds(nx,ny)&&grid[I(nx,ny)]===LAVA){grid[idx]=EMPTY;seedGrow[idx]=0;return;}
+  }
+  const belowOk=inBounds(x,y+1)&&(grid[I(x,y+1)]===SAND||grid[I(x,y+1)]===SANDSTONE);
+  let waterNear=false;
+  for(const [nx,ny] of neigh){if(inBounds(nx,ny)&&grid[I(nx,ny)]===WATER){waterNear=true;break;}}
+  if(belowOk&&waterNear){
+    seedGrow[idx]=Math.min(255,seedGrow[idx]+1);
+    if(seedGrow[idx]>SEED_GERM_THRESH){grid[idx]=GRASS;seedGrow[idx]=0;discover(3,x,y);}
+  } else {
+    seedGrow[idx]=0;
+  }
+}
+function updateSteam(x,y,idx){
+  steamLife[idx]--;
+  if(steamLife[idx]<=0){grid[idx]=EMPTY;steamLife[idx]=0;return;}
+  if(!inBounds(x,y-1)){grid[idx]=EMPTY;steamLife[idx]=0;return;}
+  if(canFall(x,y-1)){
+    const ul=canFall(x-1,y-1),ur=canFall(x+1,y-1);
+    let tx=x;
+    if(Math.random()<.3){
+      if(ul&&ur)tx=Math.random()<.5?x-1:x+1; else if(ul)tx=x-1; else if(ur)tx=x+1;
+    }
+    const life=steamLife[idx];move(x,y,tx,y-1);steamLife[I(tx,y-1)]=life;steamLife[idx]=0;return;
+  }
+  const l=canFall(x-1,y),r=canFall(x+1,y);
+  if(l||r){
+    const tx=(l&&r)?(Math.random()<.5?x-1:x+1):(l?x-1:x+1);
+    const life=steamLife[idx];move(x,y,tx,y);steamLife[I(tx,y)]=life;steamLife[idx]=0;return;
+  }
+}
+
+// ===== 렌더 (ImageData 1회 채움 — 셀 90×130개뿐이라 매우 가벼움) =====
+function render(){
+  for(let i=0;i<grid.length;i++){
+    const m=grid[i],o=i*4;
+    if(m===LAVA){
+      const f=heatArr[i]/255;
+      pix[o]=Math.round(200+55*f);pix[o+1]=Math.round(50+70*f);pix[o+2]=Math.round(24+22*f);pix[o+3]=255;
+    } else if(m===STEAM){
+      pix[o]=223;pix[o+1]=230;pix[o+2]=245;pix[o+3]=Math.round(190*(steamLife[i]/STEAM_LIFE));
+    } else {
+      const c=MAT_RGBA[m]||MAT_RGBA[EMPTY];
+      pix[o]=c[0];pix[o+1]=c[1];pix[o+2]=c[2];pix[o+3]=c[3];
+    }
+  }
+  ctx.putImageData(imgData,0,0);
+}
+
+// ===== 발견 처리 =====
+function discover(id,x,y){
+  if(discoveredSet.has(id))return;
+  discoveredSet.add(id);
+  const prevBest=+(localStorage.getItem("earth_best")||0);
+  // 스탬프 정합성: 미션 완수(절반 발견) 이후에만 허브 스탬프 키 저장
+  if(discoveredSet.size>=HALF&&discoveredSet.size>prevBest)localStorage.setItem("earth_best",String(discoveredSet.size));
+  renderDiscBar();
+  updateHUD();
+  showFact(id);
+  flashStage();
+  sDiscover();
+  if(!halfShown&&discoveredSet.size>=HALF){
+    halfShown=true;
+    setTimeout(showClearOverlay,700);
+  }
+  if(discoveredSet.size===TOTAL){
+    setTimeout(()=>showToast("#ffd24a","🎉 모든 현상 발견!","지구과학 실험실의 현상을 모두 찾았어요 — 진짜 지구과학자!"),900);
+  }
+}
+function updateHUD(){
+  const n=discoveredSet.size,pct=Math.round(n/TOTAL*100);
+  document.getElementById("discCount").textContent=`${n} / ${TOTAL} (${pct}%)`;
+  const best=+(localStorage.getItem("earth_best")||0);
+  document.getElementById("discBest").textContent="최고 "+best;
+}
+function showClearOverlay(){
+  document.getElementById("overCount").textContent=discoveredSet.size;
+  document.getElementById("overDesc").textContent=`현상 ${discoveredSet.size} / ${TOTAL} 발견 — 지구과학 견습생`;
+  document.getElementById("over").classList.remove("hide");
+}
+
+// ===== 발견 도감 UI =====
+function renderDiscBar(){
+  const el=document.getElementById("discbar");el.innerHTML="";
+  DISCOVERIES.forEach((d,i)=>{
+    const got=discoveredSet.has(i);
+    const item=document.createElement("div");item.className="lad"+(got?" got":"");
+    const box=document.createElement("div");box.className="orb-box";
+    const c=document.createElement("i");c.style.width="18px";c.style.height="18px";c.style.background=d.color;
+    if(!got)c.style.opacity=".25";
+    box.appendChild(c);
+    const nm=document.createElement("span");nm.className="nm";nm.textContent=got?d.name:"???";
+    if(!got)nm.style.opacity=".45";
+    item.appendChild(box);item.appendChild(nm);
+    item.onclick=()=>{ if(got)showFact(i); else showToast("#4a5180","??? 미발견 현상","재료를 섞어서 직접 찾아보세요!"); };
+    el.appendChild(item);
+  });
+}
+let toastTimer=null;
+function showToast(color,title,body){
+  const el=document.getElementById("toast");
+  document.getElementById("toastDot").style.background=color;
+  document.getElementById("toastTitle").textContent=title;
+  document.getElementById("toastBody").textContent=body;
+  el.classList.add("show");
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),3200);
+}
+function showFact(i){const d=DISCOVERIES[i];showToast(d.color,d.name+" 발견!",d.fact);}
+function flashStage(){cv.classList.add("flash");setTimeout(()=>cv.classList.remove("flash"),500);}
+
+// ===== 팔레트 UI =====
+function renderPalette(){
+  const el=document.getElementById("palette");el.innerHTML="";
+  PALETTE.forEach(p=>{
+    const item=document.createElement("div");
+    item.className="pal-item"+(p.mat===selectedMat?" active":"");
+    const ic=document.createElement("div");ic.className="pal-ic";ic.textContent=p.ic;
+    const nm=document.createElement("div");nm.className="pal-nm";nm.textContent=p.nm;
+    item.appendChild(ic);item.appendChild(nm);
+    item.onclick=()=>{selectedMat=p.mat;renderPalette();};
+    el.appendChild(item);
+  });
+}
+
+// ===== 브러시 입력 (Pointer Events = 터치+마우스 통합) =====
+let started=false,overFlag=false,painting=false,lastGX=0,lastGY=0;
+function brushRadius(mat){ if(mat===-1)return 3; if(mat===SEED||mat===STONE)return 1; return 2; }
+function pxToGrid(e){
+  const r=cv.getBoundingClientRect();
+  let gx=Math.floor((e.clientX-r.left)/r.width*GRID_W);
+  let gy=Math.floor((e.clientY-r.top)/r.height*GRID_H);
+  gx=Math.max(0,Math.min(GRID_W-1,gx));gy=Math.max(0,Math.min(GRID_H-1,gy));
+  return [gx,gy];
+}
+function paintAt(gx,gy){
+  const br=brushRadius(selectedMat);
+  for(let dy=-br;dy<=br;dy++)for(let dx=-br;dx<=br;dx++){
+    if(dx*dx+dy*dy>br*br)continue;
+    const nx=gx+dx,ny=gy+dy;
+    if(!inBounds(nx,ny))continue;
+    const idx=I(nx,ny);
+    if(selectedMat===-1){ grid[idx]=EMPTY; }
+    else if(selectedMat===LAVA){ grid[idx]=LAVA; heatArr[idx]=255; }
+    else if(selectedMat===SAND){ grid[idx]=SAND; sandRest[idx]=0; }
+    else if(selectedMat===SEED){ if(grid[idx]===EMPTY){grid[idx]=SEED; seedGrow[idx]=0;} }
+    else { grid[idx]=selectedMat; }
+  }
+}
+function paintLine(x0,y0,x1,y1){
+  const dx=x1-x0,dy=y1-y0,steps=Math.max(1,Math.max(Math.abs(dx),Math.abs(dy)));
+  for(let i=0;i<=steps;i++){const t=i/steps;paintAt(Math.round(x0+dx*t),Math.round(y0+dy*t));}
+}
+cv.addEventListener("pointerdown",e=>{
+  e.preventDefault();ac()&&AC.resume&&AC.resume();
+  if(!started||overFlag)return;
+  painting=true;const [gx,gy]=pxToGrid(e);lastGX=gx;lastGY=gy;paintAt(gx,gy);sPaint();
+});
+cv.addEventListener("pointermove",e=>{
+  if(!painting)return;
+  const [gx,gy]=pxToGrid(e);paintLine(lastGX,lastGY,gx,gy);lastGX=gx;lastGY=gy;
+});
+cv.addEventListener("pointerup",()=>painting=false);
+cv.addEventListener("pointercancel",()=>painting=false);
+
+// ===== 레이아웃 실측 맞춤 (m.html v1.1 fitLayout 이식) =====
+function fitLayout(){
+  const hud=document.querySelector(".hud"),disc=document.getElementById("discbar"),
+        pal=document.getElementById("palette"),cvEl=document.getElementById("game");
+  if(!hud||!disc||!pal||!cvEl)return;
+  for(let pass=0;pass<2;pass++){
+    const bs=getComputedStyle(document.body);
+    const padV=parseFloat(bs.paddingTop)+parseFloat(bs.paddingBottom);
+    const availH=window.innerHeight-hud.offsetHeight-disc.offsetHeight-pal.offsetHeight-padV-21/*3 gaps*/-4/*border*/-8/*여유*/;
+    const w=Math.min(window.innerWidth*0.94,430,Math.max(200,availH*RATIO));
+    const wpx=Math.round(w)+"px";
+    hud.style.width=wpx;disc.style.width=wpx;pal.style.width=wpx;cvEl.style.width=wpx;
+  }
+}
+addEventListener("resize",fitLayout);
+addEventListener("orientationchange",()=>setTimeout(fitLayout,120));
+addEventListener("load",()=>{scrollTo(0,0);fitLayout();});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitLayout);
+
+// ===== 렌더 루프 =====
+let lastT=performance.now(),physAccum=0;
+function frame(now){
+  const dt=Math.min((now-lastT)/1000,.05);lastT=now;
+  if(started){
+    physAccum+=dt;let steps=0;
+    while(physAccum>=PSTEP&&steps<3){updateGrid();physAccum-=PSTEP;steps++;}
+  }
+  render();
+  requestAnimationFrame(frame);
+}
+
+// ===== 시작 =====
+document.getElementById("backBtn").onclick=()=>location.href="h.html";
+document.getElementById("muteBtn").onclick=function(){muted=!muted;this.textContent=muted?"🔇 무음":"🔊 소리";};
+document.getElementById("startBtn").onclick=()=>{
+  document.getElementById("intro").classList.add("hide");
+  started=true;
+};
+document.getElementById("continueBtn").onclick=()=>{
+  document.getElementById("over").classList.add("hide");overFlag=false;
+};
+const vTag=document.createElement("div");
+vTag.textContent=VERSION;
+vTag.style.cssText="position:fixed;right:8px;bottom:6px;font-size:10px;color:#4a5180;font-family:var(--num);z-index:50";
+document.body.appendChild(vTag);
+
+renderDiscBar();renderPalette();updateHUD();fitLayout();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
