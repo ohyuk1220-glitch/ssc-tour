@@ -113,9 +113,9 @@
     <ul class="rule-list">
       <li>대포를 드래그해서 <b>각도와 힘</b>을 조절하세요</li>
       <li>손을 떼면 공기 와류(고리)가 포물선으로 날아가요</li>
-      <li>바람이 조금씩 방향을 바꿔요 — 바람 표시를 확인하세요</li>
-      <li>표적은 멀수록 점수가 높아요</li>
-      <li>기회는 <b>5발</b>뿐! 최고점에 도전해보세요</li>
+      <li>바람이 매번 바뀌어요 — 오른쪽 위 바람 게이지를 보고 다시 조준하세요</li>
+      <li>표적은 멀수록 높은 점수, 일부는 <b>움직여요</b> · 가끔 ★<b>보너스</b> 표적도 등장</li>
+      <li>연속 명중하면 <b>콤보 점수</b>가 붙어요. 기회는 <b>5발</b>!</li>
     </ul>
     <button class="big-btn" id="startBtn" type="button">시작하기</button>
   </div>
@@ -195,10 +195,29 @@
 
   var targetDefs = [
     { fx:0.44, mode:'ground',   baseR:32, score:60 },
-    { fx:0.58, mode:'elevated', fy:0.60, baseR:24, score:110 },
-    { fx:0.72, mode:'ground',   baseR:22, score:160 },
+    { fx:0.58, mode:'elevated', fy:0.60, baseR:24, score:110, bob:{amp:0.055, speed:1.5, ph:0.4} },
+    { fx:0.72, mode:'ground',   baseR:22, score:160, moveX:{amp:0.05, speed:1.15, ph:2.1} },
     { fx:0.87, mode:'ground',   baseR:16, score:240 }
   ];
+  var bonusTarget = null; // { fx, fy, r, score } - 라운드마다 확률 등장, 못 맞히면 사라짐
+
+  function maybeSpawnBonus(){
+    bonusTarget = null;
+    if(Math.random() < 0.45){
+      bonusTarget = {
+        fx: 0.32 + Math.random()*0.5,
+        fy: 0.16 + Math.random()*0.2,
+        baseR: 15,
+        score: 260 + Math.round(Math.random()*8)*10
+      };
+    }
+  }
+  function getBonusTarget(){
+    if(!bonusTarget) return null;
+    var r = bonusTarget.baseR*scale;
+    var bob = Math.sin(gameTime*2.2)*0.02;
+    return { x:bonusTarget.fx*W, y:(bonusTarget.fy+bob)*H, r:r, score:bonusTarget.score, mode:'bonus' };
+  }
 
   var phase = 'aim'; // aim | flying | resolved | gameover
   var shotsLeft = MAX_SHOTS;
@@ -209,6 +228,11 @@
   var trailAccum = 0;
   var particles = [];
   var floats = [];
+  var shocks = [];
+  var windStreaks = [];
+  var windStreakAccum = 0;
+  var gameTime = 0;
+  var combo = 0;
   var shake = 0, flash = 0;
   var dragging = false;
   var pointer = { x:0, y:0 };
@@ -234,7 +258,7 @@
     groundY = H*0.82;
     cannonX = W*0.14;
     cannonY = groundY - 4*scale;
-    maxPull = Math.min(160*scale, W*0.32);
+    maxPull = W*0.42; // 힘 조절 체감폭 확대(기존 32%/160px 상한 → 화면폭 42%)
     gravity = 560*scale;
     speedMin = 260*scale;
     speedMax = 760*scale;
@@ -242,9 +266,13 @@
 
   function getTarget(t){
     var r = t.baseR*scale;
-    var x = t.fx*W;
-    var y = (t.mode === 'elevated') ? t.fy*H : (groundY - r);
-    return { x:x, y:y, r:r, score:t.score, mode:t.mode };
+    var fx = t.fx;
+    if(t.moveX){ fx += Math.sin(gameTime*t.moveX.speed + t.moveX.ph) * t.moveX.amp; }
+    var x = fx*W;
+    var fy = t.fy;
+    if(t.mode === 'elevated' && t.bob){ fy += Math.sin(gameTime*t.bob.speed + t.bob.ph) * t.bob.amp; }
+    var y = (t.mode === 'elevated') ? fy*H : (groundY - r);
+    return { x:x, y:y, r:r, score:t.score, mode:t.mode, moving: !!(t.moveX||t.bob) };
   }
 
   /* ---------- 사운드용 사용자 제스처 트리거 + 입력 ---------- */
@@ -345,6 +373,110 @@
     }
     ctx.globalAlpha = 1;
   }
+  /* ---------- 명중 충격파(손맛) ---------- */
+  function updateShocks(dt){
+    for(var i=shocks.length-1;i>=0;i--){
+      var s = shocks[i];
+      s.r += 210*scale*dt;
+      s.life -= dt*1.9;
+      if(s.life <= 0) shocks.splice(i,1);
+    }
+  }
+  function drawShocks(){
+    for(var i=0;i<shocks.length;i++){
+      var s = shocks[i];
+      ctx.globalAlpha = Math.max(s.life,0)*0.8;
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = Math.max(1, 3.5*scale*s.life);
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* ---------- 바람 가시화(흐르는 스트릭 + 게이지) ---------- */
+  function spawnWindStreak(){
+    windStreaks.push({
+      x: wind >= 0 ? -24*scale : W+24*scale,
+      y: 18*scale + Math.random()*(groundY-46*scale),
+      len: (16+Math.random()*20)*scale,
+      vx: wind*1.35,
+      life: 1
+    });
+  }
+  function updateWindStreaks(dt){
+    windStreakAccum += dt;
+    var mag = Math.abs(wind)/(130*scale);
+    var interval = clamp(0.55 - mag*0.4, 0.16, 0.55);
+    if(mag > 0.08 && windStreakAccum > interval){
+      windStreakAccum = 0;
+      spawnWindStreak();
+    }
+    for(var i=windStreaks.length-1;i>=0;i--){
+      var s = windStreaks[i];
+      s.x += s.vx*dt;
+      s.life -= dt*0.42;
+      if(s.life <= 0 || s.x < -80*scale || s.x > W+80*scale) windStreaks.splice(i,1);
+    }
+  }
+  function drawWindStreaks(){
+    ctx.lineCap = 'round';
+    for(var i=0;i<windStreaks.length;i++){
+      var s = windStreaks[i];
+      ctx.globalAlpha = Math.max(s.life,0)*0.28;
+      ctx.strokeStyle = '#dfeaff';
+      ctx.lineWidth = 1.6*scale;
+      var dir = s.vx >= 0 ? 1 : -1;
+      ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - s.len*dir, s.y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  function roundRectPath(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+  function drawWindGauge(){
+    var cx = W - 52*scale, cy = 30*scale;
+    var panelW = 88*scale, panelH = 40*scale;
+    ctx.save();
+    ctx.fillStyle = 'rgba(15,17,22,0.55)';
+    roundRectPath(cx-panelW/2, cy-panelH/2, panelW, panelH, 10*scale);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1; ctx.stroke();
+
+    var pct = clamp(Math.abs(wind)/(130*scale), 0, 1);
+    var dir = wind === 0 ? 0 : (wind > 0 ? 1 : -1);
+
+    // 게이지 바 (중앙 기준 좌우로 채워짐)
+    var gw = 62*scale, gh = 5*scale, gx = cx, gy = cy + 9*scale;
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    ctx.fillRect(gx-gw/2, gy-gh/2, gw, gh);
+    ctx.fillStyle = pct > 0.72 ? '#ff5f5f' : (pct > 0.3 ? '#f4c542' : '#4a90e2');
+    var fillW = (gw/2)*pct;
+    if(dir >= 0) ctx.fillRect(gx, gy-gh/2, fillW, gh);
+    else ctx.fillRect(gx-fillW, gy-gh/2, fillW, gh);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillRect(gx-1*scale, gy-6.5*scale, 2*scale, 13*scale);
+
+    // 방향 화살표
+    ctx.translate(cx, cy-8*scale);
+    if(dir !== 0){
+      ctx.rotate(dir > 0 ? 0 : Math.PI);
+      ctx.fillStyle = '#eef1f6';
+      ctx.beginPath();
+      ctx.moveTo(-7*scale,0); ctx.lineTo(5*scale,-5*scale); ctx.lineTo(5*scale,5*scale);
+      ctx.closePath(); ctx.fill();
+    }else{
+      ctx.fillStyle = '#8b93a3';
+      ctx.beginPath(); ctx.arc(0,0,3*scale,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function spawnFloat(x,y,text,color){
     floats.push({ x:x, y:y, text:text, color:color, life:1 });
   }
@@ -369,21 +501,37 @@
   }
 
   /* ---------- 판정 ---------- */
-  function resolveHit(t, pos){
+  function spawnShock(x,y,color){
+    shocks.push({ x:x, y:y, r:8*scale, life:1, color:color });
+  }
+  function resolveHit(t, pos, isBonus){
     phase = 'resolved';
-    score += t.score;
+    combo++;
+    var comboBonus = combo >= 2 ? (combo-1)*15 : 0;
+    var gained = t.score + comboBonus;
+    score += gained;
     hitCount++;
-    shake = Math.max(shake, 10);
-    flash = 0.55;
-    spawnBurst(pos.x, pos.y, t.score >= 200 ? '#f4c542' : '#4a90e2', 16);
-    spawnFloat(pos.x, pos.y, '+'+t.score, '#3ddc84');
-    showFeedback('명중!', 'good');
+    if(isBonus){ bonusTarget = null; }
+
+    var burstColor = isBonus ? '#f4c542' : (t.score >= 200 ? '#f4c542' : '#4a90e2');
+    var shockColor = isBonus ? '#f4c542' : (combo >= 3 ? '#ff9f4a' : '#8fd7ff');
+    shake = Math.max(shake, 10 + Math.min(combo,4)*2.2);
+    flash = Math.min(0.55 + combo*0.05, 0.85);
+    spawnBurst(pos.x, pos.y, burstColor, isBonus ? 26 : (16 + Math.min(combo,3)*3));
+    spawnShock(pos.x, pos.y, shockColor);
+    if(isBonus) spawnShock(pos.x, pos.y, '#ffffff');
+    spawnFloat(pos.x, pos.y, '+'+gained, isBonus ? '#f4c542' : '#3ddc84');
+    if(comboBonus>0) spawnFloat(pos.x, pos.y-22*scale, combo+'콤보 +'+comboBonus, '#ff9f4a');
+
+    var label = isBonus ? '보너스 명중!' : (combo >= 3 ? combo+'연속 명중!' : '명중!');
+    showFeedback(label, 'good');
     playHit();
     ring = null;
     setTimeout(afterShot, 750);
   }
   function resolveMiss(x,y){
     phase = 'resolved';
+    combo = 0;
     spawnBurst(x, Math.min(y, groundY), '#8b93a3', 8);
     showFeedback('빗나감', 'bad');
     playMiss();
@@ -415,12 +563,14 @@
   function newWind(){
     wind = (Math.random()*2-1) * 130*scale;
     var abs = Math.abs(wind);
-    var label = '없음';
-    if(abs > 95*scale) label = '강함';
-    else if(abs > 40*scale) label = '보통';
-    else if(abs > 14*scale) label = '약함';
+    var label = '없음', dots = 0;
+    if(abs > 95*scale){ label = '강함'; dots = 3; }
+    else if(abs > 40*scale){ label = '보통'; dots = 2; }
+    else if(abs > 14*scale){ label = '약함'; dots = 1; }
     var arrow = wind > 14*scale ? '→' : (wind < -14*scale ? '←' : '·');
-    el.windBadge.textContent = '바람 ' + arrow + ' ' + label;
+    var dotStr = dots > 0 ? ' ' + '●'.repeat(dots) + '○'.repeat(3-dots) : '';
+    el.windBadge.textContent = '바람 ' + arrow + ' ' + label + dotStr;
+    maybeSpawnBonus();
   }
   function renderAmmo(){
     el.ammo.innerHTML = '';
@@ -434,9 +584,9 @@
   function gameOver(){
     phase = 'gameover';
     var grade = '연습이 더 필요해요';
-    if(score >= 900) grade = '명사수!';
-    else if(score >= 500) grade = '베테랑 사수';
-    else if(score >= 200) grade = '초보 사수';
+    if(score >= 1100) grade = '명사수!';
+    else if(score >= 650) grade = '베테랑 사수';
+    else if(score >= 250) grade = '초보 사수';
     el.resultScore.textContent = score;
     el.resultGrade.textContent = grade;
     el.resultDesc.textContent = MAX_SHOTS + '발 중 ' + hitCount + '발 명중';
@@ -444,9 +594,10 @@
   }
 
   function startGame(){
-    score = 0; displayScore = 0; hitCount = 0;
+    score = 0; displayScore = 0; hitCount = 0; combo = 0;
     shotsLeft = MAX_SHOTS;
-    particles.length = 0; floats.length = 0;
+    particles.length = 0; floats.length = 0; shocks.length = 0; windStreaks.length = 0;
+    windStreakAccum = 0; gameTime = 0;
     ring = null; shake = 0; flash = 0;
     dragging = false;
     phase = 'aim';
@@ -486,7 +637,25 @@
       ctx.fillStyle = 'rgba(238,241,246,0.9)';
       ctx.font = '700 ' + Math.round(11*scale) + 'px -apple-system,sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(g.score + '점', g.x, g.y - g.r - 8*scale);
+      var label = g.score + '점' + (g.moving ? ' ↔' : '');
+      ctx.fillText(label, g.x, g.y - g.r - 8*scale);
+    }
+
+    var bg = getBonusTarget();
+    if(bg){
+      var pulse = 1 + Math.sin(gameTime*7)*0.08;
+      ctx.save();
+      ctx.shadowColor = 'rgba(244,197,66,0.85)';
+      ctx.shadowBlur = 16*scale;
+      ctx.beginPath(); ctx.fillStyle = '#f4c542'; ctx.arc(bg.x,bg.y,bg.r*pulse,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.beginPath(); ctx.strokeStyle = '#fff3cf'; ctx.lineWidth = 2*scale;
+      ctx.arc(bg.x,bg.y,bg.r*pulse*0.6,0,Math.PI*2); ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = '#f4c542';
+      ctx.font = '800 ' + Math.round(11.5*scale) + 'px -apple-system,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('★ 보너스 ' + bg.score + '점', bg.x, bg.y - bg.r - 9*scale);
     }
   }
   function drawCannon(angle){
@@ -531,13 +700,26 @@
     ctx.beginPath(); ctx.moveTo(cannonX,cannonY); ctx.lineTo(pointer.x,pointer.y); ctx.stroke();
     ctx.setLineDash([]);
 
-    var barW = 70*scale, barH = 8*scale;
-    var bx = cannonX - barW/2, by = cannonY - 46*scale;
+    var barW = 84*scale, barH = 9*scale;
+    var bx = cannonX - barW/2, by = cannonY - 50*scale;
+    var atMax = liveAim.power >= 0.995;
     ctx.fillStyle = 'rgba(20,24,30,0.8)';
     ctx.fillRect(bx,by,barW,barH);
-    ctx.fillStyle = liveAim.power > 0.85 ? '#ff5f5f' : '#f4c542';
+    ctx.fillStyle = atMax ? '#ff5f5f' : (liveAim.power > 0.8 ? '#f4854a' : '#f4c542');
     ctx.fillRect(bx,by,barW*liveAim.power,barH);
-    ctx.strokeStyle = '#343b47'; ctx.lineWidth = 1; ctx.strokeRect(bx,by,barW,barH);
+    // 25/50/75% 눈금 + 상한선(100%) 명확히 표시
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1;
+    [0.25,0.5,0.75].forEach(function(p){
+      ctx.beginPath(); ctx.moveTo(bx+barW*p, by); ctx.lineTo(bx+barW*p, by+barH); ctx.stroke();
+    });
+    ctx.strokeStyle = atMax ? '#ff5f5f' : '#343b47'; ctx.lineWidth = atMax ? 2 : 1;
+    ctx.strokeRect(bx,by,barW,barH);
+    if(atMax){
+      ctx.fillStyle = '#ff5f5f';
+      ctx.font = '800 ' + Math.round(10*scale) + 'px -apple-system,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('MAX', bx+barW/2, by-5*scale);
+    }
   }
   function drawRing(r){
     ctx.save();
@@ -556,10 +738,13 @@
   }
 
   function update(dt){
+    gameTime += dt;
     shake *= 0.9; if(shake < 0.05) shake = 0;
     flash *= 0.85; if(flash < 0.01) flash = 0;
     updateParticles(dt);
     updateFloats(dt);
+    updateShocks(dt);
+    updateWindStreaks(dt);
     displayScore += (score-displayScore)*Math.min(1, dt*8);
     el.scoreVal.textContent = Math.round(displayScore);
 
@@ -573,14 +758,21 @@
       trailAccum += dt;
       if(trailAccum > 0.025){ trailAccum = 0; spawnTrail(ring.x, ring.y); }
 
-      var hitT = null, hitPos = null;
-      for(var i=0;i<targetDefs.length;i++){
-        var g = getTarget(targetDefs[i]);
-        var d = Math.hypot(ring.x-g.x, ring.y-g.y);
-        if(d < ring.r + g.r){ hitT = g; hitPos = g; break; }
+      var hitT = null, hitPos = null, hitBonus = false;
+      var bg = getBonusTarget();
+      if(bg){
+        var bd = Math.hypot(ring.x-bg.x, ring.y-bg.y);
+        if(bd < ring.r + bg.r){ hitT = bg; hitPos = bg; hitBonus = true; }
+      }
+      if(!hitT){
+        for(var i=0;i<targetDefs.length;i++){
+          var g = getTarget(targetDefs[i]);
+          var d = Math.hypot(ring.x-g.x, ring.y-g.y);
+          if(d < ring.r + g.r){ hitT = g; hitPos = g; break; }
+        }
       }
       if(hitT){
-        resolveHit(hitT, hitPos);
+        resolveHit(hitT, hitPos, hitBonus);
       }else if(ring.y > groundY+30*scale || ring.x > W+80 || ring.x < -80 || flightTime > 4.5){
         resolveMiss(ring.x, Math.min(ring.y, groundY));
       }
@@ -594,14 +786,17 @@
     ctx.translate(sx,sy);
 
     drawBackground();
+    drawWindStreaks();
     drawTargets();
     drawParticles();
+    drawShocks();
     if(ring) drawRing(ring);
     drawFloats();
     drawCannon(dragging ? liveAim.angle : aimAngleDeg);
     if(dragging) drawAimHelpers();
 
     ctx.restore();
+    drawWindGauge();
     if(flash > 0){
       ctx.fillStyle = 'rgba(255,255,255,' + Math.min(flash,0.6) + ')';
       ctx.fillRect(0,0,W,H);

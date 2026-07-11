@@ -35,20 +35,22 @@
     color: #f4c95d;
   }
   #hud {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 8px;
     font-size: 12px; font-weight: 600; color: #9db2c9;
+    flex-wrap: wrap; justify-content: flex-end;
   }
-  #budget-pill {
+  #level-pill, #budget-pill, #state-pill, #sag-pill {
     background: #17273d; border: 1px solid #2c4360;
     border-radius: 999px; padding: 4px 12px;
     color: #d7e6f5; font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
+  #level-pill { color: #9fd3ff; border-color: #2a4a68; }
   #budget-pill.low { color: #ff8a65; border-color: #6b3324; }
   #budget-pill.empty { color: #ff5252; border-color: #7a2020; }
-  #state-pill {
-    background: #17273d; border: 1px solid #2c4360;
-    border-radius: 999px; padding: 4px 12px;
-  }
+  #sag-pill { display: none; }
+  #sag-pill.warn { color: #f4c95d; border-color: #6b5320; }
+  #sag-pill.danger { color: #ff5252; border-color: #7a2020; }
 
   #canvas-wrap {
     position: relative; flex: 1 1 auto; min-height: 0;
@@ -126,7 +128,9 @@
   <header>
     <h1>🌉 다리 건설 — G전시실 프로토타입</h1>
     <div id="hud">
+      <span id="level-pill">레벨 1/3</span>
       <span id="budget-pill">빔 0/0</span>
+      <span id="sag-pill">처짐 -</span>
       <span id="state-pill">설계 중</span>
     </div>
   </header>
@@ -140,7 +144,8 @@
         <div id="overlay-title">결과</div>
         <div id="overlay-desc">설명</div>
         <div class="btn-row">
-          <button class="primary" id="btn-retry">다시 도전</button>
+          <button class="primary" id="btn-next-level" style="display:none;">다음 레벨 ▶</button>
+          <button id="btn-retry">다시 도전</button>
           <button class="ghost" id="btn-reset-overlay">새로 설계</button>
         </div>
       </div>
@@ -148,7 +153,7 @@
   </div>
 
   <footer>
-    <div id="hint">노드를 <b>두 번 탭</b>해서 빔 연결 · 이미 연결된 두 노드를 다시 탭하면 <b>해체</b></div>
+    <div id="hint">노드를 <b>탭</b>해 선택 → 조준선이 <b>초록</b>이면 연결 · 이미 연결된 두 노드면 <b>해체</b></div>
     <div class="btn-row">
       <button class="ghost" id="btn-clear">초기화</button>
       <button class="primary" id="btn-test">테스트 주행 ▶</button>
@@ -181,21 +186,38 @@
   var displayScale = 1;
   window.addEventListener('resize', resize);
 
+  // ---------- 레벨 정의 ----------
+  // bays = cols+1, 완전삼각화(상판+하판+대각선 1개씩) 필요 빔 수 = 3*bays
+  // budget이 그보다 크면(+슬랙) 여유 있음 / 같으면 딱 맞음 / 작으면 일부러 골라서 빼야 함(긴장)
+  var LEVELS = [
+    { label:'짧은 다리', cols:2, budget:10, loadMul:2.2, sagLimit:48 }, // 완전삼각화=9, 슬랙+1 (쉬움/연습)
+    { label:'표준 다리', cols:5, budget:18, loadMul:2.7, sagLimit:48 }, // 완전삼각화=18, 딱 맞음 (기존 밸런스 그대로 보존)
+    { label:'긴 다리',   cols:7, budget:22, loadMul:3.1, sagLimit:68 }  // 완전삼각화=24, -2(구간을 골라 생략해야 함).
+                                                                        // sagLimit 상향은 편법이 아니라 실측 근거: 8구간 다리는
+                                                                        // "완전삼각화"라도 자연 처짐이 6구간보다 커서(진단 결과
+                                                                        // 완전삼각화 평형처짐≈60, 대각선0개≈79) 48을 그대로 쓰면
+                                                                        // 완벽하게 지어도 무조건 무너지는 버그가 됨 — 실측으로 보정.
+  ];
+  var currentLevelIdx = 0;
+
   // ---------- 월드 상수 ----------
-  var GAP_L = 150, GAP_R = 750;     // 절벽 안쪽 끝
   var TOP_Y = 200, BOT_Y = 320;     // 상현/하현 높이
   var FLOOR_Y = 470;                // 계곡 바닥(추락 판정)
-  var COLS = [250, 350, 450, 550, 650]; // 자유 노드 x열 (계곡 내부)
+  var BAY_W = 100;                  // 구간 폭(고정)
+  var GAP_L, GAP_R;                 // 절벽 안쪽 끝(레벨마다 재계산)
+  var COLS = [];                    // 자유 노드 x열(레벨마다 재계산)
   var MAX_LEN = 175;                // 빔 최대 길이 (근접 연결만 허용)
-  var BEAM_BUDGET = 18;             // 상판6+하판6+대각선6(전 구간 삼각화)이 딱 맞는 예산
+  var BEAM_BUDGET = 18;             // 레벨마다 buildWorld()에서 갱신
+  var TRUCK_LOAD_MUL = 2.7;         // 레벨마다 buildWorld()에서 갱신
 
   var GRAVITY = 0.30;
-  var CONSTRAINT_ITER = 6;
+  var CONSTRAINT_ITER = 6;          // 검증된 원본 값 그대로(L2 밸런스 보존 — 손대면 안 됨, 실측 확인됨)
   var STRESS_ADD = 1.0;
   var STRESS_DECAY = 0.05;
   var STRESS_LIMIT = 9.0;
   var STRESS_RATIO_THRESHOLD = 0.10;
-  var SAG_LIMIT = 48; // 상판이 이 이상 처지면 트럭이 통과 불가로 판정(삼각화 안 된 다리는 넘김)
+  var SAG_LIMIT = 48; // 상판이 이 이상 처지면 트럭이 통과 불가로 판정 — 레벨마다 buildWorld()에서 lvl.sagLimit로 갱신
+  var WARN_RATIO = 0.85; // 이 이상 스트레스면 붕괴 전 경고(색은 이미 빨강, 추가로 흔들림+토스트)
 
   // ---------- 노드/빔 데이터 ----------
   var nodes = [];   // {id,x,y,ox,oy,homeX,homeY,pinned,role}
@@ -211,7 +233,22 @@
   var leftTop, leftBot, rightTop, rightBot;
   var topChain = []; // [leftTop, ...COLS top nodes..., rightTop] 순서
 
-  function buildWorld(){
+  function buildWorld(levelIdx){
+    if (typeof levelIdx !== 'number') levelIdx = currentLevelIdx;
+    levelIdx = Math.max(0, Math.min(LEVELS.length - 1, levelIdx));
+    currentLevelIdx = levelIdx;
+    var lvl = LEVELS[levelIdx];
+
+    var bays = lvl.cols + 1;
+    var span = BAY_W * bays;
+    GAP_L = Math.round((W - span) / 2);
+    GAP_R = GAP_L + span;
+    BEAM_BUDGET = lvl.budget;
+    TRUCK_LOAD_MUL = lvl.loadMul;
+    SAG_LIMIT = lvl.sagLimit || 48;
+    COLS = [];
+    for (var c = 0; c < lvl.cols; c++) COLS.push(GAP_L + BAY_W * (c + 1));
+
     nodes = []; beams = []; nid = 0;
     leftTop = addNode(GAP_L, TOP_Y, true, 'anchor');
     leftBot = addNode(GAP_L, BOT_Y, true, 'anchor');
@@ -227,6 +264,13 @@
       topChain.push(t);
     }
     topChain.push(rightTop);
+
+    selected = null;
+    pointerWorld = null;
+    warnedThisRun = false;
+    firstBreakInfo = null;
+    brokeAnyLogged = false;
+    truck = null;
   }
 
   function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
@@ -248,10 +292,14 @@
   // ---------- 상태 ----------
   var MODE = 'design'; // design | sim | success | fail
   var selected = null;
+  var pointerWorld = null; // 빔 미리보기용 현재 조준 위치
   var truck = null;
   var shakeT = 0;
   var particles = [];
   var toastT = 0;
+  var warnedThisRun = false;   // 이번 주행에서 붕괴 경고를 이미 띄웠는지
+  var firstBreakInfo = null;   // 이번 주행에서 처음 끊어진 빔 설명(피드백용)
+  var brokeAnyLogged = false;
 
   function toast(msg){
     var el = document.getElementById('toast');
@@ -269,6 +317,22 @@
     var sp = document.getElementById('state-pill');
     sp.textContent = MODE === 'design' ? '설계 중' : MODE === 'sim' ? '주행 중' : MODE === 'success' ? '성공' : '붕괴';
     document.getElementById('btn-test').disabled = (MODE === 'sim');
+    document.getElementById('level-pill').textContent =
+      '레벨 ' + (currentLevelIdx+1) + '/' + LEVELS.length + ' · ' + LEVELS[currentLevelIdx].label;
+  }
+
+  function updateSagPill(){
+    var pill = document.getElementById('sag-pill');
+    if (MODE !== 'sim' || !truck || truck.falling){
+      pill.style.display = 'none';
+      return;
+    }
+    pill.style.display = '';
+    var sag = Math.max(0, truck.sag || 0);
+    var ratio = sag / SAG_LIMIT;
+    pill.textContent = '처짐 ' + Math.round(sag) + '/' + SAG_LIMIT;
+    pill.classList.toggle('warn', ratio >= 0.6 && ratio < 0.9);
+    pill.classList.toggle('danger', ratio >= 0.9);
   }
 
   // ---------- 입력 ----------
@@ -301,6 +365,7 @@
 
     var a = selected, b = n;
     selected = null;
+    pointerWorld = null;
 
     var existing = findBeam(a,b);
     if (existing){
@@ -332,6 +397,16 @@
     e.preventDefault();
     onTap(e.clientX, e.clientY);
   });
+  canvas.addEventListener('pointermove', function(e){
+    if (MODE !== 'design' || !selected){ pointerWorld = null; return; }
+    pointerWorld = toWorld(e.clientX, e.clientY);
+  });
+  canvas.addEventListener('pointerleave', function(){ pointerWorld = null; });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && MODE === 'design' && selected){
+      selected = null; pointerWorld = null;
+    }
+  });
 
   // ---------- 물리(자체 구현 — Verlet + 거리 구속) ----------
   function resetPhysicsPositions(){
@@ -343,11 +418,14 @@
       n.pinned = (n.role === 'anchor');
     }
     for (var j=0;j<beams.length;j++){ beams[j].stress = 0; beams[j].broken = false; }
+    warnedThisRun = false;
+    firstBreakInfo = null;
+    brokeAnyLogged = false;
   }
 
   function startSim(){
     if (MODE !== 'design') return;
-    // 상판(top chord) 6구간이 모두 이어져 있는지 확인
+    // 상판(top chord) 구간이 모두 이어져 있는지 확인
     var brokenAt = -1;
     for (var i=0;i<topChain.length-1;i++){
       if (!findBeam(topChain[i], topChain[i+1])){ brokenAt = i; break; }
@@ -359,9 +437,20 @@
     for (var k=0;k<nodes.length;k++){
       if (nodes[k].role === 'free') nodes[k].pinned = false;
     }
-    truck = { x: leftTop.x - 60, y: TOP_Y - 14, seg: 0, falling:false, vy:0, angle:0, speed: 62 };
+    warnedThisRun = false;
+    firstBreakInfo = null;
+    brokeAnyLogged = false;
+    truck = { x: leftTop.x - 60, y: TOP_Y - 14, seg: 0, falling:false, vy:0, angle:0, speed: 62, sag: 0 };
     MODE = 'sim';
     setHUD();
+  }
+
+  function beamRoleLabel(bm){
+    var sameY = Math.abs(bm.a.y - bm.b.y) < 1;
+    if (sameY){
+      return Math.abs(bm.a.y - TOP_Y) < 1 ? '상판' : '하판';
+    }
+    return '대각선';
   }
 
   function verletStep(dt){
@@ -383,7 +472,7 @@
         if (Math.abs(nn.homeY - TOP_Y) > 1) continue; // 상현 노드만
         var d = Math.abs(nn.x - truck.x);
         if (d < 150){
-          var f = (1 - d/150) * 2.7;
+          var f = (1 - d/150) * TRUCK_LOAD_MUL;
           nn.y += f;
         }
       }
@@ -409,6 +498,7 @@
 
     // 스트레스 누적 & 파단 판정 (마지막 반복 후 잔여 변형으로 판단)
     var brokeAny = false;
+    var maxRatio = 0;
     for (var b2=0;b2<beams.length;b2++){
       var bm2 = beams[b2];
       if (bm2.broken) continue;
@@ -419,24 +509,26 @@
       } else {
         bm2.stress = Math.max(0, bm2.stress - STRESS_DECAY);
       }
+      maxRatio = Math.max(maxRatio, bm2.stress / STRESS_LIMIT);
       if (bm2.stress >= STRESS_LIMIT){
         bm2.broken = true;
         brokeAny = true;
+        if (!brokeAnyLogged){
+          brokeAnyLogged = true;
+          firstBreakInfo = beamRoleLabel(bm2);
+        }
         spawnBreakFx(bm2);
       }
     }
     if (brokeAny) shakeT = 0.25;
 
-    // 고립 노드 처리(붙어있는 빔이 하나도 없으면 낙하 잔해로)
-    for (var n2=0;n2<nodes.length;n2++){
-      var nd = nodes[n2];
-      if (nd.pinned || nd.dead || nd.role !== 'free') continue;
-      var has = false;
-      for (var b3=0;b3<beams.length;b3++){
-        if (beams[b3].broken) continue;
-        if (beams[b3].a===nd || beams[b3].b===nd){ has = true; break; }
+    // 붕괴 직전 경고: 아직 안 끊어졌지만 한계에 근접 — 토스트 1회 + 미세 흔들림
+    if (MODE === 'sim' && maxRatio >= WARN_RATIO){
+      shakeT = Math.max(shakeT, 0.08);
+      if (!warnedThisRun){
+        warnedThisRun = true;
+        toast('위험! 빔이 한계에 가까워지고 있어요');
       }
-      if (!has && nd.y > TOP_Y + 6){ /* 여전히 표류 허용, 낙하는 y로 판정 */ }
     }
   }
 
@@ -474,14 +566,18 @@
     if (!segBeam && nB.x > nA.x && truck.x >= nA.x){
       // 앞 구간이 끊어져 있는데 트럭이 그 위로 진입 -> 추락
       truck.falling = true;
+      truck.failMsg = firstBreakInfo
+        ? (firstBreakInfo + ' 빔이 끊어져 다리가 무너졌습니다')
+        : '다리가 끊겨 트럭이 계곡으로 떨어졌습니다';
       return;
     }
     var span = Math.max(1, nB.x - nA.x);
     var f = Math.min(1, Math.max(0, (truck.x - nA.x) / span));
     var groundY = nA.y + (nB.y - nA.y) * f;
     truck.y = groundY - 14;
+    truck.sag = groundY - TOP_Y;
 
-    if (groundY - TOP_Y > SAG_LIMIT){
+    if (truck.sag > SAG_LIMIT){
       truck.falling = true;
       truck.failMsg = '처짐이 너무 커서 다리가 무너졌습니다 — 삼각 구조로 힘을 분산해보세요';
       return;
@@ -524,19 +620,39 @@
     var icon = document.getElementById('overlay-icon');
     var title = document.getElementById('overlay-title');
     var desc = document.getElementById('overlay-desc');
+    var nextBtn = document.getElementById('btn-next-level');
+    var retryBtn = document.getElementById('btn-retry');
     if (success){
       icon.textContent = '🎉';
       title.textContent = '성공!';
       title.className = 'success';
       var usedBeams = beams.filter(function(b){return !b.broken;}).length;
       desc.textContent = '트럭이 안전하게 건넜습니다. 사용한 빔 ' + usedBeams + '/' + BEAM_BUDGET + '개.';
+
+      var hasNext = currentLevelIdx < LEVELS.length - 1;
+      nextBtn.style.display = '';
+      nextBtn.textContent = hasNext ? '다음 레벨 ▶' : '처음부터 다시';
+      nextBtn.onclick = function(){ goToLevel(hasNext ? currentLevelIdx + 1 : 0); };
+      retryBtn.classList.add('ghost');
+      retryBtn.classList.remove('primary');
     } else {
       icon.textContent = '💥';
       title.textContent = '붕괴!';
       title.className = 'fail';
       desc.textContent = msg || '다리가 하중을 버티지 못했습니다.';
+
+      nextBtn.style.display = 'none';
+      retryBtn.classList.remove('ghost');
+      retryBtn.classList.add('primary');
     }
     ov.classList.add('show');
+  }
+  function goToLevel(idx){
+    document.getElementById('overlay').classList.remove('show');
+    buildWorld(idx);
+    MODE = 'design';
+    toast('레벨 ' + (idx+1) + ': ' + LEVELS[idx].label);
+    setHUD();
   }
   document.getElementById('btn-retry').addEventListener('click', function(){
     document.getElementById('overlay').classList.remove('show');
@@ -546,13 +662,13 @@
   });
   document.getElementById('btn-reset-overlay').addEventListener('click', function(){
     document.getElementById('overlay').classList.remove('show');
-    buildWorld();
+    buildWorld(currentLevelIdx);
     MODE = 'design';
     setHUD();
   });
   document.getElementById('btn-clear').addEventListener('click', function(){
     if (MODE === 'sim') return;
-    buildWorld();
+    buildWorld(currentLevelIdx);
     MODE = 'design';
     toast('초기화했습니다');
     setHUD();
@@ -588,6 +704,26 @@
     ctx.beginPath(); ctx.moveTo(GAP_R, TOP_Y-30); ctx.lineTo(GAP_R, BOT_Y+40); ctx.stroke();
   }
 
+  function drawSagGuide(){
+    if (MODE !== 'sim' && MODE !== 'fail') return;
+    var y = TOP_Y + SAG_LIMIT;
+    ctx.save();
+    ctx.setLineDash([6,6]);
+    ctx.strokeStyle = 'rgba(255,120,120,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(GAP_L, y);
+    ctx.lineTo(GAP_R, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,150,150,0.55)';
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('처짐 한계선', GAP_R, y - 6);
+    ctx.textAlign = 'left';
+    ctx.restore();
+  }
+
   function beamColor(bm){
     var s = Math.min(1, bm.stress / STRESS_LIMIT);
     if (s < 0.45) return '#8fa6bd';
@@ -607,6 +743,36 @@
       ctx.lineTo(bm.b.x, bm.b.y);
       ctx.stroke();
     }
+  }
+
+  function drawPreview(){
+    if (MODE !== 'design' || !selected || !pointerWorld) return;
+    var target = nearestNode(pointerWorld);
+    var tx = target ? target.x : pointerWorld.x;
+    var ty = target ? target.y : pointerWorld.y;
+    var color = 'rgba(180,195,210,0.5)'; // 기본: 노드 없는 곳을 조준 중(중립)
+    if (target && target !== selected){
+      var existing = findBeam(selected, target);
+      if (existing){
+        color = 'rgba(244,201,93,0.85)'; // 해체 예정
+      } else {
+        var d = dist(selected, target);
+        var valid = d <= MAX_LEN && !(selected.pinned && target.pinned) && budgetLeft() > 0;
+        color = valid ? 'rgba(126,224,168,0.9)' : 'rgba(255,90,90,0.85)';
+      }
+    } else if (target === selected){
+      return; // 자기 자신 위 — 미리보기 불필요
+    }
+    ctx.save();
+    ctx.setLineDash([5,5]);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(selected.x, selected.y);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
 
   function drawNodes(){
@@ -680,7 +846,9 @@
     ctx.fillStyle = '#0c1420';
     ctx.fillRect(-10,-10,W+20,H+20);
     drawCliffs();
+    drawSagGuide();
     drawBeams();
+    drawPreview();
     drawNodes();
     drawTruck();
     drawParticles(dt);
@@ -705,6 +873,7 @@
     } else if (MODE === 'success' || MODE === 'fail'){
       verletStep(dt); // 붕괴/도착 후 잔여 흔들림 살짝
     }
+    updateSagPill();
 
     render(dt);
     requestAnimationFrame(frame);
@@ -716,11 +885,44 @@
     getBeams: function(){ return beams; },
     getTruck: function(){ return truck; },
     getMode: function(){ return MODE; },
-    getTopY: function(){ return TOP_Y; }
+    getTopY: function(){ return TOP_Y; },
+    getBotY: function(){ return BOT_Y; },
+    getGap: function(){ return { left: GAP_L, right: GAP_R }; },
+    getLevels: function(){ return LEVELS; },
+    getLevel: function(){ return currentLevelIdx; },
+    getBudgetLeft: budgetLeft,
+    // 아래는 자동 플레이테스트 전용 — 실제 탭 UI 로직(길이/예산/고정점 규칙)을 그대로 통과시킨다
+    setLevel: function(idx){ buildWorld(idx); MODE = 'design'; setHUD(); return currentLevelIdx; },
+    connect: function(idA, idB){
+      var a = null, b = null;
+      for (var i=0;i<nodes.length;i++){
+        if (nodes[i].id === idA) a = nodes[i];
+        if (nodes[i].id === idB) b = nodes[i];
+      }
+      if (!a || !b) return { ok:false, reason:'no-node' };
+      var existing = findBeam(a,b);
+      if (existing){
+        existing.broken = true;
+        beams = beams.filter(function(x){ return x !== existing; });
+        setHUD();
+        return { ok:true, action:'removed' };
+      }
+      var d = dist(a,b);
+      if (d > MAX_LEN) return { ok:false, reason:'too-far' };
+      if (a.pinned && b.pinned) return { ok:false, reason:'both-pinned' };
+      if (budgetLeft() <= 0) return { ok:false, reason:'no-budget' };
+      beams.push({ a:a, b:b, rest:d, stress:0, broken:false });
+      setHUD();
+      return { ok:true, action:'added', budgetLeft: budgetLeft() };
+    },
+    startSim: startSim,
+    step: function(n){
+      for (var i=0;i<n;i++){ verletStep(1/30); updateTruck(1/30); }
+    }
   };
 
   // ---------- 시작 ----------
-  buildWorld();
+  buildWorld(0);
   resize();
   setHUD();
   requestAnimationFrame(frame);

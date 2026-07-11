@@ -25,22 +25,34 @@
   header {
     flex: 0 0 auto;
     display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; row-gap: 6px;
     gap: 8px;
     padding: 10px 14px;
     background: #0f1522;
     border-bottom: 1px solid #1e2a3d;
   }
+  header > div:first-child { flex: 1 1 140px; min-width: 0; }
   header h1 {
     font-size: 15px; margin: 0; font-weight: 800; letter-spacing: -0.01em;
     color: #5eead4;
   }
   header p.sub { font-size: 11px; color: #6b7c93; margin: 2px 0 0; }
-  #hud { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  #starTally {
+    flex: 0 0 auto; font-size: 12px; font-weight: 800; color: #ffd24a;
+    background: #1e1a0f; border: 1px solid #4a3a1a; border-radius: 999px;
+    padding: 4px 10px; white-space: nowrap;
+  }
+  #hud {
+    display: flex; align-items: center; gap: 5px; flex: 0 1 auto;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    max-width: 100%; scrollbar-width: none;
+  }
+  #hud::-webkit-scrollbar { display: none; }
   .dot-btn {
-    width: 22px; height: 22px; border-radius: 50%; border: 1px solid #2a3a52;
-    background: #16223a; color: #7d92aa; font-size: 10px; font-weight: 700;
+    width: 20px; height: 20px; border-radius: 50%; border: 1px solid #2a3a52;
+    background: #16223a; color: #7d92aa; font-size: 9.5px; font-weight: 700;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
-    padding: 0;
+    padding: 0; flex-shrink: 0;
   }
   .dot-btn.done { background: #123c34; border-color: #1f6e5c; color: #5eead4; }
   .dot-btn.active { background: #5eead4; border-color: #5eead4; color: #0a0d16; }
@@ -79,16 +91,39 @@
     z-index: 10;
   }
   #overlay.show { display: flex; }
-  #overlay-card {
+  .overlay-card {
     background: #101c2e; border: 1px solid #2c4360;
     border-radius: 16px; padding: 26px 28px;
     max-width: 340px; width: calc(100% - 48px);
     text-align: center;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   }
-  #overlay-title { font-size: 20px; font-weight: 800; margin: 4px 0 8px; color: #5eead4; }
-  #overlay-desc { font-size: 13px; color: #a9bcd0; margin-bottom: 18px; }
+  #overlay-title, #intro-title { font-size: 20px; font-weight: 800; margin: 4px 0 8px; color: #5eead4; }
+  #overlay-desc, #intro-desc { font-size: 13px; color: #a9bcd0; margin-bottom: 18px; }
   .btn-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  #intro-overlay {
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(6,10,18,0.9);
+    z-index: 20;
+  }
+  #intro-overlay.show { display: flex; }
+  .intro-steps {
+    display: flex; justify-content: center; gap: 14px;
+    margin: 4px 0 16px;
+  }
+  .intro-step { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 72px; }
+  .intro-icon {
+    width: 52px; height: 52px; border-radius: 10px;
+    background: #16223a; border: 1px solid #2a3a52;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .intro-txt { font-size: 11px; color: #cfe0f2; line-height: 1.4; }
+  .ico-mirror { width: 24px; height: 24px; border-top: 4px solid #cfe3ff; border-radius: 2px; }
+  .ico-mirror-a { transform: rotate(-45deg); }
+  .ico-mirror-b { transform: rotate(45deg); }
+  .ico-x { font-size: 20px; font-weight: 800; color: #ff8a8a; }
 
   button {
     font-family: inherit; font-weight: 700; font-size: 13px;
@@ -118,8 +153,9 @@
   <header>
     <div>
       <h1>빛 퍼즐 — B전시실(연결) 프로토타입</h1>
-      <p class="sub" id="stageSub">스테이지 1/5 · 거울로 빛을 전구까지</p>
+      <p class="sub" id="stageSub">스테이지 1/8 · 거울로 빛을 전구까지</p>
     </div>
+    <div id="starTally" aria-label="총 별점">⭐ 0</div>
     <div id="hud"></div>
   </header>
 
@@ -127,11 +163,34 @@
     <canvas id="cv"></canvas>
     <div id="toast"></div>
     <div id="overlay">
-      <div id="overlay-card">
+      <div class="overlay-card">
         <div id="overlay-title">모든 스테이지 클리어</div>
-        <div id="overlay-desc">5개 스테이지를 모두 통과했습니다.</div>
+        <div id="overlay-desc">8개 스테이지를 모두 통과했습니다.</div>
         <div class="btn-row">
           <button class="primary" id="btn-restart">처음부터 다시</button>
+        </div>
+      </div>
+    </div>
+    <div id="intro-overlay" class="show">
+      <div class="overlay-card">
+        <div id="intro-title">빛 퍼즐 안내</div>
+        <div class="intro-steps">
+          <div class="intro-step">
+            <div class="intro-icon"><div class="ico-mirror ico-mirror-a"></div></div>
+            <div class="intro-txt"><b>탭</b>해서 거울 놓기</div>
+          </div>
+          <div class="intro-step">
+            <div class="intro-icon"><div class="ico-mirror ico-mirror-b"></div></div>
+            <div class="intro-txt">한 번 더 탭하면 <b>회전</b></div>
+          </div>
+          <div class="intro-step">
+            <div class="intro-icon"><div class="ico-x">✕</div></div>
+            <div class="intro-txt">또 탭하면 <b>제거</b></div>
+          </div>
+        </div>
+        <div id="intro-desc">청록색 빛을 거울로 꺾어서 <b>노란 전구</b>까지 이어보세요. 스테이지가 진행될수록 <b>벽</b>·<b>프리즘</b>(빛을 가르는 삼각형)·<b>거울 개수 제한</b>이 등장합니다.</div>
+        <div class="btn-row">
+          <button class="primary" id="btn-start">시작하기</button>
         </div>
       </div>
     </div>
@@ -179,30 +238,52 @@
   function turnCW(dx,dy){ return { dx:-dy, dy:dx }; }             // 프리즘 분산용
 
   // ---------- 스테이지 데이터 ----------
+  // par = 이 스테이지를 클리어하는 데 필요한 "최소 거울 개수"(별점 기준).
+  // 모든 스테이지는 스크립트(brute-force 솔버)로 최소해를 검증했고,
+  // 벽 배치로 "거울 0~1개로 대충 우회" 같은 자명한 해를 막아뒀다(검증 로그: 완료 보고 참고).
   var STAGES = [
     {
-      title: '거울 하나로', hint: '거울 방향을 바꿔가며 빛을 전구까지 보내보세요',
-      w:5, h:5, source:{x:0,y:0,dir:'R'}, target:{x:4,y:4}, walls:[], prisms:[], mirrorLimit:null
+      title: '거울 하나로', hint: '거울을 탭해 90도씩 돌려보세요. 방향만 맞으면 클리어!',
+      w:5, h:5, source:{x:0,y:0,dir:'R'}, target:{x:4,y:4}, walls:[], prisms:[], mirrorLimit:null, par:1
     },
     {
       title: '두 번 꺾기', hint: '거울 두 개로 길을 두 번 꺾어야 해요',
       w:6, h:5, source:{x:0,y:1,dir:'R'}, target:{x:5,y:3},
-      walls:[{x:5,y:1}], prisms:[], mirrorLimit:null
+      walls:[{x:5,y:1}], prisms:[], mirrorLimit:null, par:2
+    },
+    {
+      title: '벽 사이로', hint: '벽 사이 좁은 통로를 따라 거울 두 개로 빛을 꺾어보세요',
+      w:7, h:5, source:{x:0,y:2,dir:'R'}, target:{x:6,y:0},
+      walls:[{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:4,y:1},{x:5,y:1},{x:6,y:1},{x:4,y:2},{x:5,y:2},{x:6,y:2},{x:0,y:3},{x:1,y:3},{x:2,y:3},{x:3,y:3},{x:4,y:3},{x:5,y:3},{x:6,y:3},{x:0,y:4},{x:1,y:4},{x:2,y:4},{x:3,y:4},{x:4,y:4},{x:5,y:4},{x:6,y:4}],
+      prisms:[], mirrorLimit:null, par:2
     },
     {
       title: '갈라지는 빛', hint: '프리즘 칸을 지나면 빛이 두 갈래로 갈라져요',
       w:7, h:5, source:{x:0,y:2,dir:'R'}, target:{x:5,y:4},
-      walls:[], prisms:[{x:3,y:2}], mirrorLimit:null
+      walls:[], prisms:[{x:3,y:2}], mirrorLimit:null, par:1
     },
     {
-      title: '거울 세 개', hint: '거울은 딱 3개까지만 놓을 수 있어요',
-      w:8, h:6, source:{x:0,y:0,dir:'D'}, target:{x:7,y:5},
-      walls:[{x:5,y:2},{x:2,y:1},{x:6,y:1}], prisms:[], mirrorLimit:3
-    },
-    {
-      title: '갈라진 길 잇기', hint: '프리즘 + 거울 2개. 갈라진 빛 중 하나만 전구로 보내면 돼요',
+      title: '프리즘 방향 잡기', hint: '프리즘에서 갈라진 빛 중 하나를 거울로 다시 꺾어 전구까지',
       w:8, h:6, source:{x:0,y:0,dir:'R'}, target:{x:1,y:5},
-      walls:[{x:5,y:4},{x:6,y:1}], prisms:[{x:2,y:3}], mirrorLimit:2
+      walls:[{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:3,y:1},{x:5,y:1},{x:6,y:1},{x:7,y:1},{x:0,y:2},{x:1,y:2},{x:2,y:2},{x:3,y:2},{x:5,y:2},{x:6,y:2},{x:7,y:2},{x:0,y:3},{x:1,y:3},{x:2,y:3},{x:3,y:3},{x:5,y:3},{x:6,y:3},{x:7,y:3},{x:0,y:4},{x:5,y:4},{x:6,y:4},{x:7,y:4},{x:0,y:5},{x:2,y:5},{x:3,y:5},{x:4,y:5},{x:5,y:5},{x:6,y:5},{x:7,y:5}],
+      prisms:[{x:4,y:0}], mirrorLimit:null, par:2
+    },
+    {
+      title: '거울 세 개', hint: '거울은 딱 3개까지만 놓을 수 있어요. 통로를 잘 살펴보세요',
+      w:8, h:6, source:{x:0,y:0,dir:'D'}, target:{x:7,y:5},
+      walls:[{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:4,y:0},{x:5,y:0},{x:6,y:0},{x:7,y:0},{x:1,y:1},{x:2,y:1},{x:3,y:1},{x:4,y:1},{x:5,y:1},{x:6,y:1},{x:7,y:1},{x:4,y:2},{x:5,y:2},{x:6,y:2},{x:7,y:2},{x:0,y:3},{x:1,y:3},{x:2,y:3},{x:4,y:3},{x:5,y:3},{x:6,y:3},{x:7,y:3},{x:0,y:4},{x:1,y:4},{x:2,y:4},{x:4,y:4},{x:5,y:4},{x:6,y:4},{x:7,y:4},{x:0,y:5},{x:1,y:5},{x:2,y:5}],
+      prisms:[], mirrorLimit:3, par:3
+    },
+    {
+      title: '두 개의 프리즘', hint: '프리즘을 두 번 지나야 길이 열려요. 거울로 마무리하세요',
+      w:7, h:5, source:{x:0,y:0,dir:'R'}, target:{x:0,y:4},
+      walls:[{x:4,y:0},{x:5,y:0},{x:6,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:4,y:1},{x:5,y:1},{x:6,y:1},{x:0,y:2},{x:1,y:2},{x:2,y:2},{x:4,y:2},{x:5,y:2},{x:6,y:2},{x:0,y:3},{x:4,y:3},{x:5,y:3},{x:6,y:3},{x:2,y:4},{x:3,y:4},{x:4,y:4},{x:5,y:4},{x:6,y:4}],
+      prisms:[{x:3,y:0},{x:3,y:3}], mirrorLimit:2, par:2
+    },
+    {
+      title: '갈라진 길 잇기', hint: '프리즘 + 거울 2개. 갈라진 빛을 전구로 이어보세요',
+      w:9, h:6, source:{x:0,y:0,dir:'R'}, target:{x:7,y:5},
+      walls:[{x:7,y:0},{x:5,y:5}], prisms:[{x:5,y:0}], mirrorLimit:2, par:2
     }
   ];
 
@@ -218,8 +299,29 @@
   var particles = [];
   var toastT = 0;
   var maxStageReached = 0;
+  var stageStars = new Array(STAGES.length).fill(0); // 스테이지별 획득 별점(0~3)
+  var totalStarsMax = STAGES.length * 3;
 
   function key(x,y){ return x+','+y; }
+
+  function starsForCount(used, par){
+    if (used <= par) return 3;
+    if (used <= par + 1) return 2;
+    return 1;
+  }
+  function starString(n){
+    var s = '';
+    for (var i=0;i<3;i++) s += (i < n ? '★' : '☆');
+    return s;
+  }
+  function totalStars(){
+    var sum = 0;
+    for (var i=0;i<stageStars.length;i++) sum += stageStars[i];
+    return sum;
+  }
+  function renderStarTally(){
+    document.getElementById('starTally').textContent = '⭐ ' + totalStars() + '/' + totalStarsMax;
+  }
 
   function cellType(x,y){
     if (stage.source.x === x && stage.source.y === y) return 'source';
@@ -294,9 +396,15 @@
       cleared = true;
       locked = true;
       clearStart = performance.now();
+      var used = placedCount();
+      var stars = starsForCount(used, stage.par);
+      if (stars > stageStars[stageIndex]) stageStars[stageIndex] = stars;
+      renderStarTally();
+      renderHud();
       sfxWin();
       spawnBurst(stage.target.x, stage.target.y);
-      setTimeout(goNext, 950);
+      toast('클리어! ' + starString(stars) + ' (거울 ' + used + '개)', 1.5);
+      setTimeout(goNext, 1200);
     }
   }
 
@@ -381,11 +489,11 @@
     beep(1046.5, 0.22, 'sine', 0.14, 0.22);
   }
 
-  function toast(msg){
+  function toast(msg, dur){
     var el = document.getElementById('toast');
     el.textContent = msg;
     el.classList.add('show');
-    toastT = 1.0;
+    toastT = dur || 1.0;
   }
 
   function spawnBurst(gx, gy){
@@ -453,7 +561,13 @@
   document.getElementById('btn-restart').addEventListener('click', function(){
     document.getElementById('overlay').classList.remove('show');
     maxStageReached = 0;
+    stageStars = new Array(STAGES.length).fill(0);
+    renderStarTally();
     loadStage(0);
+  });
+  document.getElementById('btn-start').addEventListener('click', function(){
+    document.getElementById('intro-overlay').classList.remove('show');
+    locked = false;
   });
 
   // ---------- 렌더 ----------
@@ -679,7 +793,8 @@
   function showFinalOverlay(){
     var ov = document.getElementById('overlay');
     document.getElementById('overlay-title').textContent = '모든 스테이지 클리어';
-    document.getElementById('overlay-desc').textContent = STAGES.length + '개 스테이지를 모두 통과했습니다.';
+    document.getElementById('overlay-desc').textContent =
+      STAGES.length + '개 스테이지를 모두 통과했습니다. 총 ★ ' + totalStars() + '/' + totalStarsMax + ' 획득';
     ov.classList.add('show');
   }
 
@@ -698,6 +813,8 @@
 
   // ---------- 시작 ----------
   loadStage(0);
+  renderStarTally();
+  locked = true; // 튜토리얼 안내(#intro-overlay)를 닫기 전까지 조작 잠금 ("시작하기" 클릭 시 해제)
   requestAnimationFrame(frame);
 })();
 </script>

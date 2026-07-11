@@ -46,15 +46,26 @@
     border:1px solid var(--line);border-radius:16px;overflow:hidden}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   .stability-hud{position:absolute;top:8px;left:8px;right:8px;display:flex;align-items:center;gap:6px;
-    background:rgba(14,17,22,.55);border-radius:10px;padding:5px 8px;backdrop-filter:blur(2px)}
+    background:rgba(14,17,22,.55);border-radius:10px;padding:5px 8px;backdrop-filter:blur(2px);
+    transition:box-shadow .25s}
+  .stability-hud.combo-glow{box-shadow:0 0 0 1px rgba(255,182,72,.55),0 0 14px rgba(255,182,72,.35)}
   .stability-hud .lbl{font-size:10px;color:var(--muted);font-weight:700;white-space:nowrap}
   .stability-track{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
   .stability-fill{height:100%;width:0%;background:var(--red);border-radius:3px;transition:background .25s}
+  .combo-badge{font-size:10.5px;font-weight:800;color:var(--amber);white-space:nowrap;opacity:0;
+    transition:opacity .2s;flex-shrink:0}
+  .combo-badge.show{opacity:1}
   .gust-toast{position:absolute;top:38px;left:50%;transform:translateX(-50%) translateY(-6px);
     background:rgba(255,182,72,.16);border:1px solid rgba(255,182,72,.5);color:var(--amber);
     font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;opacity:0;
     transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap}
   .gust-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .combo-toast{position:absolute;top:66px;left:50%;transform:translateX(-50%) translateY(-6px);
+    font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;opacity:0;
+    transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap}
+  .combo-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .combo-toast.up{background:rgba(255,182,72,.16);border:1px solid rgba(255,182,72,.5);color:var(--amber)}
+  .combo-toast.brk{background:rgba(139,147,163,.16);border:1px solid rgba(139,147,163,.4);color:var(--muted)}
   .vignette{position:absolute;inset:0;pointer-events:none;opacity:0;
     box-shadow:inset 0 0 60px 10px rgba(255,95,95,.55);transition:opacity .15s}
 
@@ -66,8 +77,13 @@
     position:relative;overflow:hidden}
   .gauge-fill{height:100%;width:0%;border-radius:6px 0 0 6px;
     background:linear-gradient(90deg,#4a90c2,var(--cyan));transition:background .2s}
+  .gauge-fill.flash{animation:gaugeFlash .5s ease}
+  @keyframes gaugeFlash{0%{filter:brightness(1)}30%{filter:brightness(1.9)}100%{filter:brightness(1)}}
+  .gauge-tick{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,.28);z-index:1}
   .gauge-target{position:absolute;top:-2px;right:0;bottom:-2px;width:2px;background:var(--ink);opacity:.5}
-  .gauge .gval{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0;min-width:64px;text-align:right}
+  .gauge .gval{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0;min-width:74px;text-align:right;
+    display:flex;align-items:center;justify-content:flex-end;gap:2px}
+  .height-dir{font-size:11px;width:11px;display:inline-block;text-align:center}
 
   /* 컨트롤 */
   .controls{display:flex;flex-direction:column;gap:8px}
@@ -98,7 +114,7 @@
     backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
   .overlay.hidden{display:none}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 20px;
-    max-width:340px;width:100%;text-align:center}
+    max-width:340px;width:100%;text-align:center;position:relative;overflow:hidden}
   .card h2{font-size:20px;font-weight:800;margin-bottom:10px}
   .card p{font-size:13px;color:var(--muted);margin-bottom:6px}
   .rule-list{text-align:left;font-size:12.5px;color:var(--ink);margin:14px 0;padding-left:0;list-style:none}
@@ -114,6 +130,22 @@
   .badge{display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-bottom:8px}
   .badge.win{background:rgba(61,220,132,.15);color:var(--green);border:1px solid rgba(61,220,132,.4)}
   .badge.fail{background:rgba(255,95,95,.15);color:var(--red);border:1px solid rgba(255,95,95,.4)}
+  .record-banner{display:none;font-size:12px;font-weight:900;color:#0e1116;
+    background:linear-gradient(90deg,var(--amber),#ffd27a);border-radius:20px;padding:4px 12px;margin-bottom:8px}
+  .record-banner.show{display:inline-block;animation:recordPop .5s ease}
+  @keyframes recordPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+  .grade-badge{font-size:0;height:0;font-weight:900;line-height:1;margin-bottom:0;transition:none}
+  .grade-badge.show{font-size:36px;height:auto;margin-bottom:2px}
+  .grade-badge.grade-S{color:#ffd447;text-shadow:0 0 14px rgba(255,212,71,.55)}
+  .grade-badge.grade-A{color:var(--cyan)}
+  .grade-badge.grade-B{color:var(--green)}
+  .grade-badge.grade-C{color:var(--muted)}
+  .confetti-piece{position:absolute;width:7px;height:7px;border-radius:2px;pointer-events:none;
+    animation:confettiPop .8s ease forwards}
+  @keyframes confettiPop{
+    0%{transform:translate(0,0) rotate(0deg);opacity:1}
+    100%{transform:translate(var(--dx),var(--dy)) rotate(360deg);opacity:0}
+  }
 </style>
 </head>
 <body>
@@ -139,18 +171,26 @@
 
   <div class="stage" id="stage">
     <canvas id="cv"></canvas>
-    <div class="stability-hud">
+    <div class="stability-hud" id="stabilityHud">
       <span class="lbl">정렬 상태</span>
       <div class="stability-track"><div class="stability-fill" id="stabilityFill"></div></div>
+      <span class="combo-badge" id="comboBadge"></span>
     </div>
     <div class="gust-toast" id="gustToast">💨 돌풍! 목표가 바뀌었어요</div>
+    <div class="combo-toast" id="comboToast"></div>
     <div class="vignette" id="vignette"></div>
   </div>
 
   <div class="gauge">
     <span class="glbl">높이</span>
-    <div class="gauge-track"><div class="gauge-fill" id="heightFill"></div><div class="gauge-target"></div></div>
-    <span class="gval" id="heightVal">0.0 / 11m</span>
+    <div class="gauge-track">
+      <div class="gauge-fill" id="heightFill"></div>
+      <div class="gauge-tick" style="left:25%"></div>
+      <div class="gauge-tick" style="left:50%"></div>
+      <div class="gauge-tick" style="left:75%"></div>
+      <div class="gauge-target"></div>
+    </div>
+    <span class="gval"><span class="height-dir" id="heightDir"></span><span id="heightVal">0.0 / 11m</span></span>
   </div>
 
   <div class="controls">
@@ -188,8 +228,10 @@
 
   <!-- 결과 오버레이 -->
   <div class="overlay hidden" id="resultOverlay">
-    <div class="card">
+    <div class="card" id="resultCard">
+      <div class="record-banner" id="recordBanner">🏆 신기록!</div>
       <span class="badge" id="resultBadge">결과</span>
+      <div class="grade-badge" id="gradeBadge"></div>
       <h2 id="resultTitle">-</h2>
       <div class="result-height" id="resultHeight">0.0m</div>
       <p class="result-sub" id="resultSub">-</p>
@@ -202,29 +244,44 @@
 (function(){
   "use strict";
 
-  /* ===== 상수 (sim.mjs로 사전 튜닝: 숙련자 ~39초 클리어 / 보통 ~79초 아슬아슬 클리어 / 미숙 실패) ===== */
+  /* ===== 상수 (sim.mjs로 사전 튜닝: 숙련자 ~39초 클리어 / 보통 ~79초 아슬아슬 클리어 / 미숙 실패 — 코어 불변) ===== */
   var MAX_HEIGHT = 11;       // m
   var ROUND_TIME = 90;       // 초
-  var GROW_RATE = 0.75;      // matchScore가 임계 이상일 때 성장 계수
-  var DECAY_RATE = 1.2;      // matchScore가 임계 미만일 때 감소 계수
-  var THRESHOLD = 0.5;       // 이 matchScore 이상이어야 자람
-  var GUST_MIN = 4.2, GUST_MAX = 6.2; // 돌풍 간격(초)
+  var GROW_RATE = 0.75;      // matchScore가 임계 이상일 때 성장 계수 (불변)
+  var DECAY_RATE = 1.2;      // matchScore가 임계 미만일 때 감소 계수 (불변)
+  var THRESHOLD = 0.5;       // 이 matchScore 이상이어야 자람 (불변)
+  var GUST_MIN = 4.2, GUST_MAX = 6.2; // 돌풍 간격(초) — RAMP_START 이전까지는 원본과 완전 동일
   var KEY_RATE = 62;         // 방향키 초당 변화량
+
+  /* ===== 2026-07-11 1라운드 개선 ① : 후반 난이도 램프 =====
+     0~24초(RAMP_START)는 원본과 100% 동일 → 초반 학습곡선 보존.
+     24~78초 사이 돌풍이 점점 빨라지고(간격↓) 목표가 더 넓게/극단적으로 튄다(폭↑). */
+  var RAMP_START = 24, RAMP_END = 78;
+  var GUST_MIN_LATE = 2.6, GUST_MAX_LATE = 3.8;
+  var GUST_LO_EARLY = 22, GUST_SPAN_EARLY = 63;   // 원본 값(22~85 범위)과 동일
+  var GUST_LO_LATE = 5,  GUST_SPAN_LATE = 90;     // 후반: 5~95 범위까지 확장
+
+  /* ===== 2026-07-11 1라운드 개선 ② : 안정 콤보 (성장에만 가산, 감소 페널티는 불변) ===== */
+  var HIGH_THRESHOLD = 0.72;              // 이 이상을 유지해야 콤보가 쌓임
+  var COMBO_STEP = [0, 2.2, 4.5, 7.5];    // 단계별 필요 유지시간(초)
+  var COMBO_MULT = [1, 1.15, 1.35, 1.6];  // 단계별 성장 배율(1단계=보너스 없음)
+  var COMBO_DECAY = 0.6;                  // THRESHOLD~HIGH_THRESHOLD 구간에선 유지시간이 초당 이만큼 서서히 깎임
 
   /* ===== DOM ===== */
   var $ = function(id){ return document.getElementById(id); };
   var stageEl = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
   var timerVal = $("timerVal"), timerBox = $("timerBox"), bestVal = $("bestVal");
-  var heightFill = $("heightFill"), heightVal = $("heightVal");
-  var stabilityFill = $("stabilityFill");
-  var gustToast = $("gustToast"), vignette = $("vignette");
+  var heightFill = $("heightFill"), heightVal = $("heightVal"), heightDir = $("heightDir");
+  var stabilityFill = $("stabilityFill"), stabilityHud = $("stabilityHud"), comboBadge = $("comboBadge");
+  var gustToast = $("gustToast"), comboToast = $("comboToast"), vignette = $("vignette");
   var tempSlider = $("tempSlider"), rotSlider = $("rotSlider");
   var tempNum = $("tempNum"), rotNum = $("rotNum");
   var tempMarker = $("tempMarker"), rotMarker = $("rotMarker");
   var introOverlay = $("introOverlay"), resultOverlay = $("resultOverlay");
   var startBtn = $("startBtn"), restartBtn2 = $("restartBtn2"), restartBtnTop = $("restartBtnTop");
   var resultBadge = $("resultBadge"), resultTitle = $("resultTitle"),
-      resultHeight = $("resultHeight"), resultSub = $("resultSub");
+      resultHeight = $("resultHeight"), resultSub = $("resultSub"),
+      gradeBadge = $("gradeBadge"), recordBanner = $("recordBanner"), resultCard = $("resultCard");
 
   /* ===== 상태 ===== */
   var running = false;
@@ -238,6 +295,10 @@
   var lastTs = null;
   var keys = { left:false, right:false, up:false, down:false };
   var particles = [];
+  var pulses = [];
+  var comboGoodTime = 0, comboTier = 0, maxComboTier = 0;
+  var comboToastTimer = null;
+  var milestoneHit = [false,false,false];
   var best = loadBest();
 
   function loadBest(){
@@ -245,7 +306,7 @@
       var raw = localStorage.getItem("tornado_proto_best_2026");
       if(raw) return JSON.parse(raw);
     }catch(e){}
-    return { bestTime: null, bestHeight: 0 };
+    return { bestTime: null, bestHeight: 0, bestComboTier: 0 };
   }
   function saveBest(){
     try{ localStorage.setItem("tornado_proto_best_2026", JSON.stringify(best)); }catch(e){}
@@ -258,6 +319,12 @@
     } else {
       bestVal.textContent = "-";
     }
+  }
+  function gradeForClear(t){
+    if(t <= 45) return "S";
+    if(t <= 60) return "A";
+    if(t <= 75) return "B";
+    return "C";
   }
 
   /* ===== 오디오 (프로시저럴 바람 소리, 외부 파일 없음) ===== */
@@ -304,6 +371,12 @@
       } else if(kind === "win"){
         o.type = "sine"; o.frequency.value = 520;
         g.gain.value = 0.08; o.frequency.linearRampToValueAtTime(1040, audioCtx.currentTime+0.35);
+      } else if(kind === "combo"){
+        o.type = "square"; o.frequency.value = 740;
+        g.gain.value = 0.045; o.frequency.linearRampToValueAtTime(1180, audioCtx.currentTime+0.12);
+      } else if(kind === "tick"){
+        o.type = "sine"; o.frequency.value = 900;
+        g.gain.value = 0.035; o.frequency.linearRampToValueAtTime(900, audioCtx.currentTime+0.01);
       } else {
         o.type = "sawtooth"; o.frequency.value = 220;
         g.gain.value = 0.05; o.frequency.linearRampToValueAtTime(80, audioCtx.currentTime+0.4);
@@ -343,12 +416,21 @@
   function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
   function lerp(a,b,t){ return a + (b-a)*t; }
 
+  function rampT(t){
+    return clamp((t - RAMP_START) / (RAMP_END - RAMP_START), 0, 1);
+  }
   function scheduleGust(now){
-    nextGustAt = now + (GUST_MIN + Math.random()*(GUST_MAX-GUST_MIN));
+    var rt = rampT(now);
+    var gmin = lerp(GUST_MIN, GUST_MIN_LATE, rt);
+    var gmax = lerp(GUST_MAX, GUST_MAX_LATE, rt);
+    nextGustAt = now + (gmin + Math.random()*(gmax-gmin));
   }
   function doGust(){
-    idealTemp = 22 + Math.random()*63; // 22~85
-    idealRot = 22 + Math.random()*63;
+    var rt = rampT(elapsed);
+    var lo = lerp(GUST_LO_EARLY, GUST_LO_LATE, rt);
+    var span = lerp(GUST_SPAN_EARLY, GUST_SPAN_LATE, rt);
+    idealTemp = clamp(lo + Math.random()*span, 3, 97);
+    idealRot = clamp(lo + Math.random()*span, 3, 97);
     tempMarker.style.left = idealTemp + "%";
     rotMarker.style.left = idealRot + "%";
     gustToast.classList.add("show");
@@ -363,6 +445,65 @@
     return clamp(1 - (errT+errR)/70, 0, 1);
   }
 
+  function showComboToast(kind, tier){
+    if(kind === "up"){
+      comboToast.textContent = "🔥 콤보 x" + COMBO_MULT[tier].toFixed(2);
+      comboToast.className = "combo-toast up show";
+    } else {
+      comboToast.textContent = "콤보 끊김";
+      comboToast.className = "combo-toast brk show";
+    }
+    clearTimeout(comboToastTimer);
+    comboToastTimer = setTimeout(function(){ comboToast.classList.remove("show"); }, 850);
+  }
+
+  function updateCombo(dt){
+    if(matchScore >= HIGH_THRESHOLD){
+      comboGoodTime += dt;
+    } else if(matchScore >= THRESHOLD){
+      comboGoodTime = Math.max(0, comboGoodTime - COMBO_DECAY*dt);
+    } else {
+      if(comboTier > 0) showComboToast("brk");
+      comboGoodTime = 0;
+    }
+    var tier = 0;
+    for(var i=COMBO_STEP.length-1; i>=1; i--){
+      if(comboGoodTime >= COMBO_STEP[i]){ tier = i; break; }
+    }
+    if(tier > comboTier){
+      showComboToast("up", tier);
+      playBlip("combo");
+    }
+    comboTier = tier;
+    if(tier > maxComboTier) maxComboTier = tier;
+    stabilityHud.classList.toggle("combo-glow", tier > 0);
+    if(tier > 0){
+      comboBadge.textContent = "🔥×" + COMBO_MULT[tier].toFixed(2);
+      comboBadge.classList.add("show");
+    } else {
+      comboBadge.classList.remove("show");
+    }
+    return COMBO_MULT[tier];
+  }
+
+  function checkMilestones(){
+    var frac = height / MAX_HEIGHT;
+    var marks = [0.25, 0.5, 0.75];
+    for(var i=0;i<marks.length;i++){
+      if(!milestoneHit[i] && frac >= marks[i]){
+        milestoneHit[i] = true;
+        flashGauge();
+        playBlip("tick");
+      }
+    }
+  }
+  function flashGauge(){
+    heightFill.classList.remove("flash");
+    void heightFill.offsetWidth;
+    heightFill.classList.add("flash");
+    pulses.push({ t0: performance.now()/1000 });
+  }
+
   function resetState(){
     tempVal = 50; rotVal = 50;
     tempSlider.value = 50; rotSlider.value = 50;
@@ -371,6 +512,13 @@
     elapsed = 0; timeLeft = ROUND_TIME;
     height = 0; matchScore = 0; matchSmoothed = 0; shakeMag = 0;
     keys.left=keys.right=keys.up=keys.down=false;
+    comboGoodTime = 0; comboTier = 0; maxComboTier = 0;
+    milestoneHit = [false,false,false];
+    pulses = [];
+    stabilityHud.classList.remove("combo-glow");
+    comboBadge.classList.remove("show");
+    comboToast.classList.remove("show");
+    recordBanner.classList.remove("show");
     scheduleGust(0);
     initParticles();
     updateHUDStatic();
@@ -384,29 +532,61 @@
     heightFill.style.width = (height/MAX_HEIGHT*100) + "%";
   }
 
+  function spawnConfetti(){
+    var colors = ["#7ec8e3","#3ddc84","#ffb648","#ff5f5f","#ffd447"];
+    for(var i=0;i<14;i++){
+      var el = document.createElement("div");
+      el.className = "confetti-piece";
+      var angle = Math.random()*Math.PI*2;
+      var dist = 60+Math.random()*70;
+      el.style.setProperty("--dx", Math.cos(angle)*dist + "px");
+      el.style.setProperty("--dy", (Math.sin(angle)*dist - 30) + "px");
+      el.style.background = colors[i % colors.length];
+      el.style.left = "50%"; el.style.top = "40%";
+      resultCard.appendChild(el);
+      (function(node){ setTimeout(function(){ node.remove(); }, 900); })(el);
+    }
+  }
+
   function endGame(win){
     running = false;
+    var prevBestTime = best.bestTime;
+    var prevBestHeight = best.bestHeight;
+    var newRecord = false;
+
+    if(win && (prevBestTime === null || elapsed < prevBestTime)){
+      best.bestTime = elapsed; newRecord = true;
+    }
+    if(height > prevBestHeight){
+      best.bestHeight = height;
+      if(!win) newRecord = true;
+    }
+    if(maxComboTier > (best.bestComboTier||0)) best.bestComboTier = maxComboTier;
+    saveBest(); renderBest();
+
+    var comboNote = maxComboTier > 0 ? " · 최고 콤보 x" + COMBO_MULT[maxComboTier].toFixed(2) : "";
+
     if(win){
-      var clearTime = elapsed;
-      if(best.bestTime === null || clearTime < best.bestTime) best.bestTime = clearTime;
-      if(height > best.bestHeight) best.bestHeight = height;
-      saveBest(); renderBest();
+      var grade = gradeForClear(elapsed);
+      gradeBadge.textContent = grade;
+      gradeBadge.className = "grade-badge show grade-" + grade;
       resultBadge.textContent = "성공"; resultBadge.className = "badge win";
       resultTitle.textContent = "토네이도 완성!";
       resultHeight.textContent = height.toFixed(1)+"m"; resultHeight.className = "result-height win";
-      resultSub.textContent = clearTime.toFixed(1) + "초 만에 11m 도달";
+      resultSub.textContent = elapsed.toFixed(1) + "초 만에 11m 도달" + comboNote;
       playBlip("win");
       if(navigator.vibrate) navigator.vibrate([40,60,40]);
     } else {
-      if(height > best.bestHeight) best.bestHeight = height;
-      saveBest(); renderBest();
+      gradeBadge.textContent = ""; gradeBadge.className = "grade-badge";
       resultBadge.textContent = "실패"; resultBadge.className = "badge fail";
       resultTitle.textContent = "시간 종료";
       resultHeight.textContent = height.toFixed(1)+"m"; resultHeight.className = "result-height fail";
-      resultSub.textContent = "균형을 더 오래 유지해보세요";
+      resultSub.textContent = "균형을 더 오래 유지해보세요" + comboNote;
       playBlip("fail");
       if(navigator.vibrate) navigator.vibrate(120);
     }
+    recordBanner.classList.toggle("show", newRecord);
+    if(newRecord) spawnConfetti();
     resultOverlay.classList.remove("hidden");
   }
 
@@ -516,6 +696,18 @@
       ctx.fill();
     }
 
+    // 성장 마일스톤 펄스 링(25/50/75% 도달 시 잠깐 확산)
+    for(var pi=pulses.length-1; pi>=0; pi--){
+      var age = t - pulses[pi].t0;
+      if(age > 0.6){ pulses.splice(pi,1); continue; }
+      var pr = age/0.6;
+      ctx.beginPath();
+      ctx.arc(cx, baseY-funnelPx*0.5, 20+pr*70, 0, Math.PI*2);
+      ctx.strokeStyle = "rgba(255,182,72,"+(0.5*(1-pr)).toFixed(3)+")";
+      ctx.lineWidth = 3*(1-pr)+1;
+      ctx.stroke();
+    }
+
     ctx.restore();
 
     // 비네트(불안정 경고)
@@ -546,10 +738,12 @@
     matchScore = computeMatch();
     matchSmoothed += (matchScore - matchSmoothed) * Math.min(1, dt*4);
 
+    var comboMult = updateCombo(dt);
     var delta = matchScore > THRESHOLD
-      ? (matchScore - THRESHOLD) * GROW_RATE
+      ? (matchScore - THRESHOLD) * GROW_RATE * comboMult
       : -(THRESHOLD - matchScore) * DECAY_RATE;
     height = clamp(height + delta*dt, 0, MAX_HEIGHT);
+    checkMilestones();
 
     var targetShake = (height > 2.5 && matchSmoothed < 0.35) ? clamp((0.35-matchSmoothed)*22, 0, 7) : 0;
     shakeMag += (targetShake - shakeMag) * Math.min(1, dt*5);
@@ -563,6 +757,8 @@
     timerBox.classList.toggle("warn", timeLeft <= 15);
     heightVal.textContent = height.toFixed(1) + " / " + MAX_HEIGHT + "m";
     heightFill.style.width = (height/MAX_HEIGHT*100) + "%";
+    heightDir.textContent = delta > 0.008 ? "▲" : (delta < -0.008 ? "▼" : "•");
+    heightDir.style.color = delta > 0.008 ? "var(--green)" : (delta < -0.008 ? "var(--red)" : "var(--muted)");
     var stabPct = Math.round(matchSmoothed*100);
     stabilityFill.style.width = stabPct + "%";
     stabilityFill.style.background = matchSmoothed > 0.66 ? "var(--green)" : (matchSmoothed > 0.35 ? "var(--amber)" : "var(--red)");
