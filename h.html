@@ -184,6 +184,15 @@
   <button class="btn-primary" data-close>닫기</button>
 </div></div>
 
+<!-- 홈 화면 추가(전체화면) 자동 안내 -->
+<div id="a2hs" style="position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:120;
+  background:rgba(20,16,10,.96);color:#fff;padding:11px 15px;border-radius:14px;display:none;
+  align-items:center;gap:11px;font-size:13px;font-weight:700;max-width:92vw;border:1.5px solid #f6b93b;box-shadow:0 4px 16px rgba(0,0,0,.4)">
+  <span id="a2hsMsg"></span>
+  <button id="a2hsBtn" style="background:#f6b93b;color:#3a2c00;border:none;border-radius:9px;padding:6px 12px;font-weight:800;font-size:13px;cursor:pointer">설치</button>
+  <span id="a2hsX" style="cursor:pointer;opacity:.6;font-size:16px">✕</span>
+</div>
+
 <div id="boot"><div class="bi">🔬</div><div class="bt">과학관 탐방</div><div class="bp">불러오는 중…</div></div>
 
 <script>
@@ -200,17 +209,13 @@ const FLOORS=[
  ]},
  {id:"1F", name:"1층", bg:"bg/f1_hq.png", tint:"#4caf50", start:[0.46,0.50], spots:[
    {name:"G전시실 · 생태", kind:"door", room:"room_G", icon:"🌿", x:0.18,y:0.15, color:"#4caf50"},
-   {name:"지진 체험관", kind:"door", room:"room_quake", icon:"🌋", x:0.135,y:0.44, color:"#8a7a6a"},
-   {name:"아이디어 제작소", room:"G전시실 내", kind:"soon", icon:"🛠️", x:0.30,y:0.62, color:"#4caf50"},
-   {name:"안내 · 매표소", kind:"info", icon:"🎫", x:0.55,y:0.44, color:"#4a90e2",
-    info:"관람 안내를 받고 탐방을 시작하는 곳이에요. 여기서 출발!"},
-   {name:"무인 발권기", kind:"info", icon:"🎟️", x:0.62,y:0.54, color:"#9c6ade",
-    info:"직접 표를 뽑는 기계예요. 줄 서지 않고 빠르게 입장!"},
+   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.58,y:0.48, color:"#4a90e2",
+    info:"안내·매표를 하는 중앙 데스크예요. 옆 엘리베이터로 지하1층·2층·3층을 오갈 수 있어요."},
    {name:"북카페", kind:"info", icon:"☕", x:0.87,y:0.32, color:"#8d6e63",
     info:"과학책을 보며 쉬어가는 공간. 음료도 마실 수 있어요."},
    {name:"별관 · 메이커 스튜디오", kind:"info", icon:"🔧", x:0.82,y:0.84, color:"#ef8c3b",
     info:"직접 만들고 실험하는 창작 공간. 메이커 강좌가 열려요."},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.38,y:0.26, color:"#9aa"},
+   {name:"엘리베이터 (메인)", kind:"elevator", icon:"🛗", x:0.38,y:0.26, color:"#9aa"},
  ]},
  {id:"HALF", name:"½층", bg:"bg/f_half_hq.png", tint:"#f4c430", start:[0.50,0.62], spots:[
    {name:"Y전시실 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.17,y:0.25, color:"#f4c430"},
@@ -258,6 +263,8 @@ const ROOMS={
      info:"인류세 — 플라스틱·콘크리트 같은 인간의 흔적이 지층에 쌓여 새로운 지질시대를 만들고 있어요."},
     {name:"분리수거 챌린지", kind:"game", file:"g.html", best:"recycle_best", label:"분리수거 챌린지",
      icon:"♻️", room:"G전시실", x:0.28,y:0.80, color:"#4caf50"},
+    {name:"지진 체험관", kind:"door", room:"room_quake", icon:"🌋", x:0.12,y:0.55, color:"#8a7a6a"},
+    {name:"아이디어 제작소", kind:"soon", icon:"🛠️", x:0.88,y:0.55, color:"#4caf50"},
     {name:"나가기", kind:"exit", icon:"🚪", x:0.50,y:0.91, color:"#b0a99a"},
   ]},
   room_quake:{ name:"지진 체험관", bg:"bg/room_quake_hq.png", tint:"#8a7a6a", floorName:"1층", start:[0.5,0.72], spots:[
@@ -353,7 +360,7 @@ let bgRect={x:0,y:0,w:0,h:0};
 const images={}; let curImg=null;
 const CHAR={};   // 캐릭터 4방향 스프라이트(codex)
 let nearSpot=null;
-let inRoom=null;   // null=오버월드(층 배경), roomId=실내 방
+let inRoom=null, roomStack=[];   // inRoom=현재 방 / roomStack=방→방 진입 히스토리(나가기=이전 방)
 let doneCache={};
 function curScene(){ return inRoom ? ROOMS[inRoom] : FLOORS[floorIdx]; }
 
@@ -429,7 +436,7 @@ window.addEventListener("resize",resize); resize();
 
 /* ── 층 진입 ── */
 function enterFloor(idx,instant){
-  inRoom=null;
+  inRoom=null; roomStack=[];
   floorIdx=idx; safeSet("ufo_floor",idx);
   const f=FLOORS[idx];
   curImg=(f._ok?images[f.id]:null);
@@ -438,7 +445,8 @@ function enterFloor(idx,instant){
   camX=player.px; camY=player.py;
   nearSpot=null; updateFloorTag();
 }
-function enterRoom(roomId){
+function enterRoom(roomId, fromStack){
+  if(inRoom && !fromStack) roomStack.push(inRoom);   // 방→방 진입이면 이전 방 저장
   inRoom=roomId; shake=7; const r=ROOMS[roomId];
   curImg=(r._ok?images[roomId]:null);
   const st=r.start||[0.5,0.7];
@@ -447,6 +455,7 @@ function enterRoom(roomId){
   nearSpot=null; updateFloorTag();
 }
 function exitRoom(){
+  if(roomStack.length){ enterRoom(roomStack.pop(), true); return; }   // 이전 방(예: 지진→G전시실)으로 복귀
   const back=inRoom; inRoom=null;
   const f=curScene();
   curImg=(f._ok?images[f.id]:null);
@@ -819,6 +828,25 @@ window.addEventListener("pageshow",e=>{ refreshDone(); updateScore(); setTimeout
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){refreshDone();updateScore();} });
 
 /* ══════════ 시작 ══════════ */
+/* ══════════ 홈 화면 추가(전체화면) 자동 안내 ══════════ */
+(function(){
+  const el=document.getElementById("a2hs"); if(!el)return;
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone=navigator.standalone||matchMedia("(display-mode:standalone)").matches||matchMedia("(display-mode:fullscreen)").matches;
+  let dp=null;
+  function show(mode){ if(standalone)return;
+    document.getElementById("a2hsMsg").textContent = (mode==="install")
+      ? "📲 앱으로 설치하면 전체화면으로 즐길 수 있어요!"
+      : '📲 공유 버튼 → "홈 화면에 추가"하면 전체화면!';
+    document.getElementById("a2hsBtn").style.display = (mode==="install")?"":"none";
+    el.style.display="flex";
+  }
+  window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); dp=e; if(!safeGet("a2hs_seen"))show("install"); });
+  document.getElementById("a2hsBtn").onclick=async()=>{ if(dp){dp.prompt();dp=null;} el.style.display="none"; };
+  document.getElementById("a2hsX").onclick=()=>{ el.style.display="none"; safeSet("a2hs_seen","1"); };
+  if(isIOS && !standalone && !safeGet("a2hs_seen")) setTimeout(()=>show("ios"),1800);
+})();
+
 refreshDone(); updateScore();
 preload();
 console.log("과학관 탐방 "+HUB_VERSION+" · 스탬프 "+STAMP_TOTAL+"개");
