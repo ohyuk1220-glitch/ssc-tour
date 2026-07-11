@@ -123,9 +123,13 @@
 <div id="rotate"><div class="ph">📱</div><p><b>휴대폰을 가로로 돌려주세요</b><br>과학관 탐방은 가로 화면에서 즐길 수 있어요</p></div>
 
 <div class="hud" id="hud-top">
-  <div class="badge" id="badge">🎫 <span class="n" id="sc">0</span><span class="t">/7</span></div>
+  <div style="display:flex;gap:8px">
+    <div class="badge" id="badge">🎫 <span class="n" id="sc">0</span><span class="t">/7</span></div>
+    <div class="badge">⭐ <span class="n" id="scoreVal">0</span><span class="t">점</span></div>
+  </div>
   <div class="topbtns">
-    <div class="iconbtn" id="mapBtn">🗺️</div>
+    <div class="iconbtn" id="soundBtn">🔊</div>
+    <div class="iconbtn" id="mapBtn">📖</div>
     <div class="iconbtn" id="certBtn">🏆</div>
   </div>
 </div>
@@ -303,8 +307,9 @@ const ROOMS={
   ]},
 };
 
-/* 실내 방 걸을 수 있는 영역(벽 안쪽). 배경별 정밀조정 전 공통 기본값 */
-Object.values(ROOMS).forEach(r=>{ if(!r.walkable) r.walkable=[0.06,0.18,0.94,0.84]; });
+/* 걸을 수 있는 영역(벽 안쪽). 배경별 정밀조정 전 공통 기본값 */
+Object.values(ROOMS).forEach(r=>{ if(!r.walkable) r.walkable=[0.06,0.18,0.94,0.90]; });   // 실내 방(하단=나가기 문 0.87 포함)
+FLOORS.forEach(f=>{ if(!f.walkable) f.walkable=[0.03,0.05,0.97,0.95]; });                 // 오버월드(검은 여백 밖으로 못 나감)
 
 /* 스탬프 = 모든 game 핫스팟(층 오버월드 + 실내 방) */
 const STAMPS=[];
@@ -357,6 +362,14 @@ function updateParts(){ for(let i=parts.length-1;i>=0;i--){const p=parts[i];
   p.x+=p.vx; p.y+=p.vy; p.vy+=0.16; p.life-=0.022; if(p.life<=0)parts.splice(i,1);}}
 function drawParts(){ parts.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;
   ctx.fillRect((p.x-2)|0,(p.y-2)|0,4,4);}); ctx.globalAlpha=1; }
+/* 점수/획득 팝업 텍스트(화면 비율좌표, 위로 떠오름) */
+const pops=[];
+function popScore(txt){ pops.push({txt,x:0.5,y:0.42,life:1}); sfx(880,0.06,"sine",0.12); updateScore(); }
+function updatePops(){ for(let i=pops.length-1;i>=0;i--){const p=pops[i]; p.y-=0.0025; p.life-=0.014; if(p.life<=0)pops.splice(i,1);} }
+function drawPops(){ pops.forEach(p=>{ ctx.globalAlpha=Math.max(0,Math.min(1,p.life*1.6));
+  ctx.font="800 20px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.lineWidth=4; ctx.strokeStyle="rgba(0,0,0,.65)"; ctx.strokeText(p.txt, W*p.x, H*p.y);
+  ctx.fillStyle="#f6b93b"; ctx.fillText(p.txt, W*p.x, H*p.y); }); ctx.globalAlpha=1; }
 
 /* ── 배경 이미지 로드 ── */
 function preload(){
@@ -498,6 +511,7 @@ function render(){
   drawPlayer(s2x(player.px), s2y(player.py));
   // 파티클 (juice)
   drawParts();
+  drawPops();
   // 페이드
   if(fadeAlpha>0){ ctx.fillStyle="rgba(10,8,5,"+fadeAlpha+")"; ctx.fillRect(0,0,W,H); }
 }
@@ -532,6 +546,7 @@ const SPEED=0.00225;   // 이동 속도 절반(과학관 넓게 느껴지게)
 function update(){
   updateFade();
   updateParts();
+  updatePops();
   computeBgRect();   // clamp가 현재 화면 배치를 알아야 함(cover 시 캐릭터 화면이탈 방지)
   if(fadeState){ player.vx=player.vy=0; }
   else{
@@ -663,7 +678,29 @@ function refreshDone(){ doneCache={}; STAMPS.forEach(s=>{doneCache[s.key]=(+(saf
 function isDone(key){ return !!doneCache[key]; }
 function got(s){ return isDone(s.key); }
 function gotCount(){ return STAMPS.filter(got).length; }
-function updateScore(){ document.getElementById("sc").textContent=gotCount(); }
+
+/* ══════════ 도감·점수 (수집 가시화 = 박물관 게임 1순위) ══════════ */
+const ALL_EXHIBITS=[]; Object.values(ROOMS).forEach(r=>r.spots.forEach(s=>{
+  if(s.kind==="exhibit")ALL_EXHIBITS.push({room:r.name,name:s.name,icon:s.icon,info:s.info});}));
+const EXHIBIT_TOTAL=ALL_EXHIBITS.length;
+function seenMap(){ try{const o=JSON.parse(safeGet("ssc_seen")||"{}"); return (o&&typeof o==="object"&&!Array.isArray(o))?o:{};}catch(e){return {};} }
+function isSeen(name){ return !!seenMap()[name]; }
+function seenCount(){ const s=seenMap(); return ALL_EXHIBITS.filter(e=>s[e.name]).length; }
+function markSeen(name){ const s=seenMap(); if(!s[name]){ s[name]=1; safeSet("ssc_seen",JSON.stringify(s)); popScore("+5 관람"); } }
+function getScore(){ return gotCount()*10 + seenCount()*5; }   // 스탬프 10점 · 전시물 5점
+function updateScore(){
+  const el=document.getElementById("sc"); if(el)el.textContent=gotCount();
+  const sv=document.getElementById("scoreVal"); if(sv)sv.textContent=getScore();
+}
+function getBadges(){
+  const b=[];
+  if(gotCount()>=STAMP_TOTAL) b.push({icon:"🥇",name:"스탬프 마스터"});
+  if(EXHIBIT_TOTAL>0&&seenCount()>=EXHIBIT_TOTAL) b.push({icon:"👀",name:"관람왕"});
+  if(gotCount()>=3) b.push({icon:"🎮",name:"게이머"});
+  if(EXHIBIT_TOTAL>0&&seenCount()>=Math.ceil(EXHIBIT_TOTAL/2)) b.push({icon:"🔎",name:"호기심 탐험가"});
+  if(getScore()>=100) b.push({icon:"💯",name:"100점 돌파"});
+  return b;
+}
 
 /* ══════════ 게임 복귀 축하 ══════════ */
 function checkNewStamps(){
@@ -693,23 +730,27 @@ function anyModalOpen(){ return !!document.querySelector(".modal.show"); }
 document.getElementById("mapBtn").onclick=()=>{
   if(fadeState)return;
   refreshDone();
-  document.querySelector("#map h2").textContent="🗺️ 나의 탐험 지도";
-  document.querySelector("#map .sub").textContent="전시실을 방문해 미니게임 스탬프를 모으세요";
+  document.querySelector("#map h2").textContent="📖 나의 도감";
+  document.querySelector("#map .sub").textContent="🎫 스탬프 "+gotCount()+"/"+STAMP_TOTAL+"  ·  👀 전시물 "+seenCount()+"/"+EXHIBIT_TOTAL+"  ·  ⭐ "+getScore()+"점";
   const body=document.getElementById("mapBody"); body.innerHTML="";
-  FLOORS.forEach(f=>{
-    const games=f.spots.filter(s=>s.kind!=="elevator");
-    if(!games.length)return;
+  // 전체 진행률 바
+  const done=gotCount()+seenCount(), total=STAMP_TOTAL+EXHIBIT_TOTAL, pct=total?Math.round(done/total*100):0;
+  body.innerHTML='<div style="margin:2px 0 16px"><div style="height:16px;background:#eadfca;border-radius:9px;overflow:hidden;border:1.5px solid #d8caa8">'+
+    '<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#f6b93b,#e58e26);transition:width .4s"></div></div>'+
+    '<div style="text-align:right;font-size:12px;font-weight:700;color:'+(pct>=80?"#e58e26":"#8a8069")+';margin-top:3px">'+
+    pct+'% 완성'+(pct>=80&&pct<100?" · 거의 다 왔어요! 🎉":(pct>=100?" · 완주! 🏅":""))+'</div></div>';
+  // 방(전시실)별: 미니게임 + 전시물 관람 여부
+  const s=seenMap();
+  Object.values(ROOMS).forEach(r=>{
     const row=document.createElement("div"); row.className="map-floor";
     let chips="";
-    games.forEach(s=>{
-      if(s.kind==="game"){
-        const d=isDone(s.best);
-        chips+='<span class="room-chip '+(d?"done":"")+'">'+s.icon+" "+s.label+(d?" ⭐":"")+"</span>";
-      }else{
-        chips+='<span class="room-chip soon">'+s.icon+" "+s.name+"</span>";
-      }
+    r.spots.forEach(sp=>{
+      if(sp.kind==="game"){ const d=isDone(sp.best);
+        chips+='<span class="room-chip '+(d?"done":"")+'">'+sp.icon+" "+sp.label+(d?" ⭐":" ▶")+"</span>"; }
+      else if(sp.kind==="exhibit"){ const v=!!s[sp.name];
+        chips+='<span class="room-chip '+(v?"done":"soon")+'">'+sp.icon+" "+sp.name+(v?" ✓":"")+"</span>"; }
     });
-    row.innerHTML='<h3>'+f.name+'</h3><div class="rooms">'+chips+'</div>';
+    row.innerHTML='<h3>'+r.floorName+' · '+r.name+'</h3><div class="rooms">'+chips+'</div>';
     body.appendChild(row);
   });
   document.getElementById("map").classList.add("show");
@@ -717,14 +758,21 @@ document.getElementById("mapBtn").onclick=()=>{
 
 /* ══════════ 수료증 ══════════ */
 document.getElementById("certBtn").onclick=()=>{ if(fadeState)return; showCert(); };
+document.getElementById("soundBtn").onclick=()=>{ sndOn=!sndOn;
+  document.getElementById("soundBtn").textContent=sndOn?"🔊":"🔇"; if(sndOn)sfx(660,0.08); };
 function showCert(){
   refreshDone(); const n=gotCount();
   const full=n>=STAMP_TOTAL;
   document.getElementById("certStars").textContent="⭐".repeat(Math.min(n,STAMP_TOTAL))+"☆".repeat(Math.max(0,STAMP_TOTAL-n));
-  document.getElementById("certCount").textContent=n+" / "+STAMP_TOTAL+" 스탬프";
-  document.getElementById("certMsg").innerHTML=full
-    ? "🎊 <b>축하합니다!</b><br>서울시립과학관의 모든 전시실을<br>탐방하고 미니게임을 완료했어요!"
-    : "아직 <b>"+(STAMP_TOTAL-n)+"개</b>의 스탬프가 남았어요.<br>전시실을 더 둘러보세요!";
+  document.getElementById("certCount").textContent=n+" / "+STAMP_TOTAL+" 스탬프  ·  ⭐ "+getScore()+"점";
+  const badges=getBadges();
+  const bhtml=badges.length
+    ? '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0 4px">'+
+        badges.map(b=>'<div style="background:#fff7e6;border:2px solid #f6b93b;border-radius:12px;padding:6px 11px;font-size:12px;font-weight:800">'+b.icon+' '+b.name+'</div>').join('')+'</div>'
+    : '<div style="font-size:13px;color:#8a8069;margin:12px 0 4px">아직 배지가 없어요 — 전시물을 관람하고 미니게임을 해보세요!</div>';
+  document.getElementById("certMsg").innerHTML=(full
+    ? "🎊 <b>축하합니다!</b><br>모든 전시실을 탐방했어요!"
+    : "아직 <b>"+(STAMP_TOTAL-n)+"개</b>의 스탬프가 남았어요.")+bhtml;
   document.getElementById("cert").classList.add("show");
 }
 
@@ -736,6 +784,7 @@ document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if
 /* ══════════ 토스트 ══════════ */
 /* ══════════ 전시물·시설 관람 팝업 ══════════ */
 function showExhibit(sp){
+  if(sp.kind==="exhibit") markSeen(sp.name);   // 도감 기록 + 점수(+5)
   document.getElementById("exhibitIcon").textContent=sp.icon||"🔍";
   document.getElementById("exhibitName").textContent=sp.name;
   document.getElementById("exhibitInfo").textContent=sp.info||"";
