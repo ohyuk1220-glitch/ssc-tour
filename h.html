@@ -327,6 +327,8 @@ const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 
 if(_q.has("f"))floorIdx=+_q.get("f");
 if(!Number.isInteger(floorIdx)||floorIdx<0||floorIdx>=FLOORS.length)floorIdx=1;
 const player={px:0.5,py:0.5,vx:0,vy:0,dir:"down"};
+let camX=0.5, camY=0.5;   // 카메라(부드럽게 뒤따라옴 = 공간감)
+let shake=0, shX=0, shY=0;   // 화면 흔들림(juice)
 let bgRect={x:0,y:0,w:0,h:0};
 const images={}; let curImg=null;
 const CHAR={};   // 캐릭터 4방향 스프라이트(codex)
@@ -405,13 +407,15 @@ function enterFloor(idx,instant){
   curImg=(f._ok?images[f.id]:null);
   const st=f.start||[0.5,0.5];
   player.px=st[0]; player.py=st[1]; player.vx=player.vy=0;
+  camX=player.px; camY=player.py;
   nearSpot=null; updateFloorTag();
 }
 function enterRoom(roomId){
-  inRoom=roomId; const r=ROOMS[roomId];
+  inRoom=roomId; shake=7; const r=ROOMS[roomId];
   curImg=(r._ok?images[roomId]:null);
   const st=r.start||[0.5,0.7];
   player.px=st[0]; player.py=st[1]; player.vx=player.vy=0;
+  camX=player.px; camY=player.py;
   nearSpot=null; updateFloorTag();
 }
 function exitRoom(){
@@ -421,7 +425,7 @@ function exitRoom(){
   const d=f.spots.find(s=>s.kind==="door"&&s.room===back);   // 들어왔던 문 앞으로 복귀
   if(d){ player.px=d.x; player.py=Math.min(0.9,d.y+0.08); }
   else { const st=f.start||[0.5,0.5]; player.px=st[0]; player.py=st[1]; }
-  player.vx=player.vy=0; nearSpot=null; updateFloorTag();
+  player.vx=player.vy=0; camX=player.px; camY=player.py; nearSpot=null; updateFloorTag();
 }
 function updateFloorTag(){
   const s=curScene();
@@ -436,12 +440,12 @@ function computeBgRect(){
   const iw=(curImg&&curImg.naturalWidth)||1381, ih=(curImg&&curImg.naturalHeight)||1139;
   const scale=Math.max(W/iw, H/ih)*(inRoom?CAM_ZOOM_ROOM:CAM_ZOOM);
   const w=iw*scale, h=ih*scale;
-  // 캐릭터(px,py)가 화면 중앙에 오도록 배경을 반대로 이동
-  let x=W/2-player.px*w, y=H/2-player.py*h;
+  // 카메라(부드럽게 따라오는 camX,camY)가 화면 중앙에 오도록 배경을 반대로 이동
+  let x=W/2-camX*w, y=H/2-camY*h;
   // 맵 끝에서는 카메라 clamp(검은 여백 최소화). w>W, h>H 이므로 [W-w,0] 범위
   x=clamp(x, W-w, 0);
   y=clamp(y, H-h, 0);
-  bgRect={x,y,w,h};
+  bgRect={x:x+shX, y:y+shY, w, h};
 }
 function s2x(px){return bgRect.x+px*bgRect.w;}
 function s2y(py){return bgRect.y+py*bgRect.h;}
@@ -509,7 +513,7 @@ function drawPlayer(x,y){
   // 그림자
   ctx.beginPath();ctx.ellipse(x,y+16,18,7,0,0,7);ctx.fillStyle="rgba(0,0,0,.3)";ctx.fill();
   if(spr&&spr.complete&&spr.naturalHeight){
-    const h=68, w=spr.naturalWidth*h/spr.naturalHeight;   // 화면 표시 높이
+    const h=54, w=spr.naturalWidth*h/spr.naturalHeight;   // 화면 표시 높이(작을수록 공간 넓게)
     ctx.drawImage(spr, Math.round(x-w/2), Math.round(y-h+12-bob), Math.round(w), Math.round(h));
   }
 }
@@ -524,7 +528,7 @@ function updateFade(){
 }
 
 /* ══════════ 이동 업데이트 ══════════ */
-const SPEED=0.0045;
+const SPEED=0.00225;   // 이동 속도 절반(과학관 넓게 느껴지게)
 function update(){
   updateFade();
   updateParts();
@@ -551,6 +555,11 @@ function update(){
     if(d<100&&d<bd){bd=d;best=sp;}
   });
   if(best!==nearSpot){ nearSpot=best; updateFloorTag(); updateAbtn(); }
+  // 카메라 부드럽게 따라옴(공간감)
+  camX+=(player.px-camX)*0.11; camY+=(player.py-camY)*0.11;
+  // 화면 흔들림 감쇠
+  if(shake>0.3){ shake*=0.85; shX=(Math.random()-0.5)*shake; shY=(Math.random()-0.5)*shake; }
+  else { shake=0; shX=shY=0; }
 }
 function updateAbtn(){
   const a=document.getElementById("abtn"), lb=document.getElementById("alabel"), ic=a.querySelector(".ai");
@@ -666,7 +675,7 @@ function checkNewStamps(){
   const s=fresh[0]; seen[s.id]=1; safeSet("ufo_seen",JSON.stringify(seen));
   sfxChord([523,659,784,1047]);        // 도미솔도 상승 = 획득 축하음
   const cx=(bgRect.w?s2x(player.px):W/2), cy=(bgRect.h?s2y(player.py):H/2);
-  burst(cx,cy,"#f6b93b",26); burst(cx,cy,"#4a90e2",14);
+  burst(cx,cy,"#f6b93b",26); burst(cx,cy,"#4a90e2",14); shake=14;
   document.getElementById("cheerIcon").textContent=s.icon;
   document.getElementById("cheerRoom").textContent=s.floor+" · "+s.room+" — "+s.label;
   document.getElementById("cheer").classList.add("show");
