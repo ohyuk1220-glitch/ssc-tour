@@ -205,48 +205,55 @@ const HUB_VERSION="5.0-pixel-bg";
 const FLOORS=[
  {id:"B1", name:"지하주차장", bg:"bg/f_b1_hq.png", tint:"#3a3f4a", start:[0.5,0.60], spots:[
    {name:"수상한 상자", room:"B1 주차장", kind:"soon", icon:"📦", x:0.10,y:0.62, color:"#8a7a5a"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.48,y:0.42, color:"#9aa"},
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["B1","1F","2F","3F"], icon:"🛗", x:0.48,y:0.42, color:"#9aa"},
  ]},
  {id:"1F", name:"1층", bg:"bg/f1_hq.png", tint:"#4caf50", start:[0.46,0.50], spots:[
    {name:"G전시실 · 생태", kind:"door", room:"room_G", icon:"🌿", x:0.18,y:0.15, color:"#4caf50"},
-   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.58,y:0.48, color:"#4a90e2",
-    info:"안내·매표를 하는 중앙 데스크예요. 옆 엘리베이터로 지하1층·2층·3층을 오갈 수 있어요."},
-   {name:"북카페", kind:"info", icon:"☕", x:0.87,y:0.32, color:"#8d6e63",
+   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.72,y:0.47, color:"#4a90e2",
+    info:"안내·매표를 하는 중앙 데스크(카페테리아 앞)예요. 옆 엘리베이터로 지하1층·2층·3층을 오갈 수 있어요."},
+   {name:"북카페", kind:"info", icon:"☕", x:0.90,y:0.30, color:"#8d6e63",
     info:"과학책을 보며 쉬어가는 공간. 음료도 마실 수 있어요."},
    {name:"별관 · 메이커 스튜디오", kind:"info", icon:"🔧", x:0.82,y:0.84, color:"#ef8c3b",
     info:"직접 만들고 실험하는 창작 공간. 메이커 강좌가 열려요."},
-   {name:"엘리베이터 (메인)", kind:"elevator", icon:"🛗", x:0.38,y:0.26, color:"#9aa"},
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["B1","1F","2F","3F"], icon:"🛗", x:0.47,y:0.38, color:"#9aa"},
+   {name:"↕ ½층 계단", kind:"stair", to:"HALF", icon:"🪜", x:0.30,y:0.20, color:"#b0a99a"},
  ]},
  {id:"HALF", name:"½층", bg:"bg/f_half_hq.png", tint:"#f4c430", start:[0.50,0.62], spots:[
    {name:"Y전시실 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.17,y:0.25, color:"#f4c430"},
    {name:"사이언스홀", room:"½층", kind:"soon", icon:"🎪", x:0.45,y:0.14, color:"#8bbf6b"},
    {name:"다이나믹 토네이도", room:"½층 · 아시아 최대", kind:"soon", icon:"🌪️", x:0.50,y:0.48, color:"#7ec8e3"},
    {name:"제4교육장 · 물리", room:"제4교육장", kind:"soon", icon:"🧲", x:0.72,y:0.22, color:"#b06ab3"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.37,y:0.36, color:"#9aa"},
+   {name:"↕ 1층 계단", kind:"stair", to:"1F", icon:"🪜", x:0.37,y:0.36, color:"#b0a99a"},
  ]},
  {id:"SQRT2", name:"√2층", bg:"bg/f_sqrt2_hq.png", tint:"#ef8c3b", start:[0.50,0.62], spots:[
    {name:"O전시실 · 생존", kind:"door", room:"room_O", icon:"🧬", x:0.47,y:0.33, color:"#ef8c3b"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.20,y:0.55, color:"#9aa"},
+   {name:"Y 엘리베이터", kind:"elevator", elev:"B", floors:["1F","SQRT2","2F","3F"], icon:"🛗", x:0.20,y:0.55, color:"#9aa"},
+   {name:"↕ 2층 계단", kind:"stair", to:"2F", icon:"🪜", x:0.32,y:0.55, color:"#b0a99a"},
  ]},
  {id:"2F", name:"2층", bg:"bg/f_2f_hq.png", tint:"#4a90e2", start:[0.45,0.64], spots:[
    {name:"B전시실 · 연결", kind:"door", room:"room_B", icon:"🪐", x:0.31,y:0.37, color:"#4a90e2"},
    {name:"Yy전시실 · 공간", room:"Yy전시실", kind:"soon", icon:"🧩", x:0.63,y:0.40, color:"#f4c430"},
    {name:"천문대 · 태양관측", kind:"door", room:"room_astro", icon:"🔭", x:0.86,y:0.55, color:"#2e3a6b"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.42,y:0.70, color:"#9aa"},
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["B1","1F","2F","3F"], icon:"🛗", x:0.40,y:0.72, color:"#9aa"},
+   {name:"Y 엘리베이터", kind:"elevator", elev:"B", floors:["1F","SQRT2","2F","3F"], icon:"🛗", x:0.52,y:0.72, color:"#9aa"},
+   {name:"↕ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.32,y:0.66, color:"#b0a99a"},
  ]},
  {id:"PI", name:"π층", bg:"bg/f_pi_hq.png", tint:"#7cb342", start:[0.50,0.70], spots:[
    {name:"1교육실 · 생물", room:"1교육실", kind:"soon", icon:"🧫", x:0.22,y:0.30, color:"#7cb342"},
    {name:"2교육실 · 화학", kind:"door", room:"room_chem", icon:"⚗️", x:0.50,y:0.30, color:"#9c6ade"},
    {name:"3교육실 · 지구과학", kind:"door", room:"room_earth", icon:"🌍", x:0.80,y:0.30, color:"#8d6e63"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.10,y:0.62, color:"#9aa"},
+   {name:"↕ 3층 계단", kind:"stair", to:"3F", icon:"🪜", x:0.10,y:0.62, color:"#b0a99a"},
  ]},
  {id:"3F", name:"3층", bg:"bg/f_3f_hq.png", tint:"#90a4ae", start:[0.5,0.72], spots:[
    {name:"X전시실 · 기획전시", room:"X전시실", kind:"soon", icon:"🎨", x:0.50,y:0.42, color:"#90a4ae"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.75,y:0.45, color:"#9aa"},
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["B1","1F","2F","3F"], icon:"🛗", x:0.72,y:0.45, color:"#9aa"},
+   {name:"Y 엘리베이터", kind:"elevator", elev:"B", floors:["1F","SQRT2","2F","3F"], icon:"🛗", x:0.82,y:0.45, color:"#9aa"},
+   {name:"↕ π층 계단", kind:"stair", to:"PI", icon:"🪜", x:0.22,y:0.60, color:"#b0a99a"},
+   {name:"↕ 옥상 계단", kind:"stair", to:"R", icon:"🪜", x:0.32,y:0.22, color:"#b0a99a"},
  ]},
  {id:"R", name:"옥상", bg:"bg/f_rooftop_hq.png", tint:"#7ec8e3", start:[0.55,0.55], spots:[
    {name:"태양광 발전소", room:"옥상", kind:"soon", icon:"☀️", x:0.30,y:0.38, color:"#f6b93b"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.56,y:0.30, color:"#9aa"},
+   {name:"↕ 3층 계단", kind:"stair", to:"3F", icon:"🪜", x:0.56,y:0.30, color:"#b0a99a"},
  ]},
 ];
 
@@ -607,6 +614,7 @@ function updateAbtn(){
   if(nearSpot){
     a.classList.add("on");
     if(nearSpot.kind==="elevator"){ic.textContent="🛗";lb.textContent="층 이동";}
+    else if(nearSpot.kind==="stair"){ic.textContent="🪜";lb.textContent="계단";}
     else if(nearSpot.kind==="game"){ic.textContent="🎮";lb.textContent="플레이";}
     else if(nearSpot.kind==="door"){ic.textContent="🚪";lb.textContent="입장";}
     else if(nearSpot.kind==="exit"){ic.textContent="🚪";lb.textContent="나가기";}
@@ -666,7 +674,10 @@ document.getElementById("abtn").addEventListener("pointerdown",(e)=>{
     sfx(660,0.1,"square",0.15);
     startFade(()=>{ safeSet("ufo_floor",floorIdx); location.href=sp.file; });
   }else if(sp.kind==="elevator"){
-    sfx(520,0.09,"triangle"); openElevator();
+    sfx(520,0.09,"triangle"); openElevator(sp);
+  }else if(sp.kind==="stair"){
+    sfx(600,0.10,"triangle"); const ti=FLOORS.findIndex(f=>f.id===sp.to);
+    if(ti>=0)startFade(()=>enterFloor(ti));
   }else if(sp.kind==="door"){
     sfx(587,0.12,"triangle"); startFade(()=>enterRoom(sp.room));
   }else if(sp.kind==="exit"){
@@ -679,20 +690,18 @@ document.getElementById("abtn").addEventListener("pointerdown",(e)=>{
 });
 
 /* ══════════ 엘리베이터(층 선택) ══════════ */
-function openElevator(){
-  // 지도 모달 재활용: 층 리스트로
+function openElevator(sp){
+  // 지도 모달 재활용: 이 엘베가 정차하는 층만
   const m=document.getElementById("map");
-  document.querySelector("#map h2").textContent="🛗 엘리베이터";
+  document.querySelector("#map h2").textContent="🛗 "+((sp&&sp.name)||"엘리베이터");
   document.querySelector("#map .sub").textContent="이동할 층을 선택하세요";
   const body=document.getElementById("mapBody");
   body.innerHTML="";
   FLOORS.forEach((f,i)=>{
-    const gcount=f.spots.filter(s=>s.kind==="game").length;
-    const gdone=f.spots.filter(s=>s.kind==="game"&&isDone(s.best)).length;
+    if(sp&&sp.floors&&!sp.floors.includes(f.id))return;   // 이 엘베가 안 서는 층 제외
     const row=document.createElement("div"); row.className="map-floor";
     row.style.cursor="pointer";
-    row.innerHTML='<h3>'+(i===floorIdx?"📍 ":"")+f.name+
-      '<span class="cur">'+(gcount?gdone+"/"+gcount+" ⭐":"")+'</span></h3>';
+    row.innerHTML='<h3>'+(i===floorIdx?"📍 ":"")+f.name+'</h3>';
     row.onclick=()=>{ closeModals(); if(i!==floorIdx){startFade(()=>enterFloor(i));} };
     body.appendChild(row);
   });
