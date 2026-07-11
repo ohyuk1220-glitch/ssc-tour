@@ -173,6 +173,27 @@
     transform:translateX(-50%);
   }
   .dial-hint{ font-size:12px; color:var(--fg-dim); text-align:center; margin-bottom:10px; }
+
+  /* 시간압박 바 (2026-07-12 R2 추가) */
+  .timer-row{ margin:2px 0 10px; }
+  .timer-track{ height:6px; background:var(--bg); border:1px solid var(--line); border-radius:4px; overflow:hidden; }
+  .timer-bar{ height:100%; width:100%; background:var(--good); transition:width .1s linear, background .2s ease; }
+  .timer-bar.warn{ background:var(--warn); }
+  .timer-bar.bad{ background:var(--bad); }
+  .timer-chip{ display:inline-block; margin-top:6px; font-size:12.5px; color:var(--accent); font-weight:700; letter-spacing:.02em; }
+
+  /* 콤보 배지 (2026-07-12 R2 추가) */
+  .combo-badge{
+    display:inline-block; margin:8px auto 2px; padding:5px 14px; border-radius:20px;
+    font-size:14px; font-weight:900; background:rgba(255,183,3,.22); color:var(--accent);
+    animation:comboPop .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes comboPop{
+    0%{ transform:scale(.6) rotate(-4deg); opacity:0; }
+    60%{ transform:scale(1.12) rotate(2deg); }
+    100%{ transform:scale(1) rotate(0); opacity:1; }
+  }
+  .combo-broke{ margin:8px 0 2px; font-size:12.5px; color:var(--fg-dim); text-align:center; }
   .dial-target.pulse{ animation:targetPulse 1.1s ease-in-out infinite; }
   @keyframes targetPulse{
     0%,100%{ box-shadow:inset 0 0 0 rgba(92,230,92,0); }
@@ -299,17 +320,22 @@
 
   // 2026-07-11 조정: 값 간격을 좁혀 저정확도 측정 시 실제로 순위가 헷갈릴 수 있게 함
   // (기존 32/95/160은 오차가 아무리 커도 순서가 절대 안 뒤집혔음 → 측정 무의미화 문제)
+  // 2026-07-12(R2) timeLimit 추가: 다이얼 정지에 제한시간을 둬서 "무제한 대기 후 완벽한 타이밍만 노리기"를 막음(시간압박)
   var SAMPLES = [
-    { id:"cola",   name:"콜라(355ml)",     color:"#3a2317", trueValue:34,  speed:1.15, targetW:22 },
-    { id:"coffee", name:"드립커피(240ml)", color:"#8a5a2e", trueValue:72,  speed:1.55, targetW:17 },
-    { id:"energy", name:"에너지음료(250ml)", color:"#8fef2a", trueValue:110, speed:2.0,  targetW:13 }
+    { id:"cola",   name:"콜라(355ml)",     color:"#3a2317", trueValue:34,  speed:1.15, targetW:22, timeLimit:5.5 },
+    { id:"coffee", name:"드립커피(240ml)", color:"#8a5a2e", trueValue:72,  speed:1.55, targetW:17, timeLimit:4.6 },
+    { id:"energy", name:"에너지음료(250ml)", color:"#8fef2a", trueValue:110, speed:2.0,  targetW:13, timeLimit:3.8 }
   ];
 
   var state = {
     screen: "intro",      // intro | select | measure | result | final
     measureSub: "insert",  // insert | measuring | done
     currentId: null,
-    rankOrder: []
+    rankOrder: [],
+    combo: 0,             // 2026-07-12(R2) 연속 정확측정(80%+) 콤보
+    maxCombo: 0,
+    lastComboBroke: false,
+    startTime: null       // 실험 시작 시각(전체 소요시간 표시용)
   };
 
   var rafId = null;
@@ -324,6 +350,29 @@
   }
   function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
   function esc(s){ return String(s); }
+  function timerChipHtml(){ return '<div class="timer-chip" id="timerChip">⏱ 0:00</div>'; }
+
+  /* ---------------- 전체 소요시간 표시(2026-07-12 R2, 채점에는 미반영·표시용) ---------------- */
+  var elapsedTimerId = null;
+  function startElapsedTimer(){
+    stopElapsedTimer();
+    elapsedTimerId = setInterval(function(){
+      var chip = document.getElementById("timerChip");
+      if (!chip || state.startTime == null) return;
+      var sec = Math.floor((Date.now() - state.startTime) / 1000);
+      var m = Math.floor(sec/60), r = sec%60;
+      chip.textContent = "⏱ " + m + ":" + (r<10?"0":"") + r;
+    }, 500);
+  }
+  function stopElapsedTimer(){
+    if (elapsedTimerId){ clearInterval(elapsedTimerId); elapsedTimerId = null; }
+  }
+  function formatElapsed(){
+    if (state.startTime == null) return "0:00";
+    var sec = Math.floor((Date.now() - state.startTime) / 1000);
+    var m = Math.floor(sec/60), r = sec%60;
+    return m + ":" + (r<10?"0":"") + r;
+  }
 
   /* ---------------- 반복 플레이 기록(localStorage, 실패해도 게임 진행에 영향 없음) ---------------- */
   var STORAGE_KEY = "caffeineProto_best_v1";
@@ -407,9 +456,14 @@
       + '</div>';
     }).join('');
 
+    var comboHint = state.combo>=2
+      ? '<div class="combo-badge">🔥 콤보 x'+state.combo+' 유지 중 · 다음 측정도 성공하면 계속 올라갑니다</div>'
+      : '';
+
     return ''
-    + '<header><h1>샘플 선택</h1><p>순서대로 3개 음료를 모두 측정하세요 ('+doneCount+'/3)</p></header>'
+    + '<header><h1>샘플 선택</h1><p>순서대로 3개 음료를 모두 측정하세요 ('+doneCount+'/3)</p>' + timerChipHtml() + '</header>'
     + '<div class="progress-dots">' + SAMPLES.map(function(s){return '<span class="'+(s.measured!=null?'on':'')+'"></span>';}).join('') + '</div>'
+    + comboHint
     + '<div class="sample-grid">' + cards + '</div>'
     + '<button class="btn" id="btnToResult" style="margin-top:18px;" '+(allMeasured()?'':'disabled')+'>결과 보기</button>';
   }
@@ -437,8 +491,9 @@
       + '  <div class="light-beam on" id="beam"></div>'
       + '  <div class="device-slot"><div class="device-cuvette filled" style="background:'+s2.color+'"></div></div>'
       + '</div>'
+      + '<div class="timer-row"><div class="timer-track"><div class="timer-bar" id="timerBar"></div></div></div>'
       + '<div class="dial-wrap">'
-      + '  <div class="dial-hint">정지 버튼을 초록 구간에서 눌러야 정확도가 올라갑니다</div>'
+      + '  <div class="dial-hint">정지 버튼을 초록 구간에서 눌러야 정확도가 올라갑니다 · 시간 안에 못 누르면 측정 실패!</div>'
       + '  <div class="dial-track" id="dialTrack">'
       + '    <div class="dial-target" id="dialTarget"></div>'
       + '    <div class="dial-marker" id="dialMarker"></div>'
@@ -447,19 +502,30 @@
       + '<button class="btn" id="btnStop">정지! (측정)</button>';
     } else if (state.measureSub === "done"){
       var acc = s.accuracy;
-      var tagClass = acc>=80 ? "good" : (acc>=50 ? "warn" : "bad");
-      var tagText = acc>=80 ? "정확한 측정!" : (acc>=50 ? "쓸만한 측정" : "오차가 큽니다");
+      var timedOut = !!s.timedOut;
+      var tagClass = timedOut ? "bad" : (acc>=80 ? "good" : (acc>=50 ? "warn" : "bad"));
+      var tagText = timedOut ? "시간 초과!" : (acc>=80 ? "정확한 측정!" : (acc>=50 ? "쓸만한 측정" : "오차가 큽니다"));
+      var comboBlock = "";
+      if (!timedOut && acc>=80 && state.combo>=2){
+        comboBlock = '<div class="combo-badge">🔥 콤보 x'+state.combo+'!</div>';
+      } else if (state.lastComboBroke){
+        comboBlock = '<div class="combo-broke">콤보가 끊겼습니다</div>';
+      }
+      var descText = timedOut
+        ? '제한시간 안에 정지하지 못했습니다 · 다음 샘플에선 더 서둘러 보세요'
+        : esc(s.name)+' 흡광도 측정 완료 · 정확한 수치는 다음 그래프에서 막대 높이로 비교하세요';
       body = ''
       + '<div class="card result-pop pop-anim" id="resultCard">'
       + '  <div class="tag '+tagClass+'">'+tagText+'</div>'
       + '  <div class="big-num">정확도 '+acc+'%</div>'
-      + '  <div style="color:var(--fg-dim);font-size:13px;">'+esc(s.name)+' 흡광도 측정 완료 · 정확한 수치는 다음 그래프에서 막대 높이로 비교하세요</div>'
+      + comboBlock
+      + '  <div style="color:var(--fg-dim);font-size:13px;">'+descText+'</div>'
       + '</div>'
       + '<div class="confetti-layer" id="confettiHolder"></div>'
       + '<button class="btn" id="btnBackSelect" style="margin-top:16px;">선택 화면으로</button>';
     }
 
-    return '<header><h1>'+ (s? esc(s.name) : '측정') +'</h1><p>실험 절차대로 진행하세요</p></header>' + '<div class="card">' + body + '</div>';
+    return '<header><h1>'+ (s? esc(s.name) : '측정') +'</h1><p>실험 절차대로 진행하세요</p>' + timerChipHtml() + '</header>' + '<div class="card">' + body + '</div>';
   }
 
   /* ---------------- 결과(그래프+랭킹) ---------------- */
@@ -517,15 +583,21 @@
 
   /* ---------------- 최종 점수 ---------------- */
   function renderFinal(){
+    var elapsedStr = formatElapsed();
+    stopElapsedTimer(); // 2026-07-12 R2: 실험 종료 시점에 표시용 타이머 정지(채점엔 미반영)
+
     var avgAcc = SAMPLES.reduce(function(sum,s){return sum+s.accuracy;},0) / SAMPLES.length;
-    var accuracyScore = Math.round(avgAcc*0.6);
+    // 2026-07-12 R2: 콤보 점수(10점) 신설에 맞춰 배점 재배분(정확도 60→55, 순위 40→35, 콤보 신규 10) = 총 100 유지
+    var accuracyScore = Math.round(avgAcc*0.55);
 
     var correctOrder = SAMPLES.slice().sort(function(a,b){return a.trueValue-b.trueValue;}).map(function(s){return s.id;});
     var correctCount = 0;
     for (var i=0;i<3;i++){ if (state.rankOrder[i]===correctOrder[i]) correctCount++; }
-    var rankScore = Math.round(correctCount/3*40);
+    var rankScore = Math.round(correctCount/3*35);
 
-    var total = accuracyScore + rankScore;
+    var comboScore = state.maxCombo>=3 ? 10 : (state.maxCombo===2 ? 5 : 0);
+
+    var total = Math.min(100, accuracyScore + rankScore + comboScore);
     var grade = total>=90 ? "S" : total>=75 ? "A" : total>=60 ? "B" : "C";
 
     // 반복 플레이 훅: 최고 기록 갱신 여부 + 도전 횟수 (localStorage 실패해도 채점엔 영향 없음)
@@ -543,8 +615,10 @@
     + '  <div class="num">'+total+' / 100점</div>'
     + recordTag
     + '  <div class="breakdown">'
-    + '    <div><span>측정 정확도 평균</span><span>'+Math.round(avgAcc)+'% → '+accuracyScore+'/60점</span></div>'
-    + '    <div><span>순위 정답 ('+correctCount+'/3 일치)</span><span>'+rankScore+'/40점</span></div>'
+    + '    <div><span>측정 정확도 평균</span><span>'+Math.round(avgAcc)+'% → '+accuracyScore+'/55점</span></div>'
+    + '    <div><span>순위 정답 ('+correctCount+'/3 일치)</span><span>'+rankScore+'/35점</span></div>'
+    + '    <div><span>최고 콤보</span><span>'+state.maxCombo+'콤보 → '+comboScore+'/10점</span></div>'
+    + '    <div><span>소요 시간</span><span>'+elapsedStr+'</span></div>'
     + '  </div>'
     + '  <div class="play-count">총 '+playCount+'회 도전 · 최고 기록 '+(isNewRecord?grade:prevBest.grade)+'등급 ('+(isNewRecord?total:prevBest.total)+'점)</div>'
     + '  <div class="confetti-layer" id="confettiHolder2"></div>'
@@ -555,7 +629,11 @@
   /* ---------------- 이벤트 바인딩 ---------------- */
   function bindEvents(){
     var btnStart = document.getElementById("btnStart");
-    if (btnStart) btnStart.addEventListener("click", function(){ state.screen="select"; render(); });
+    if (btnStart) btnStart.addEventListener("click", function(){
+      state.startTime = Date.now();
+      startElapsedTimer();
+      state.screen="select"; render();
+    });
 
     var btnToResult = document.getElementById("btnToResult");
     if (btnToResult) btnToResult.addEventListener("click", function(){
@@ -612,8 +690,9 @@
 
     var btnRestart = document.getElementById("btnRestart");
     if (btnRestart) btnRestart.addEventListener("click", function(){
-      SAMPLES.forEach(function(s){ s.measured=null; s.accuracy=null; });
-      state = { screen:"intro", measureSub:"insert", currentId:null, rankOrder:[] };
+      SAMPLES.forEach(function(s){ s.measured=null; s.accuracy=null; s.timedOut=null; });
+      stopElapsedTimer();
+      state = { screen:"intro", measureSub:"insert", currentId:null, rankOrder:[], combo:0, maxCombo:0, lastComboBroke:false, startTime:null };
       render();
     });
 
@@ -643,7 +722,8 @@
   function startDialLoop(){
     var s = getSample(state.currentId);
     var targetStart = 8 + Math.random() * (92 - s.targetW - 8);
-    dialData = { startTime: performance.now(), speed: s.speed, targetStart: targetStart, targetW: s.targetW };
+    // 2026-07-12 R2: timeLimit·finished 플래그 추가(시간압박 + 중복 정지 방지)
+    dialData = { startTime: performance.now(), speed: s.speed, targetStart: targetStart, targetW: s.targetW, timeLimit: s.timeLimit, finished: false };
 
     var targetEl = document.getElementById("dialTarget");
     if (targetEl){
@@ -656,8 +736,15 @@
     var wobbleAmp = Math.max(0, s.speed - 1.2) * 6;
 
     function frame(now){
-      if (!dialData) return;
+      if (!dialData || dialData.finished) return;
       var elapsed = (now - dialData.startTime) / 1000;
+
+      // 2026-07-12 R2: 제한시간 초과 시 자동 정지(실패 처리) — 무제한 대기로 완벽한 타이밍만 노리는 것 방지
+      if (elapsed >= dialData.timeLimit){
+        onStopMeasurement({ timedOut:true });
+        return;
+      }
+
       var pos = 50 + 48 * Math.sin(elapsed * dialData.speed * 1.6)
                 + wobbleAmp * Math.sin(elapsed * dialData.speed * 4.3);
       pos = clamp(pos, 1, 99);
@@ -672,6 +759,14 @@
       var trackEl = document.getElementById("dialTrack");
       if (trackEl) trackEl.classList.toggle("in-target", inTarget);
 
+      var remainRatio = clamp(1 - elapsed / dialData.timeLimit, 0, 1);
+      var timerBar = document.getElementById("timerBar");
+      if (timerBar){
+        timerBar.style.width = (remainRatio * 100) + "%";
+        timerBar.classList.toggle("warn", remainRatio <= 0.4 && remainRatio > 0.18);
+        timerBar.classList.toggle("bad", remainRatio <= 0.18);
+      }
+
       rafId = requestAnimationFrame(frame);
     }
     rafId = requestAnimationFrame(frame);
@@ -681,26 +776,41 @@
     if (rafId){ cancelAnimationFrame(rafId); rafId = null; }
   }
 
-  function onStopMeasurement(){
-    if (!dialData) return;
+  function onStopMeasurement(opts){
+    if (!dialData || dialData.finished) return;
+    dialData.finished = true;
+    opts = opts || {};
     var s = getSample(state.currentId);
-    var pos = dialData.currentPos != null ? dialData.currentPos : 50;
-    var half = dialData.targetW / 2;
-    var center = dialData.targetStart + half;
-    var diff = Math.abs(pos - center);
-
     var accuracy;
-    if (diff <= half) accuracy = 100;
-    else accuracy = Math.round(clamp(100 - (diff - half) / 25 * 100, 0, 100));
 
-    // 2026-07-11: .35 → .55. 값 간격을 좁힌 것과 맞물려 저정확도 측정 시
-    // 인접 샘플의 측정값 범위가 실제로 겹쳐 순위가 뒤집힐 수 있게 함(측정=결론 긴장감)
-    var noiseFactor = (100 - accuracy) / 100 * 0.55;
+    if (opts.timedOut){
+      // 시간 내 정지 못함 = 위치와 무관하게 실패 처리(운으로 얻어걸리는 것 방지)
+      accuracy = Math.round(12 + Math.random() * 18); // 12~30%
+    } else {
+      var pos = dialData.currentPos != null ? dialData.currentPos : 50;
+      var half = dialData.targetW / 2;
+      var center = dialData.targetStart + half;
+      var diff = Math.abs(pos - center);
+      if (diff <= half) accuracy = 100;
+      else accuracy = Math.round(clamp(100 - (diff - half) / 25 * 100, 0, 100));
+    }
+
+    // 2026-07-11: .35 → .55. 값 간격을 좁힌 것과 맞물려 저정확도 측정 시 인접 샘플의 측정값 범위가 겹치게 함
+    // 2026-07-12 R2: .55 → .85 재조정(시뮬레이션 검증: 정확도 60~70%대에서 순위 역전 확률이 0%→약25%로 상승,
+    // 80%+ 구간은 여전히 0%로 안전해 "정확히 재면 보상, 대충 재면 흔들림" 긴장이 명확해짐)
+    var noiseFactor = (100 - accuracy) / 100 * 0.85;
     var sign = Math.random() < 0.5 ? -1 : 1;
-    var measured = s.trueValue * (1 + sign * noiseFactor);
+    var measuredVal = s.trueValue * (1 + sign * noiseFactor);
 
     s.accuracy = accuracy;
-    s.measured = Math.round(measured * 10) / 10;
+    s.measured = Math.round(measuredVal * 10) / 10;
+    s.timedOut = !!opts.timedOut;
+
+    // 2026-07-12 R2: 콤보 — 80%+ & 시간초과 아님이 연속되면 콤보 유지, 아니면 리셋
+    var success = accuracy >= 80 && !opts.timedOut;
+    state.lastComboBroke = state.combo > 0 && !success;
+    state.combo = success ? state.combo + 1 : 0;
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
 
     stopDialLoop();
     state.measureSub = "done";

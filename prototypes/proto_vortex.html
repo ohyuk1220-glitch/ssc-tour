@@ -139,6 +139,9 @@
   var DEG = Math.PI/180;
   var MIN_ANGLE = 5*DEG;
   var MAX_ANGLE = 85*DEG;
+  // R2 밸런스: 바람 최대치 130→95로 하향(기존 값은 넓은 화면비에서 원거리·소형 표적이
+  // 역풍 시 물리적으로 명중 불가능해지는 경우가 있었음 - 자동 플레이테스트로 실측 확인).
+  var WIND_CAP = 95;
 
   var el = {
     stage: document.getElementById('stage'),
@@ -193,22 +196,28 @@
   var W=0, H=0, dpr=1, scale=1, groundY=0, cannonX=0, cannonY=0, maxPull=0;
   var gravity=560, speedMin=260, speedMax=760;
 
+  // R2: 4개 표적을 전체적으로 살짝 당겨와 사거리 여유(마진)를 확보(원거리·소형 표적이
+  // 최대 역풍에서도 항상 도달 가능하도록 - 자동 플레이테스트로 도달가능성 검증됨)
   var targetDefs = [
-    { fx:0.44, mode:'ground',   baseR:32, score:60 },
-    { fx:0.58, mode:'elevated', fy:0.60, baseR:24, score:110, bob:{amp:0.055, speed:1.5, ph:0.4} },
-    { fx:0.72, mode:'ground',   baseR:22, score:160, moveX:{amp:0.05, speed:1.15, ph:2.1} },
-    { fx:0.87, mode:'ground',   baseR:16, score:240 }
+    { fx:0.42, mode:'ground',   baseR:32, score:60 },
+    { fx:0.55, mode:'elevated', fy:0.60, baseR:24, score:110, bob:{amp:0.055, speed:1.5, ph:0.4} },
+    { fx:0.66, mode:'ground',   baseR:22, score:160, moveX:{amp:0.05, speed:1.15, ph:2.1} },
+    { fx:0.78, mode:'ground',   baseR:16, score:240 }
   ];
   var bonusTarget = null; // { fx, fy, r, score } - 라운드마다 확률 등장, 못 맞히면 사라짐
 
   function maybeSpawnBonus(){
     bonusTarget = null;
-    if(Math.random() < 0.45){
+    // R2: 등장확률 45%→25% (설명 카드의 "가끔 등장"이라는 문구와 실제 빈도가
+    // 어긋나 있었음 - 45%는 사실상 매 게임 등장. 25%로 낮춰 "가끔"에 맞춤)
+    // 스폰 영역도 축소(가로로 넓고 낮은 화면에서 "멀고+높은" 코너는 역풍 시
+    // 도달 불가능한 좌표가 섞여 있었음 - 플레이테스트로 확인 후 안전 영역으로 축소)
+    if(Math.random() < 0.25){
       bonusTarget = {
-        fx: 0.32 + Math.random()*0.5,
-        fy: 0.16 + Math.random()*0.2,
+        fx: 0.30 + Math.random()*0.26,
+        fy: 0.27 + Math.random()*0.11,
         baseR: 15,
-        score: 260 + Math.round(Math.random()*8)*10
+        score: 280 + Math.round(Math.random()*8)*10
       };
     }
   }
@@ -239,6 +248,7 @@
   var liveAim = { angle: 45*DEG, power: 0 };
   var aimAngleDeg = 45*DEG; // 발사 후에도 고정 표시되는 각도
   var feedbackTimer = null;
+  var afterShotTimer = null; // 명중/빗나감 후 afterShot() 예약 타이머(재시작 시 취소 필요)
   var toastHidden = false;
 
   function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
@@ -405,7 +415,7 @@
   }
   function updateWindStreaks(dt){
     windStreakAccum += dt;
-    var mag = Math.abs(wind)/(130*scale);
+    var mag = Math.abs(wind)/(WIND_CAP*scale);
     var interval = clamp(0.55 - mag*0.4, 0.16, 0.55);
     if(mag > 0.08 && windStreakAccum > interval){
       windStreakAccum = 0;
@@ -448,7 +458,7 @@
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1; ctx.stroke();
 
-    var pct = clamp(Math.abs(wind)/(130*scale), 0, 1);
+    var pct = clamp(Math.abs(wind)/(WIND_CAP*scale), 0, 1);
     var dir = wind === 0 ? 0 : (wind > 0 ? 1 : -1);
 
     // 게이지 바 (중앙 기준 좌우로 채워짐)
@@ -527,7 +537,7 @@
     showFeedback(label, 'good');
     playHit();
     ring = null;
-    setTimeout(afterShot, 750);
+    afterShotTimer = setTimeout(afterShot, 750);
   }
   function resolveMiss(x,y){
     phase = 'resolved';
@@ -536,7 +546,7 @@
     showFeedback('빗나감', 'bad');
     playMiss();
     ring = null;
-    setTimeout(afterShot, 600);
+    afterShotTimer = setTimeout(afterShot, 600);
   }
   function afterShot(){
     if(shotsLeft <= 0){
@@ -561,13 +571,16 @@
 
   /* ---------- 바람 / 앰모 / 점수 UI ---------- */
   function newWind(){
-    wind = (Math.random()*2-1) * 130*scale;
+    wind = (Math.random()*2-1) * WIND_CAP*scale;
     var abs = Math.abs(wind);
+    // 임계값은 WIND_CAP 대비 비율로 유지(기존 95/40/14 ÷ 130 = 약 .73/.31/.11) —
+    // WIND_CAP만 낮추고 임계값을 그대로 두면 "강함" 표시가 사실상 안 뜨는 버그가 생김
+    var strongTh = WIND_CAP*0.73*scale, midTh = WIND_CAP*0.31*scale, weakTh = WIND_CAP*0.11*scale;
     var label = '없음', dots = 0;
-    if(abs > 95*scale){ label = '강함'; dots = 3; }
-    else if(abs > 40*scale){ label = '보통'; dots = 2; }
-    else if(abs > 14*scale){ label = '약함'; dots = 1; }
-    var arrow = wind > 14*scale ? '→' : (wind < -14*scale ? '←' : '·');
+    if(abs > strongTh){ label = '강함'; dots = 3; }
+    else if(abs > midTh){ label = '보통'; dots = 2; }
+    else if(abs > weakTh){ label = '약함'; dots = 1; }
+    var arrow = wind > weakTh ? '→' : (wind < -weakTh ? '←' : '·');
     var dotStr = dots > 0 ? ' ' + '●'.repeat(dots) + '○'.repeat(3-dots) : '';
     el.windBadge.textContent = '바람 ' + arrow + ' ' + label + dotStr;
     maybeSpawnBonus();
@@ -594,6 +607,11 @@
   }
 
   function startGame(){
+    // R2 버그수정: 명중/빗나감 애니메이션 도중(afterShot 대기 중) "다시 시작"을 누르면
+    // 예약된 afterShot()이 새 게임 상태에 뒤늦게 끼어들어 바람이 몰래 다시 굴러가거나
+    // 조기 게임오버로 이어질 수 있었음 - 재시작 시 예약 타이머를 확실히 취소
+    clearTimeout(afterShotTimer);
+    afterShotTimer = null;
     score = 0; displayScore = 0; hitCount = 0; combo = 0;
     shotsLeft = MAX_SHOTS;
     particles.length = 0; floats.length = 0; shocks.length = 0; windStreaks.length = 0;

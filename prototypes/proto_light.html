@@ -42,6 +42,12 @@
     background: #1e1a0f; border: 1px solid #4a3a1a; border-radius: 999px;
     padding: 4px 10px; white-space: nowrap;
   }
+  #mirrorBadge {
+    flex: 0 0 auto; font-size: 11px; font-weight: 700; color: #9fc3ea;
+    background: #0f1c2e; border: 1px solid #244063; border-radius: 999px;
+    padding: 4px 9px; white-space: nowrap;
+  }
+  #mirrorBadge.warn { color: #ffb4b4; background: #2a1414; border-color: #5a2a2a; }
   #hud {
     display: flex; align-items: center; gap: 5px; flex: 0 1 auto;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
@@ -55,6 +61,9 @@
     padding: 0; flex-shrink: 0;
   }
   .dot-btn.done { background: #123c34; border-color: #1f6e5c; color: #5eead4; }
+  .dot-btn.tier-1 { background: #1a2620; border-color: #2f4a38; color: #7fd9b8; }
+  .dot-btn.tier-2 { background: #123c34; border-color: #1f6e5c; color: #5eead4; }
+  .dot-btn.tier-3 { background: #2a2410; border-color: #ffd24a; color: #ffd24a; }
   .dot-btn.active { background: #5eead4; border-color: #5eead4; color: #0a0d16; }
 
   #canvas-wrap {
@@ -156,6 +165,7 @@
       <p class="sub" id="stageSub">스테이지 1/8 · 거울로 빛을 전구까지</p>
     </div>
     <div id="starTally" aria-label="총 별점">⭐ 0</div>
+    <div id="mirrorBadge" aria-label="사용한 거울 수">🪞 0</div>
     <div id="hud"></div>
   </header>
 
@@ -252,9 +262,12 @@
       walls:[{x:5,y:1}], prisms:[], mirrorLimit:null, par:2
     },
     {
-      title: '벽 사이로', hint: '벽 사이 좁은 통로를 따라 거울 두 개로 빛을 꺾어보세요',
+      title: '벽 사이로', hint: '벽 블록을 피해 거울 두 개로 빛을 꺾어 전구까지 이어보세요',
       w:7, h:5, source:{x:0,y:2,dir:'R'}, target:{x:6,y:0},
-      walls:[{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:4,y:1},{x:5,y:1},{x:6,y:1},{x:4,y:2},{x:5,y:2},{x:6,y:2},{x:0,y:3},{x:1,y:3},{x:2,y:3},{x:3,y:3},{x:4,y:3},{x:5,y:3},{x:6,y:3},{x:0,y:4},{x:1,y:4},{x:2,y:4},{x:3,y:4},{x:4,y:4},{x:5,y:4},{x:6,y:4}],
+      // R2(2026-07-12): 원래 26개 벽(74%)이 "막힌 방"처럼 답답하다는 피드백 →
+      // brute-force 솔버로 실제 해에 꼭 필요한 벽만 남기고 5개(14%)로 축소.
+      // 필수 벽 = (4,1)(4,2)(5,1)(5,2) 2x2 블록: 가로 직행 지름길(거울 1개 우회)을 차단.
+      walls:[{x:4,y:1},{x:4,y:2},{x:5,y:1},{x:5,y:2},{x:1,y:4}],
       prisms:[], mirrorLimit:null, par:2
     },
     {
@@ -265,7 +278,11 @@
     {
       title: '프리즘 방향 잡기', hint: '프리즘에서 갈라진 빛 중 하나를 거울로 다시 꺾어 전구까지',
       w:8, h:6, source:{x:0,y:0,dir:'R'}, target:{x:1,y:5},
-      walls:[{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:3,y:1},{x:5,y:1},{x:6,y:1},{x:7,y:1},{x:0,y:2},{x:1,y:2},{x:2,y:2},{x:3,y:2},{x:5,y:2},{x:6,y:2},{x:7,y:2},{x:0,y:3},{x:1,y:3},{x:2,y:3},{x:3,y:3},{x:5,y:3},{x:6,y:3},{x:7,y:3},{x:0,y:4},{x:5,y:4},{x:6,y:4},{x:7,y:4},{x:0,y:5},{x:2,y:5},{x:3,y:5},{x:4,y:5},{x:5,y:5},{x:6,y:5},{x:7,y:5}],
+      // R2(2026-07-12): 원래 32개 벽(67%, 수직 통로가 사방으로 막혀 답답)을 14개(29%)로 축소.
+      // 필수 벽만 유지: (1,1)=프리즘을 거치지 않고 거울 1개로 바로 열1을 타고 내려가는
+      // 지름길 차단(핵심), 5행 블록=목표 칸 옆으로 바로 들어오는 우회 차단(핵심).
+      // 오른쪽 5~7열 일부는 "통로" 느낌을 남기는 장식적 프레이밍(제거해도 정답엔 무관, 시각적 구조용).
+      walls:[{x:1,y:1},{x:5,y:1},{x:6,y:1},{x:7,y:1},{x:5,y:2},{x:6,y:2},{x:5,y:3},{x:0,y:5},{x:2,y:5},{x:3,y:5},{x:4,y:5},{x:5,y:5},{x:6,y:5},{x:7,y:5}],
       prisms:[{x:4,y:0}], mirrorLimit:null, par:2
     },
     {
@@ -321,6 +338,22 @@
   }
   function renderStarTally(){
     document.getElementById('starTally').textContent = '⭐ ' + totalStars() + '/' + totalStarsMax;
+  }
+
+  // R2(2026-07-12) 신규: 거울 사용량을 상시 표시 — 별점(효율) 기준이 "거울 N개 이하"라는 걸
+  // 클리어 후 토스트로만 알던 문제 + mirrorLimit 스테이지에서 한도를 모른 채 플레이하던 문제를
+  // 동시에 해결. 한도 있는 스테이지는 "사용/한도", 없는 스테이지는 "사용 (★3 기준: par개 이하)".
+  function renderMirrorBadge(){
+    var el = document.getElementById('mirrorBadge');
+    if (!el || !stage) return;
+    var used = placedCount();
+    if (stage.mirrorLimit != null){
+      el.textContent = '🪞 ' + used + '/' + stage.mirrorLimit;
+      el.classList.toggle('warn', used >= stage.mirrorLimit);
+    } else {
+      el.textContent = '🪞 ' + used + ' (★3: ' + stage.par + '개 이하)';
+      el.classList.remove('warn');
+    }
   }
 
   function cellType(x,y){
@@ -392,6 +425,7 @@
 
   function recompute(){
     trace = traceBeams();
+    renderMirrorBadge();
     if (trace.hit && !cleared){
       cleared = true;
       locked = true;
@@ -441,11 +475,17 @@
     hud.innerHTML = '';
     for (var i=0;i<STAGES.length;i++){
       var b = document.createElement('button');
-      b.className = 'dot-btn' + (i === stageIndex ? ' active' : (i < maxStageReached ? ' done' : (i <= maxStageReached ? '' : '')));
-      if (i < stageIndex) b.classList.add('done');
-      if (i === stageIndex) { b.className = 'dot-btn active'; }
+      if (i === stageIndex){
+        b.className = 'dot-btn active';
+      } else {
+        // R2(2026-07-12): 획득 별점(1~3)에 따라 dot 색을 다르게 — 재도전해서 별을 더
+        // 채울 수 있다는 걸 스테이지 목록만 봐도 알 수 있게 (이전엔 전부 같은 초록 'done').
+        var tier = stageStars[i];
+        b.className = 'dot-btn' + (tier > 0 ? (' tier-' + tier) : '');
+      }
       b.textContent = String(i+1);
       b.type = 'button';
+      b.title = stageStars[i] > 0 ? starString(stageStars[i]) : '';
       b.disabled = i > maxStageReached;
       (function(idx){ b.addEventListener('click', function(){ if (!locked) loadStage(idx); }); })(i);
       hud.appendChild(b);
@@ -528,7 +568,10 @@
     var k = key(col,row);
     var cur = mirrors[k];
     if (!cur){
-      if (stage.mirrorLimit && placedCount() >= stage.mirrorLimit){
+      // R2(2026-07-12): mirrorLimit:0 같은 값이 오면 `&&`(truthy 체크)는 0을 false로
+      // 취급해 한도 검사를 건너뛰는 잠재 버그였다(현재 데이터는 모두 null/2/3이라 안 드러남).
+      // != null 체크로 방어.
+      if (stage.mirrorLimit != null && placedCount() >= stage.mirrorLimit){
         flashCells[k] = { t: 1, kind: 'limit' };
         sfxInvalid();
         toast('거울은 최대 ' + stage.mirrorLimit + '개까지만 놓을 수 있어요');

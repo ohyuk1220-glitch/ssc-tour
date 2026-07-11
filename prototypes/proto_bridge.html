@@ -190,13 +190,25 @@
   // bays = cols+1, 완전삼각화(상판+하판+대각선 1개씩) 필요 빔 수 = 3*bays
   // budget이 그보다 크면(+슬랙) 여유 있음 / 같으면 딱 맞음 / 작으면 일부러 골라서 빼야 함(긴장)
   var LEVELS = [
-    { label:'짧은 다리', cols:2, budget:10, loadMul:2.2, sagLimit:48 }, // 완전삼각화=9, 슬랙+1 (쉬움/연습)
+    { label:'짧은 다리 (튜토리얼)', cols:2, budget:10, loadMul:2.2, sagLimit:15 }, // 완전삼각화=9, 슬랙+1.
+                                                                        // sagLimit 48→15 (R2, 실측 근거): 원래 48은 대각선 0개(무브레이싱)
+                                                                        // 로도 자연 처짐이 19에 그쳐 항상 통과 — "삼각화 필수" 훅이
+                                                                        // 죽어있었음. 15는 완전삼각화(처짐13.3, 여유 1.7)는 넉넉히
+                                                                        // 통과하고, 무브레이싱(19)·버티컬만(15.9)·대각선 1개만(15.1)은
+                                                                        // 확실히 탈락시킴. 단, 절벽 인접 구간(0번 베이) 대각선만 생략한
+                                                                        // 설계(처짐14.6)는 통과 — "가운데 구간이 더 중요하다"는 레벨3
+                                                                        // 교훈을 미리 살짝 맛보게 하는 의도적 여유.
     { label:'표준 다리', cols:5, budget:18, loadMul:2.7, sagLimit:48 }, // 완전삼각화=18, 딱 맞음 (기존 밸런스 그대로 보존)
-    { label:'긴 다리',   cols:7, budget:22, loadMul:3.1, sagLimit:68 }  // 완전삼각화=24, -2(구간을 골라 생략해야 함).
-                                                                        // sagLimit 상향은 편법이 아니라 실측 근거: 8구간 다리는
-                                                                        // "완전삼각화"라도 자연 처짐이 6구간보다 커서(진단 결과
-                                                                        // 완전삼각화 평형처짐≈60, 대각선0개≈79) 48을 그대로 쓰면
-                                                                        // 완벽하게 지어도 무조건 무너지는 버그가 됨 — 실측으로 보정.
+    { label:'긴 다리',   cols:7, budget:22, loadMul:3.1, sagLimit:72, // 완전삼각화=24, -2(구간을 골라 생략해야 함).
+                                                                        // sagLimit 68→72 (R2): hazard 하중이 상시로 더해지는 만큼
+                                                                        // 완전삼각화 처짐이 소폭 올라가(≈66) 그대로면 여유가 줄어들어
+                                                                        // 보정. 완전삼각화 여유는 여전히 6 이상으로 유지됨(실측).
+      hazard: { colIdx:4, force:0.6, label:'관측 장비' }
+      // R2 추가: 5번째 자유노드(중앙보다 살짝 오른쪽, 비대칭)에 상시 고정하중을 건다.
+      // R1 진단(트럭의 이동 하중만으로는 "대각선 개수"만 맞으면 어디 놓든 통과 — 위치가
+      // 중요해지지 않음)의 해결책. 대각선 개수만으로는 여전히 부족하고, 정확히 이 지점에
+      // 대각선을 붙여야 한다(HAZARD_BRACED 판정 + HAZARD_UNBRACED_MULT, verletStep 참고).
+    },
   ];
   var currentLevelIdx = 0;
 
@@ -218,6 +230,15 @@
   var STRESS_RATIO_THRESHOLD = 0.10;
   var SAG_LIMIT = 48; // 상판이 이 이상 처지면 트럭이 통과 불가로 판정 — 레벨마다 buildWorld()에서 lvl.sagLimit로 갱신
   var WARN_RATIO = 0.85; // 이 이상 스트레스면 붕괴 전 경고(색은 이미 빨강, 추가로 흔들림+토스트)
+  var HAZARD_NODE = null;  // R2 추가: 상시 집중하중이 걸리는 노드(레벨에 hazard 정의 있을 때만) — buildWorld()에서 갱신
+  var HAZARD_FORCE = 0;    // 프레임마다 HAZARD_NODE.y에 더해지는 고정 하중 크기(대각선으로 지지됐을 때 기준값)
+  var HAZARD_LABEL = '';
+  var HAZARD_BRACED = true;   // 하중 지점에 실제로 대각선이 닿아있는지 — startSim()에서 매 주행마다 재판정
+  var HAZARD_UNBRACED_MULT = 15; // 대각선 없이 방치하면 하중이 이만큼 배로 커짐.
+  // 실측(퍼펫티어 자동 플레이테스트, 8베이 중 2개 생략하는 28가지 조합 전수 검사):
+  // force=0.6 · mult=15 · sagLimit=72 조합에서 "하중지점에 닿는 대각선이 있는 21가지 조합"은
+  // 100% 성공(처짐 61.4~70.6), "하중지점 대각선이 없는 7가지 조합"은 100% 실패(처짐 72.0~72.4) —
+  // 다른 어떤 대각선을 더 생략하든 상관없이 오직 "그 지점에 대각선이 있는가"만으로 승패가 갈림.
 
   // ---------- 노드/빔 데이터 ----------
   var nodes = [];   // {id,x,y,ox,oy,homeX,homeY,pinned,role}
@@ -264,6 +285,13 @@
       topChain.push(t);
     }
     topChain.push(rightTop);
+
+    HAZARD_NODE = null; HAZARD_FORCE = 0; HAZARD_LABEL = ''; HAZARD_BRACED = true;
+    if (lvl.hazard && topFree[lvl.hazard.colIdx]){
+      HAZARD_NODE = topFree[lvl.hazard.colIdx];
+      HAZARD_FORCE = lvl.hazard.force;
+      HAZARD_LABEL = lvl.hazard.label || '집중하중';
+    }
 
     selected = null;
     pointerWorld = null;
@@ -437,6 +465,15 @@
     for (var k=0;k<nodes.length;k++){
       if (nodes[k].role === 'free') nodes[k].pinned = false;
     }
+    // 집중하중 지점에 실제로 대각선이 닿아 있는지 주행 시작 시 판정(설계를 그대로 반영)
+    HAZARD_BRACED = true;
+    if (HAZARD_NODE){
+      HAZARD_BRACED = beams.some(function(bm){
+        if (bm.broken) return false;
+        if (bm.a !== HAZARD_NODE && bm.b !== HAZARD_NODE) return false;
+        return Math.abs(bm.a.y - bm.b.y) > 1 && Math.abs(bm.a.x - bm.b.x) > 1; // 진짜 대각선만 인정(상판/하판/수직재 제외)
+      });
+    }
     warnedThisRun = false;
     firstBreakInfo = null;
     brokeAnyLogged = false;
@@ -476,6 +513,12 @@
           nn.y += f;
         }
       }
+    }
+    // 상시 집중하중(R2 추가): 트럭 위치와 무관하게 특정 지점을 계속 눌러
+    // "대각선을 어디에 놓느냐"가 실제로 성패를 가르게 만든다. 그 지점에 대각선이
+    // 없으면(HAZARD_BRACED=false) 하중이 훨씬 크게 작용 — 위치 선택이 곧 승패.
+    if (HAZARD_NODE && !HAZARD_NODE.dead && !HAZARD_NODE.pinned){
+      HAZARD_NODE.y += HAZARD_FORCE * (HAZARD_BRACED ? 1 : HAZARD_UNBRACED_MULT);
     }
 
     for (var iter=0; iter<CONSTRAINT_ITER; iter++){
@@ -651,7 +694,10 @@
     document.getElementById('overlay').classList.remove('show');
     buildWorld(idx);
     MODE = 'design';
-    toast('레벨 ' + (idx+1) + ': ' + LEVELS[idx].label);
+    var lvl = LEVELS[idx];
+    var msg = '레벨 ' + (idx+1) + ': ' + lvl.label;
+    if (lvl.hazard) msg += ' — ' + (lvl.hazard.label || '집중하중') + ' 지점 근처를 특히 신경 쓰세요';
+    toast(msg);
     setHUD();
   }
   document.getElementById('btn-retry').addEventListener('click', function(){
@@ -720,6 +766,31 @@
     ctx.font = '10px -apple-system, sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText('처짐 한계선', GAP_R, y - 6);
+    ctx.textAlign = 'left';
+    ctx.restore();
+  }
+
+  function drawHazard(){
+    if (!HAZARD_NODE) return;
+    var x = HAZARD_NODE.x, y = HAZARD_NODE.y;
+    ctx.save();
+    // 장비 상자 + 안테나(점+선만 사용, 픽셀아트 아님)
+    ctx.fillStyle = '#ffb454';
+    ctx.strokeStyle = '#7a4a10';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(x-11, y-24, 22, 16);
+    ctx.strokeRect(x-11, y-24, 22, 16);
+    ctx.beginPath();
+    ctx.moveTo(x, y-24); ctx.lineTo(x, y-32);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y-34, 2.4, 0, Math.PI*2);
+    ctx.fillStyle = '#ff5252';
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,180,84,0.9)';
+    ctx.font = 'bold 10px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(HAZARD_LABEL, x, y-38);
     ctx.textAlign = 'left';
     ctx.restore();
   }
@@ -850,6 +921,7 @@
     drawBeams();
     drawPreview();
     drawNodes();
+    drawHazard();
     drawTruck();
     drawParticles(dt);
     ctx.restore();
@@ -890,6 +962,8 @@
     getGap: function(){ return { left: GAP_L, right: GAP_R }; },
     getLevels: function(){ return LEVELS; },
     getLevel: function(){ return currentLevelIdx; },
+    getHazard: function(){ return HAZARD_NODE ? { nodeId: HAZARD_NODE.id, force: HAZARD_FORCE, label: HAZARD_LABEL, braced: HAZARD_BRACED, mult: HAZARD_UNBRACED_MULT } : null; },
+    setHazardMult: function(m){ HAZARD_UNBRACED_MULT = m; return HAZARD_UNBRACED_MULT; }, // QA 튜닝 전용
     getBudgetLeft: budgetLeft,
     // 아래는 자동 플레이테스트 전용 — 실제 탭 UI 로직(길이/예산/고정점 규칙)을 그대로 통과시킨다
     setLevel: function(idx){ buildWorld(idx); MODE = 'design'; setHUD(); return currentLevelIdx; },

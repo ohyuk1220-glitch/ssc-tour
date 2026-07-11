@@ -92,8 +92,10 @@
   .hrow .no{color:var(--muted);font-weight:700;min-width:16px}
   .hrow .g{font-family:"SF Mono",Consolas,Menlo,monospace;font-weight:700;letter-spacing:2px;flex:1}
   .hrow .g.shape-g{display:flex;gap:6px;align-items:center;font-family:inherit;letter-spacing:0}
-  .hrow .dots{display:flex;gap:3px}
-  .dot{width:10px;height:10px;border-radius:50%}
+  .hrow .dots{display:flex;gap:4px}
+  .dot{width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:9px;font-weight:800;color:#fff;line-height:1;
+    text-shadow:0 0 2px rgba(0,0,0,.85),0 0 1px rgba(0,0,0,.85)}
   .dot.g{background:var(--green)}
   .dot.y{background:var(--yellow)}
   .dot.b{background:var(--black)}
@@ -101,7 +103,14 @@
   /* 범례 */
   .legend{display:flex;gap:12px;justify-content:center;font-size:10.5px;color:var(--muted);flex-wrap:wrap}
   .legend span{display:flex;align-items:center;gap:4px}
-  .legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .legend i{width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:7.5px;font-weight:800;color:#fff;text-shadow:0 0 2px rgba(0,0,0,.85)}
+
+  /* 도형 아이콘 색약 보조 라벨 */
+  .shape-icon-wrap{position:relative;display:inline-block;flex-shrink:0}
+  .shape-mark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#fff;line-height:1;pointer-events:none;
+    text-shadow:0 0 2px rgba(0,0,0,.9),0 0 4px rgba(0,0,0,.6)}
 
   /* 키패드 */
   .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex-shrink:0}
@@ -274,6 +283,9 @@
 
   var SHAPE_LABELS = { circle: '동그라미', square: '네모', triangle: '세모', star: '별' };
 
+  /* 색약 사용자를 위한 결과 점(초록/노랑/검정) 보조 문자 — 색만으로 구분하지 않도록 */
+  var DOT_MARK = { g: '✓', y: '~', b: '✕' };
+
   var BEST_KEY = 'doorlock_best_records_v1';
 
   var el = {
@@ -420,14 +432,30 @@
     return parts.length ? parts.join(' · ') : '아쉽지만 다시 시도해보세요';
   }
 
-  /* ---------- 도형 아이콘 ---------- */
+  /* ---------- 도형 아이콘 (+ 색약 보조 문자 라벨) ---------- */
   function makeShapeIcon(sym, size){
+    var wrap = document.createElement('span');
+    wrap.className = 'shape-icon-wrap';
+    wrap.style.width = size + 'px';
+    wrap.style.height = size + 'px';
+    wrap.setAttribute('role', 'img');
+    wrap.setAttribute('aria-label', SHAPE_LABELS[sym] || sym);
+
     var span = document.createElement('span');
     span.className = 'shape-icon shape-' + sym;
     span.style.width = size + 'px';
     span.style.height = size + 'px';
-    span.setAttribute('aria-label', SHAPE_LABELS[sym] || sym);
-    return span;
+    span.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(span);
+
+    var mark = document.createElement('span');
+    mark.className = 'shape-mark';
+    mark.setAttribute('aria-hidden', 'true');
+    mark.style.fontSize = Math.max(8, Math.round(size*0.42)) + 'px';
+    mark.textContent = (SHAPE_LABELS[sym] || sym).charAt(0);
+    wrap.appendChild(mark);
+
+    return wrap;
   }
 
   function symbolNode(sym, size){
@@ -467,11 +495,10 @@
   }
 
   function renderLegend(){
-    var isShape = state.mode.kind === 'shape';
     el.legend.innerHTML =
-      '<span><i style="background:var(--green)"></i>자리·값 정확</span>' +
-      '<span><i style="background:var(--yellow)"></i>값만 맞음</span>' +
-      '<span><i style="background:var(--black)"></i>없음</span>';
+      '<span><i style="background:var(--green)">' + DOT_MARK.g + '</i>자리·값 정확</span>' +
+      '<span><i style="background:var(--yellow)">' + DOT_MARK.y + '</i>값만 맞음</span>' +
+      '<span><i style="background:var(--black)">' + DOT_MARK.b + '</i>없음</span>';
   }
 
   /* ---------- 렌더 ---------- */
@@ -529,6 +556,7 @@
     order.forEach(function(t){
       var d = document.createElement('span');
       d.className = 'dot ' + t;
+      d.textContent = DOT_MARK[t] || '';
       dots.appendChild(d);
     });
     row.appendChild(no); row.appendChild(g); row.appendChild(dots);
@@ -617,10 +645,31 @@
     el.doorPanel.classList.add('shake');
   }
 
+  /* 이미 초록(자리·값 정확)으로 확인된 자리 인덱스 집합 — 힌트가 이 자리를 다시 공개하지 않도록 */
+  function getSolvedPositions(){
+    var solved = {};
+    state.attempts.forEach(function(a){
+      for(var i=0;i<a.guess.length;i++){
+        if(a.guess[i] === state.secret[i]) solved[i] = true;
+      }
+    });
+    return solved;
+  }
+
   function useHint(){
     if(state.over || state.hintUsed) return;
+    var solved = getSolvedPositions();
+    var candidates = [];
+    for(var i=0;i<state.mode.len;i++){
+      if(!solved[i]) candidates.push(i);
+    }
+    if(candidates.length === 0){
+      // 안전망: 모든 자리를 이미 스스로 맞춘 상태(정상 플레이라면 이미 승리 처리됨)
+      setStatus('이미 모든 자리를 맞췄어요! 확인을 눌러보세요', 'hint');
+      return;
+    }
     state.hintUsed = true;
-    var idx = Math.floor(Math.random()*state.mode.len);
+    var idx = candidates[Math.floor(Math.random()*candidates.length)];
     var sym = state.secret[idx];
     var label = state.mode.kind === 'shape' ? (SHAPE_LABELS[sym] || sym) : ('숫자 ' + sym);
     sfxHint();
@@ -629,12 +678,32 @@
     el.hintBtn.textContent = '힌트 사용 완료';
   }
 
+  /* 이전 시도와 완전히 같은 조합인지 확인 — 새 정보 없는 시도로 기회를 낭비하지 않도록 */
+  function guessAlreadyTried(guess){
+    for(var a=0;a<state.attempts.length;a++){
+      var g = state.attempts[a].guess;
+      if(g.length !== guess.length) continue;
+      var same = true;
+      for(var i=0;i<g.length;i++){
+        if(g[i] !== guess[i]){ same = false; break; }
+      }
+      if(same) return true;
+    }
+    return false;
+  }
+
   function pressConfirm(){
     if(state.over) return;
     if(state.current.length < state.mode.len){
       sfxError();
       shakePanel();
       setStatus(state.mode.len + '자리를 모두 입력하세요', 'err');
+      return;
+    }
+    if(guessAlreadyTried(state.current)){
+      sfxError();
+      shakePanel();
+      setStatus('이미 시도한 조합이에요. 다른 조합으로 바꿔보세요', 'err');
       return;
     }
     sfxConfirm();

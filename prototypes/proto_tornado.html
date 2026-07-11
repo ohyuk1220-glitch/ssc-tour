@@ -114,7 +114,7 @@
     backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
   .overlay.hidden{display:none}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 20px;
-    max-width:340px;width:100%;text-align:center;position:relative;overflow:hidden}
+    max-width:340px;width:100%;text-align:center;position:relative}
   .card h2{font-size:20px;font-weight:800;margin-bottom:10px}
   .card p{font-size:13px;color:var(--muted);margin-bottom:6px}
   .rule-list{text-align:left;font-size:12.5px;color:var(--ink);margin:14px 0;padding-left:0;list-style:none}
@@ -267,6 +267,13 @@
   var COMBO_MULT = [1, 1.15, 1.35, 1.6];  // 단계별 성장 배율(1단계=보너스 없음)
   var COMBO_DECAY = 0.6;                  // THRESHOLD~HIGH_THRESHOLD 구간에선 유지시간이 초당 이만큼 서서히 깎임
 
+  /* ===== 2026-07-12 2라운드 개선 ③ : 무음 감소 구간 체감 개선 =====
+     기존엔 비네트/흔들림 경고가 matchSmoothed<0.35에서만 떴는데, 실제 감소(DECAY)는 THRESHOLD(0.5)
+     밑에서부터 시작됨 → 0.35~0.5 구간은 이미 높이가 줄고 있는데도 화면이 "괜찮아 보이는" 무음 구간이었음.
+     0.42로 완만히 앞당겨 감소 사실을 더 일찍 체감하게 함(0.5까지 올리지 않은 이유: 목표 근처에서 미세하게
+     흔들릴 때마다 과민 경고가 뜨는 걸 방지). 순수 연출(비네트·흔들림)만 바뀜 — GROW/DECAY/THRESHOLD 불변. */
+  var VIGNETTE_GATE = 0.42;
+
   /* ===== DOM ===== */
   var $ = function(id){ return document.getElementById(id); };
   var stageEl = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
@@ -320,10 +327,15 @@
       bestVal.textContent = "-";
     }
   }
+  /* ===== 2026-07-12 2라운드: 등급 임계값 재조정 =====
+     R1의 45/60/75초는 테스트봇 1종 기준이라 관대했음(숙련자~미숙 7단계 실력봇 105회 자동
+     플레이테스트 결과: 45초 이하에 숙련자~평균은 물론 평균이하 봇까지 60%가 S를 받아버림 —
+     S 남발). 실측 클리어시간 분포(숙련→평균→평균이하→겨우클리어)를 근거로 재설정:
+     S=27초 이하(최상위만) / A=34초(평균대) / B=50초(고전 끝에 클리어) / C=그 이상(간신히). */
   function gradeForClear(t){
-    if(t <= 45) return "S";
-    if(t <= 60) return "A";
-    if(t <= 75) return "B";
+    if(t <= 27) return "S";
+    if(t <= 34) return "A";
+    if(t <= 50) return "B";
     return "C";
   }
 
@@ -581,7 +593,17 @@
       resultBadge.textContent = "실패"; resultBadge.className = "badge fail";
       resultTitle.textContent = "시간 종료";
       resultHeight.textContent = height.toFixed(1)+"m"; resultHeight.className = "result-height fail";
-      resultSub.textContent = "균형을 더 오래 유지해보세요" + comboNote;
+      /* 2026-07-12 2라운드: 도달 높이별 실패 메시지 분기(아쉬운 근접 실패와 완전 미숙 실패를 같은 문구로
+         뭉뚱그리지 않음 — 자동 플레이테스트에서 "weak" 실력대가 4.5~9.1m까지 도달하고도 놓치는 사례가
+         잦게 관찰됨. 코어 성장식은 그대로, 결과 문구만 분기) */
+      var missFrac = height / MAX_HEIGHT;
+      if(missFrac >= 0.7){
+        resultSub.textContent = "아깝다! " + height.toFixed(1) + "m까지 왔어요 — 조금만 더 버텼으면" + comboNote;
+      } else if(missFrac >= 0.3){
+        resultSub.textContent = "균형을 더 오래 유지해보세요" + comboNote;
+      } else {
+        resultSub.textContent = "노란 막대(목표)를 더 빨리 따라가보세요" + comboNote;
+      }
       playBlip("fail");
       if(navigator.vibrate) navigator.vibrate(120);
     }
@@ -710,8 +732,8 @@
 
     ctx.restore();
 
-    // 비네트(불안정 경고)
-    var unstable = (height > 2.5 && matchSmoothed < 0.35 && running) ? clamp((0.35-matchSmoothed)/0.35,0,1) : 0;
+    // 비네트(불안정 경고) — VIGNETTE_GATE는 상단 상수 참조 (2026-07-12, 상세 설명도 상단에)
+    var unstable = (height > 2.5 && matchSmoothed < VIGNETTE_GATE && running) ? clamp((VIGNETTE_GATE-matchSmoothed)/VIGNETTE_GATE,0,1) : 0;
     vignette.style.opacity = unstable.toFixed(2);
   }
 
@@ -745,7 +767,7 @@
     height = clamp(height + delta*dt, 0, MAX_HEIGHT);
     checkMilestones();
 
-    var targetShake = (height > 2.5 && matchSmoothed < 0.35) ? clamp((0.35-matchSmoothed)*22, 0, 7) : 0;
+    var targetShake = (height > 2.5 && matchSmoothed < VIGNETTE_GATE) ? clamp((VIGNETTE_GATE-matchSmoothed)*22, 0, 7) : 0;
     shakeMag += (targetShake - shakeMag) * Math.min(1, dt*5);
 
     updateAudio(dt);
