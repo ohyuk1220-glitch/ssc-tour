@@ -447,7 +447,7 @@ function updateFloorTag(){
 }
 
 /* ══════════ 렌더 ══════════ */
-const CAM_ZOOM=2.7, CAM_ZOOM_ROOM=2.0;   // 오버월드는 크게(과학관 넓게), 실내 방은 덜 확대(전시물 보이게)
+const CAM_ZOOM=1.05, CAM_ZOOM_ROOM=1.15;   // 컨셉처럼 한 층 전체가 한 화면에(줌아웃=공간감). 실내는 방이 작아 살짝 더 확대
 function computeBgRect(){
   // 배경을 화면보다 크게(cover×zoom) 그리고 카메라가 캐릭터를 따라감 → 스크롤 탐험
   const iw=(curImg&&curImg.naturalWidth)||1381, ih=(curImg&&curImg.naturalHeight)||1139;
@@ -527,7 +527,7 @@ function drawPlayer(x,y){
   // 그림자
   ctx.beginPath();ctx.ellipse(x,y+16,18,7,0,0,7);ctx.fillStyle="rgba(0,0,0,.3)";ctx.fill();
   if(spr&&spr.complete&&spr.naturalHeight){
-    const h=54, w=spr.naturalWidth*h/spr.naturalHeight;   // 화면 표시 높이(작을수록 공간 넓게)
+    const h=40, w=spr.naturalWidth*h/spr.naturalHeight;   // 화면 표시 높이(작을수록 공간 넓게)
     ctx.drawImage(spr, Math.round(x-w/2), Math.round(y-h+12-bob), Math.round(w), Math.round(h));
   }
 }
