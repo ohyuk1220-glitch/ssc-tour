@@ -374,10 +374,95 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function hitObs(obs,px,py){ if(!obs)return false; for(let i=0;i<obs.length;i++){const o=obs[i];
   if(px>o[0]&&px<o[2]&&py>o[1]&&py<o[3])return true;} return false; }
 
+/* ══════════ NPC: 안내(파랑 유니폼 🧑‍🏫)·보안(빨강 유니폼 👮) — "살아있는 과학관" ══════════
+   안내 NPC = 전시실 7곳 + 1층 메인데스크, 고정 위치, 근접+A로 대사(전시 서사, ssc_game_corpus 기반)
+   보안 NPC = 오버월드 7개 층(옥상 제외), waypoint 2~3개 순찰, 근접+A로 짧은 대사 */
+const GUIDE_NPCS=[
+  {scene:"room_G", name:"안내 도슨트", x:0.35,y:0.83, lines:[
+    "여긴 공존의 방이에요. 한강엔 우리 생각보다 훨씬 많은 생물이 살아요.",
+    "저기 인류세 화석 보이죠? 플라스틱·닭뼈·콘크리트… 먼 훗날 인류를 기억할 흔적이래요."]},
+  {scene:"room_quake", name:"안내 도슨트", x:0.47,y:0.85, lines:[
+    "여기는 지진 체험관이에요. 흔들리면 책상 아래로, 멈추면 계단으로 대피하세요.",
+    "지진과 화산은 땅속 판이 움직여 생겨요. 저 용암 균열존이 그 증거랍니다."]},
+  {scene:"room_O", name:"안내 도슨트", x:0.50,y:0.85, lines:[
+    "생존의 방에 온 걸 환영해요. DNA 한 가닥에 나를 만든 설계도가 담겨 있어요.",
+    "지금 내 몸속엔 수많은 미생물이 함께 살아요. DNA 지문은 세상에 단 하나뿐이래요."]},
+  {scene:"room_B", name:"안내 도슨트", x:0.20,y:0.85, lines:[
+    "연결의 방이에요. 아주 작은 원자부터 저 멀리 우주까지, 세상 모든 건 이어져 있어요.",
+    "저 프리즘 보이죠? 하얀 빛 속에 무지개가 숨어 있었대요."]},
+  {scene:"room_astro", name:"안내 도슨트", x:0.50,y:0.85, lines:[
+    "천문대 BOOT에 오신 걸 환영해요. 금·토엔 진짜 별을 볼 수 있어요.",
+    "지구가 우주에서 얼마나 작은 점인지, 망원경으로 보면 느껴져요."]},
+  {scene:"room_chem", name:"안내 도슨트", x:0.50,y:0.86, lines:[
+    "π층 일상실험실, 2교육실이에요. 분광광도계로 카페인 농도를 직접 재볼 수 있어요.",
+    "비커 속에서 물질이 섞이고 변하는 순간을 눈으로 확인해보세요."]},
+  {scene:"room_earth", name:"안내 도슨트", x:0.42,y:0.87, lines:[
+    "여긴 지구과학 실험실이에요. 편광현미경으로 암석 속 결정을 들여다볼 수 있어요.",
+    "땅이 켜켜이 쌓아온 시간, 지층과 화석으로 지구의 역사를 읽어요."]},
+  {scene:"1F", name:"메인데스크 안내원", x:0.63,y:0.44, lines:[
+    "어서오세요! 서울시립과학관은 무료입장이에요.",
+    "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요."]},
+];
+const SECURITY_NPCS=[
+  {scene:"B1", name:"보안 요원", waypoints:[[0.15,0.75],[0.85,0.75],[0.85,0.20]], lines:[
+    "지하 주차장 순찰 중입니다. 위쪽 엘리베이터로 안전하게 이동하세요!"]},
+  {scene:"1F", name:"보안 요원", waypoints:[[0.20,0.70],[0.75,0.70],[0.50,0.45]], lines:[
+    "1층 로비를 순찰하고 있어요. 궁금한 건 메인데스크로!"]},
+  {scene:"HALF", name:"보안 요원", waypoints:[[0.20,0.65],[0.75,0.60],[0.45,0.45]], lines:[
+    "½층 순찰 중! 다이나믹 토네이도 라이브쇼 시간 놓치지 마세요."]},
+  {scene:"SQRT2", name:"보안 요원", waypoints:[[0.20,0.65],[0.70,0.60]], lines:[
+    "√2층이에요. 전시실 통로에서는 뛰지 말아주세요!"]},
+  {scene:"2F", name:"보안 요원", waypoints:[[0.20,0.60],[0.70,0.60],[0.45,0.75]], lines:[
+    "2층 순찰 중입니다. 천문대 BOOT는 예약이 필요해요, 참고하세요!"]},
+  {scene:"PI", name:"보안 요원", waypoints:[[0.20,0.60],[0.70,0.60],[0.45,0.75]], lines:[
+    "π층 순찰이에요. 교육실 실험 도구는 조심히 다뤄주세요."]},
+  {scene:"3F", name:"보안 요원", waypoints:[[0.30,0.65],[0.70,0.65]], lines:[
+    "3층 순찰 중. 지금 기획전시 '지구의 맥박' 놓치지 마세요!"]},
+];
+GUIDE_NPCS.forEach(n=>{n.type="guide"; n._lineIdx=0; n.dir="down";});
+SECURITY_NPCS.forEach(n=>{n.type="security"; n._lineIdx=0; n.x=n.waypoints[0][0]; n.y=n.waypoints[0][1]; n._wp=0; n._pause=0; n.dir="down";});
+function curSceneId(){ return inRoom||FLOORS[floorIdx].id; }
+function sceneNPCs(){
+  const id=curSceneId();
+  return GUIDE_NPCS.filter(n=>n.scene===id).concat(SECURITY_NPCS.filter(n=>n.scene===id));
+}
+function updateNPCPatrol(npc){
+  if(npc._pause>0){ npc._pause--; npc.vx=npc.vy=0; return; }
+  const wp=npc.waypoints[npc._wp];
+  const dx=wp[0]-npc.x, dy=wp[1]-npc.y, d=Math.hypot(dx,dy);
+  const SPD=0.0009;
+  if(d<0.012){ npc._wp=(npc._wp+1)%npc.waypoints.length; npc._pause=70; npc.vx=npc.vy=0; return; }
+  const vx=dx/d*SPD, vy=dy/d*SPD;
+  const fl=FLOORS.find(f=>f.id===npc.scene), obs=fl&&fl.obstacles;
+  const nx=npc.x+vx; if(!hitObs(obs,nx,npc.y)) npc.x=nx; else npc._wp=(npc._wp+1)%npc.waypoints.length;
+  const ny=npc.y+vy; if(!hitObs(obs,npc.x,ny)) npc.y=ny;
+  npc.vx=vx; npc.vy=vy;
+  if(Math.abs(vx)>Math.abs(vy)) npc.dir=vx>0?"right":"left"; else if(vy!==0) npc.dir=vy>0?"down":"up";
+  const wa=fl&&fl.walkable;
+  if(wa){ npc.x=clamp(npc.x,wa[0],wa[2]); npc.y=clamp(npc.y,wa[1],wa[3]); }
+}
+function updateNPCs(){ SECURITY_NPCS.forEach(updateNPCPatrol); }
+let nearNPC=null;
+function updateNearNPC(){
+  let best=null,bd=1e9;
+  sceneNPCs().forEach(n=>{
+    const dx=(n.x-player.px)*bgRect.w, dy=(n.y-player.py)*bgRect.h, d=Math.hypot(dx,dy);
+    if(d<135&&d<bd){bd=d;best=n;}
+  });
+  if(best!==nearNPC){ nearNPC=best; updateFloorTag(); updateAbtn(); }
+}
+function npcDialogue(npc){
+  const line=npc.lines[npc._lineIdx%npc.lines.length]; npc._lineIdx++;
+  document.getElementById("exhibitIcon").textContent=npc.type==="guide"?"🧑‍🏫":"👮";
+  document.getElementById("exhibitName").textContent=npc.name;
+  document.getElementById("exhibitInfo").textContent=line;
+  document.getElementById("exhibit").classList.add("show");
+}
+
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="v202607111751";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="v202607111847";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=+(safeGet("ufo_floor")||1);   // 시작 1층
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
@@ -472,7 +557,7 @@ function enterFloor(idx,instant){
   const st=f.start||[0.5,0.5];
   player.px=st[0]; player.py=st[1]; player.vx=player.vy=0;
   camX=player.px; camY=player.py;
-  nearSpot=null; updateFloorTag();
+  nearSpot=null; nearNPC=null; updateFloorTag();
 }
 function enterRoom(roomId, fromStack){
   if(inRoom && !fromStack) roomStack.push(inRoom);   // 방→방 진입이면 이전 방 저장
@@ -481,7 +566,7 @@ function enterRoom(roomId, fromStack){
   const st=r.start||[0.5,0.7];
   player.px=st[0]; player.py=st[1]; player.vx=player.vy=0;
   camX=player.px; camY=player.py;
-  nearSpot=null; updateFloorTag();
+  nearSpot=null; nearNPC=null; updateFloorTag();
 }
 function exitRoom(){
   if(roomStack.length){ enterRoom(roomStack.pop(), true); return; }   // 이전 방(예: 지진→G전시실)으로 복귀
@@ -491,12 +576,12 @@ function exitRoom(){
   const d=f.spots.find(s=>s.kind==="door"&&s.room===back);   // 들어왔던 문 앞으로 복귀
   if(d){ player.px=d.x; player.py=Math.min(0.9,d.y+0.08); }
   else { const st=f.start||[0.5,0.5]; player.px=st[0]; player.py=st[1]; }
-  player.vx=player.vy=0; camX=player.px; camY=player.py; nearSpot=null; updateFloorTag();
+  player.vx=player.vy=0; camX=player.px; camY=player.py; nearSpot=null; nearNPC=null; updateFloorTag();
 }
 function updateFloorTag(){
   const s=curScene();
   document.getElementById("floortag").innerHTML=s.name+'<span class="rm">'+
-    (nearSpot?nearSpot.name:(inRoom?"전시실 관람":"둘러보기"))+'</span>';
+    (nearNPC?nearNPC.name:(nearSpot?nearSpot.name:(inRoom?"전시실 관람":"둘러보기")))+'</span>';
 }
 
 /* ══════════ 렌더 ══════════ */
@@ -559,6 +644,8 @@ function render(){
     ctx.beginPath(); ctx.moveTo(x-5,by+15);ctx.lineTo(x+5,by+15);ctx.lineTo(x,by+21);ctx.closePath();
     ctx.fillStyle=done?"#fff7e6":"#fffdf7"; ctx.fill(); ctx.strokeStyle=done?"#f6b93b":"#2a2620";ctx.stroke();
   });
+  // NPC(안내·보안)
+  sceneNPCs().forEach(drawNPC);
   // 캐릭터
   drawPlayer(s2x(player.px), s2y(player.py));
   // 파티클 (juice)
@@ -589,6 +676,48 @@ function drawPlayer(x,y){
     ctx.rotate(tilt);
     ctx.drawImage(spr, Math.round(-w/2), Math.round(-h-bob), Math.round(w), Math.round(h*sq));
     ctx.restore();
+  }
+}
+/* ── NPC 렌더(플레이어 스프라이트 재활용 + 색 틴트) ── */
+const _npcTintCache={};
+function tintedSprite(img,tint){
+  if(!img||!img.complete||!img.naturalWidth) return null;
+  const key=tint+"|"+img.src;
+  if(_npcTintCache[key]) return _npcTintCache[key];
+  const oc=document.createElement("canvas");
+  oc.width=img.naturalWidth; oc.height=img.naturalHeight;
+  const octx=oc.getContext("2d");
+  octx.drawImage(img,0,0);
+  octx.globalCompositeOperation="source-atop";
+  octx.fillStyle=tint; octx.globalAlpha=0.5;
+  octx.fillRect(0,0,oc.width,oc.height);
+  octx.globalAlpha=1; octx.globalCompositeOperation="source-over";
+  _npcTintCache[key]=oc;
+  return oc;
+}
+function drawNPC(npc){
+  const x=s2x(npc.x), y=s2y(npc.y);
+  const seed=npc._seed||(npc._seed=Math.random()*10);
+  const moving=npc.type==="security"&&((Math.abs(npc.vx||0)+Math.abs(npc.vy||0))>0.00005);
+  const bob=npc.type==="security"
+    ? (moving?Math.abs(Math.sin(t*0.30+seed))*4:0)
+    : Math.abs(Math.sin(t*0.03+seed))*1.5;   // 안내 NPC = 잔잔한 숨쉬기 bob
+  const spr=CHAR[npc.dir||"down"];
+  const tint=npc.type==="guide"?"#3a6fd8":"#d83a3a";   // 파랑(안내)/빨강(보안) 유니폼
+  ctx.beginPath();ctx.ellipse(x,y+16,17,7,0,0,7);ctx.fillStyle="rgba(0,0,0,.28)";ctx.fill();
+  const timg=tintedSprite(spr,tint);
+  if(timg&&timg.width){
+    const h=38, w=timg.width*h/timg.height;
+    ctx.drawImage(timg, Math.round(x-w/2), Math.round(y+12-h-bob), Math.round(w), Math.round(h));
+  }else{
+    // 스프라이트 로드 실패 대비: 도형+이모지 폴백
+    ctx.beginPath(); ctx.arc(x,y-10-bob,14,0,7); ctx.fillStyle=tint; ctx.fill();
+  }
+  ctx.font="15px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText(npc.type==="guide"?"🧑‍🏫":"👮", x, y-40-bob);
+  if(npc===nearNPC){
+    ctx.beginPath(); ctx.ellipse(x,y+16,22,9,0,0,7);
+    ctx.lineWidth=2.5; ctx.strokeStyle="#fff"; ctx.stroke();
   }
 }
 
@@ -633,6 +762,9 @@ function update(){
     if(d<135&&d<bd){bd=d;best=sp;}
   });
   if(best!==nearSpot){ nearSpot=best; updateFloorTag(); updateAbtn(); }
+  // NPC: 보안 순찰 이동 + 근접 감지(nearSpot과 별개, 공존)
+  updateNPCs();
+  updateNearNPC();
   // 카메라 부드럽게 따라옴(공간감)
   camX+=(player.px-camX)*0.11; camY+=(player.py-camY)*0.11;
   // 화면 흔들림 감쇠
@@ -641,7 +773,9 @@ function update(){
 }
 function updateAbtn(){
   const a=document.getElementById("abtn"), lb=document.getElementById("alabel"), ic=a.querySelector(".ai");
-  if(nearSpot){
+  if(nearNPC){
+    a.classList.add("on"); ic.textContent=nearNPC.type==="guide"?"🧑‍🏫":"👮"; lb.textContent="대화";
+  }else if(nearSpot){
     a.classList.add("on");
     if(nearSpot.kind==="elevator"){ic.textContent="🛗";lb.textContent="층 이동";}
     else if(nearSpot.kind==="stair"){ic.textContent="🪜";lb.textContent="계단";}
@@ -698,6 +832,7 @@ function loop(){ update(); render(); requestAnimationFrame(loop); }
 document.getElementById("abtn").addEventListener("pointerdown",(e)=>{
   e.preventDefault();
   if(fadeState||anyModalOpen())return;   // 전환·모달 중 입력 잠금
+  if(nearNPC){ sfx(587,0.1,"triangle",0.12); npcDialogue(nearNPC); return; }
   if(!nearSpot)return;
   const sp=nearSpot;
   if(sp.kind==="game"){
