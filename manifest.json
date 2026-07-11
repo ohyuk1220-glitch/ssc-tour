@@ -1,0 +1,13 @@
+{
+  "name": "과학관 탐방",
+  "short_name": "과학관 탐방",
+  "description": "서울시립과학관을 돌아다니며 전시실을 관람하고 미니게임 스탬프를 모으는 게임",
+  "start_url": "h.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0d0b08",
+  "theme_color": "#0d0b08",
+  "icons": [
+    { "src": "character/down.png", "sizes": "96x96", "type": "image/png", "purpose": "any" }
+  ]
+}
