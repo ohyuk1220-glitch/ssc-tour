@@ -303,6 +303,9 @@ const ROOMS={
   ]},
 };
 
+/* 실내 방 걸을 수 있는 영역(벽 안쪽). 배경별 정밀조정 전 공통 기본값 */
+Object.values(ROOMS).forEach(r=>{ if(!r.walkable) r.walkable=[0.06,0.18,0.94,0.84]; });
+
 /* 스탬프 = 모든 game 핫스팟(층 오버월드 + 실내 방) */
 const STAMPS=[];
 function _pushGames(scene, floorName){ scene.spots.forEach(s=>{ if(s.kind==="game") STAMPS.push({
@@ -323,9 +326,10 @@ let floorIdx=+(safeGet("ufo_floor")||1);   // 시작 1층
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
 if(!Number.isInteger(floorIdx)||floorIdx<0||floorIdx>=FLOORS.length)floorIdx=1;
-const player={px:0.5,py:0.5,vx:0,vy:0};
+const player={px:0.5,py:0.5,vx:0,vy:0,dir:"down"};
 let bgRect={x:0,y:0,w:0,h:0};
 const images={}; let curImg=null;
+const CHAR={};   // 캐릭터 4방향 스프라이트(codex)
 let nearSpot=null;
 let inRoom=null;   // null=오버월드(층 배경), roomId=실내 방
 let doneCache={};
@@ -367,6 +371,8 @@ function preload(){
     im.onerror=()=>{r._ok=false;done();};
     im.src=r.bg; images[id]=im;
   });
+  ["down","up","left","right"].forEach(d=>{ const im=new Image(); pending++;
+    im.onload=done; im.onerror=done; im.src="character/"+d+".png"; CHAR[d]=im; });
   function done(){pending--; if(pending<=0)boot();}
 }
 function boot(){
@@ -424,11 +430,11 @@ function updateFloorTag(){
 }
 
 /* ══════════ 렌더 ══════════ */
-const CAM_ZOOM=2.7;   // 확대 배율(클수록 좁게 보이고 넓게 느껴짐 = 과학관이 크게). 돌아다니는 맛
+const CAM_ZOOM=2.7, CAM_ZOOM_ROOM=2.0;   // 오버월드는 크게(과학관 넓게), 실내 방은 덜 확대(전시물 보이게)
 function computeBgRect(){
   // 배경을 화면보다 크게(cover×zoom) 그리고 카메라가 캐릭터를 따라감 → 스크롤 탐험
   const iw=(curImg&&curImg.naturalWidth)||1381, ih=(curImg&&curImg.naturalHeight)||1139;
-  const scale=Math.max(W/iw, H/ih)*CAM_ZOOM;
+  const scale=Math.max(W/iw, H/ih)*(inRoom?CAM_ZOOM_ROOM:CAM_ZOOM);
   const w=iw*scale, h=ih*scale;
   // 캐릭터(px,py)가 화면 중앙에 오도록 배경을 반대로 이동
   let x=W/2-player.px*w, y=H/2-player.py*h;
@@ -497,28 +503,15 @@ function roundRect(x,y,w,h,r){
   ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
 }
 function drawPlayer(x,y){
-  const w=(Math.sin(t*0.2)*2)|0; // 걷기 흔들림
   const moving=(Math.abs(player.vx)+Math.abs(player.vy))>0.0005;
-  const wob=moving?w:0;
+  const bob=moving?Math.abs(Math.sin(t*0.35))*3:0;   // 걷기 상하 흔들림
+  const spr=CHAR[player.dir||"down"];
   // 그림자
-  ctx.beginPath();ctx.ellipse(x,y+28,20,7,0,0,7);ctx.fillStyle="rgba(0,0,0,.28)";ctx.fill();
-  // 몸 (배낭 멘 아이, 도트풍 사각형) — 확대 맵에 맞춰 1.7배
-  ctx.save(); ctx.translate(x,y+wob); ctx.scale(1.7,1.7);
-  // 다리
-  ctx.fillStyle="#3a3550"; ctx.fillRect(-6,6,4,8); ctx.fillRect(2,6,4,8);
-  // 몸통 (파란 옷)
-  ctx.fillStyle="#3f6fd0"; ctx.fillRect(-8,-6,16,14);
-  ctx.strokeStyle="#26365f"; ctx.lineWidth=1.5; ctx.strokeRect(-8,-6,16,14);
-  // 배낭 끈
-  ctx.fillStyle="#e8a33d"; ctx.fillRect(-6,-4,2,10); ctx.fillRect(4,-4,2,10);
-  // 머리
-  ctx.fillStyle="#f6d3a8"; ctx.fillRect(-6,-18,12,12);
-  ctx.strokeStyle="#c99a63"; ctx.strokeRect(-6,-18,12,12);
-  // 머리카락
-  ctx.fillStyle="#3a2e22"; ctx.fillRect(-6,-18,12,5); ctx.fillRect(-6,-18,3,9);ctx.fillRect(3,-18,3,9);
-  // 눈
-  ctx.fillStyle="#2a2620"; ctx.fillRect(-3,-12,2,2); ctx.fillRect(2,-12,2,2);
-  ctx.restore();
+  ctx.beginPath();ctx.ellipse(x,y+16,18,7,0,0,7);ctx.fillStyle="rgba(0,0,0,.3)";ctx.fill();
+  if(spr&&spr.complete&&spr.naturalHeight){
+    const h=68, w=spr.naturalWidth*h/spr.naturalHeight;   // 화면 표시 높이
+    ctx.drawImage(spr, Math.round(x-w/2), Math.round(y-h+12-bob), Math.round(w), Math.round(h));
+  }
 }
 
 /* ══════════ 페이드 전환 ══════════ */
@@ -539,9 +532,15 @@ function update(){
   if(fadeState){ player.vx=player.vy=0; }
   else{
     player.px+=player.vx; player.py+=player.vy;
-    // 맵 안(배경 비율)으로만 제한. 카메라가 따라다니므로 화면 clamp는 불필요
-    player.px=clamp(player.px,0.04,0.96);
-    player.py=clamp(player.py,0.06,0.95);
+    // 이동 방향 → 스프라이트 방향
+    if(Math.abs(player.vx)>0.0004||Math.abs(player.vy)>0.0004){
+      if(Math.abs(player.vx)>Math.abs(player.vy)) player.dir=player.vx>0?"right":"left";
+      else player.dir=player.vy>0?"down":"up";
+    }
+    // 걸을 수 있는 영역(벽 막힘). walkable=[x0,y0,x1,y1] 비율, 없으면 맵 전체
+    const wa=curScene().walkable;
+    if(wa){ player.px=clamp(player.px,wa[0],wa[2]); player.py=clamp(player.py,wa[1],wa[3]); }
+    else { player.px=clamp(player.px,0.04,0.96); player.py=clamp(player.py,0.06,0.95); }
   }
   // 근접 핫스팟 (확대된 맵 기준이라 화면상 100px 이내를 근접으로)
   let best=null,bd=1e9;
