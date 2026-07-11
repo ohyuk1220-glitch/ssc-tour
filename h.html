@@ -186,9 +186,9 @@ const HUB_VERSION="5.0-pixel-bg";
    x,y = 배경 이미지 안에서의 비율좌표(0~1). kind: game|soon|elevator
    game은 file+best(localStorage 키)로 스탬프 판정 */
 const FLOORS=[
- {id:"B1", name:"지하주차장", bg:"bg/f_b1_hq.png", tint:"#3a3f4a", start:[0.5,0.52], spots:[
-   {name:"수상한 상자", room:"B1 주차장", kind:"soon", icon:"📦", x:0.80,y:0.34, color:"#8a7a5a"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.5,y:0.52, color:"#9aa"},
+ {id:"B1", name:"지하주차장", bg:"bg/f_b1_hq.png", tint:"#3a3f4a", start:[0.5,0.60], spots:[
+   {name:"수상한 상자", room:"B1 주차장", kind:"soon", icon:"📦", x:0.10,y:0.62, color:"#8a7a5a"},
+   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.48,y:0.42, color:"#9aa"},
  ]},
  {id:"1F", name:"1층", bg:"bg/f1_hq.png", tint:"#4caf50", start:[0.46,0.50], spots:[
    {name:"G전시실 · 생태", kind:"door", room:"room_G", icon:"🌿", x:0.18,y:0.15, color:"#4caf50"},
@@ -204,53 +204,53 @@ const FLOORS=[
     info:"직접 만들고 실험하는 창작 공간. 메이커 강좌가 열려요."},
    {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.38,y:0.26, color:"#9aa"},
  ]},
- {id:"HALF", name:"½층", bg:"bg/f_half_hq.png", tint:"#f4c430", start:[0.46,0.55], spots:[
-   {name:"Y전시실 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.20,y:0.34, color:"#f4c430"},
-   {name:"사이언스홀", room:"½층", kind:"soon", icon:"🎪", x:0.38,y:0.17, color:"#8bbf6b"},
-   {name:"다이나믹 토네이도", room:"½층 · 아시아 최대", kind:"soon", icon:"🌪️", x:0.51,y:0.46, color:"#7ec8e3"},
-   {name:"제4교육장 · 물리", room:"제4교육장", kind:"soon", icon:"🧲", x:0.63,y:0.24, color:"#b06ab3"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.44,y:0.33, color:"#9aa"},
+ {id:"HALF", name:"½층", bg:"bg/f_half_hq.png", tint:"#f4c430", start:[0.50,0.62], spots:[
+   {name:"Y전시실 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.17,y:0.25, color:"#f4c430"},
+   {name:"사이언스홀", room:"½층", kind:"soon", icon:"🎪", x:0.45,y:0.14, color:"#8bbf6b"},
+   {name:"다이나믹 토네이도", room:"½층 · 아시아 최대", kind:"soon", icon:"🌪️", x:0.50,y:0.48, color:"#7ec8e3"},
+   {name:"제4교육장 · 물리", room:"제4교육장", kind:"soon", icon:"🧲", x:0.72,y:0.22, color:"#b06ab3"},
+   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.37,y:0.36, color:"#9aa"},
  ]},
- {id:"SQRT2", name:"√2층", bg:"bg/f_sqrt2_hq.png", tint:"#ef8c3b", start:[0.44,0.55], spots:[
-   {name:"O전시실 · 생존", kind:"door", room:"room_O", icon:"🧬", x:0.42,y:0.16, color:"#ef8c3b"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.42,y:0.42, color:"#9aa"},
+ {id:"SQRT2", name:"√2층", bg:"bg/f_sqrt2_hq.png", tint:"#ef8c3b", start:[0.50,0.62], spots:[
+   {name:"O전시실 · 생존", kind:"door", room:"room_O", icon:"🧬", x:0.47,y:0.33, color:"#ef8c3b"},
+   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.20,y:0.55, color:"#9aa"},
  ]},
- {id:"2F", name:"2층", bg:"bg/f_2f_hq.png", tint:"#4a90e2", start:[0.45,0.55], spots:[
-   {name:"B전시실 · 연결", kind:"door", room:"room_B", icon:"🪐", x:0.27,y:0.44, color:"#4a90e2"},
-   {name:"Yy전시실 · 공간", room:"Yy전시실", kind:"soon", icon:"🧩", x:0.87,y:0.42, color:"#f4c430"},
-   {name:"천문대 · 태양관측", kind:"door", room:"room_astro", icon:"🔭", x:0.66,y:0.78, color:"#2e3a6b"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.45,y:0.30, color:"#9aa"},
+ {id:"2F", name:"2층", bg:"bg/f_2f_hq.png", tint:"#4a90e2", start:[0.45,0.64], spots:[
+   {name:"B전시실 · 연결", kind:"door", room:"room_B", icon:"🪐", x:0.31,y:0.37, color:"#4a90e2"},
+   {name:"Yy전시실 · 공간", room:"Yy전시실", kind:"soon", icon:"🧩", x:0.63,y:0.40, color:"#f4c430"},
+   {name:"천문대 · 태양관측", kind:"door", room:"room_astro", icon:"🔭", x:0.86,y:0.55, color:"#2e3a6b"},
+   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.42,y:0.70, color:"#9aa"},
  ]},
- {id:"PI", name:"π층", bg:"bg/f_pi_hq.png", tint:"#7cb342", start:[0.45,0.55], spots:[
-   {name:"1교육실 · 생물", room:"1교육실", kind:"soon", icon:"🧫", x:0.62,y:0.28, color:"#7cb342"},
-   {name:"2교육실 · 화학", kind:"door", room:"room_chem", icon:"⚗️", x:0.72,y:0.33, color:"#9c6ade"},
-   {name:"3교육실 · 지구과학", kind:"door", room:"room_earth", icon:"🌍", x:0.84,y:0.40, color:"#8d6e63"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.66,y:0.60, color:"#9aa"},
+ {id:"PI", name:"π층", bg:"bg/f_pi_hq.png", tint:"#7cb342", start:[0.50,0.70], spots:[
+   {name:"1교육실 · 생물", room:"1교육실", kind:"soon", icon:"🧫", x:0.22,y:0.30, color:"#7cb342"},
+   {name:"2교육실 · 화학", kind:"door", room:"room_chem", icon:"⚗️", x:0.50,y:0.30, color:"#9c6ade"},
+   {name:"3교육실 · 지구과학", kind:"door", room:"room_earth", icon:"🌍", x:0.80,y:0.30, color:"#8d6e63"},
+   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.10,y:0.62, color:"#9aa"},
  ]},
- {id:"3F", name:"3층", bg:"bg/f_3f_hq.png", tint:"#90a4ae", start:[0.5,0.55], spots:[
-   {name:"X전시실 · 기획전시", room:"X전시실", kind:"soon", icon:"🎨", x:0.5,y:0.34, color:"#90a4ae"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.5,y:0.62, color:"#9aa"},
+ {id:"3F", name:"3층", bg:"bg/f_3f_hq.png", tint:"#90a4ae", start:[0.5,0.72], spots:[
+   {name:"X전시실 · 기획전시", room:"X전시실", kind:"soon", icon:"🎨", x:0.50,y:0.42, color:"#90a4ae"},
+   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.75,y:0.45, color:"#9aa"},
  ]},
- {id:"R", name:"옥상", bg:"bg/f_rooftop_hq.png", tint:"#7ec8e3", start:[0.5,0.62], spots:[
-   {name:"태양광 발전소", room:"옥상", kind:"soon", icon:"☀️", x:0.4,y:0.32, color:"#f6b93b"},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.6,y:0.55, color:"#9aa"},
+ {id:"R", name:"옥상", bg:"bg/f_rooftop_hq.png", tint:"#7ec8e3", start:[0.55,0.55], spots:[
+   {name:"태양광 발전소", room:"옥상", kind:"soon", icon:"☀️", x:0.30,y:0.38, color:"#f6b93b"},
+   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.56,y:0.30, color:"#9aa"},
  ]},
 ];
 
 /* ══════════ 전시실 실내 씬 (2계층: 오버월드 층 ↔ 실내 방) ══════════
    문(door)으로 들어가면 실내에서 자유 이동하며 전시물(exhibit) 관람 + 미니게임(game) + 나가기(exit) */
 const ROOMS={
-  room_G:{ name:"G전시실 · 생태", bg:"bg/room_G_hq.png", tint:"#4caf50", floorName:"1층", start:[0.5,0.72],
-    obstacles:[[0.08,0.14,0.37,0.39],[0.40,0.14,0.63,0.39],[0.66,0.14,0.92,0.39]], spots:[
-    {name:"한강 수족관", kind:"exhibit", icon:"🐟", x:0.22,y:0.42, color:"#4a90e2",
+  room_G:{ name:"G전시실 · 생태", bg:"bg/room_G_hq.png", tint:"#4caf50", floorName:"1층", start:[0.5,0.80],
+    obstacles:[[0.09,0.13,0.43,0.50],[0.58,0.13,0.94,0.48],[0.33,0.52,0.67,0.75]], walkable:[0.05,0.13,0.95,0.93], spots:[
+    {name:"한강 수족관", kind:"exhibit", icon:"🐟", x:0.24,y:0.30, color:"#4a90e2",
      info:"한강에는 참붕어·끄리·강준치 같은 토종 물고기가 살아요. 도심 하천이 되살아난 증거랍니다."},
-    {name:"밤섬 생태", kind:"exhibit", icon:"🦆", x:0.50,y:0.42, color:"#4caf50",
+    {name:"밤섬 생태", kind:"exhibit", icon:"🦆", x:0.76,y:0.30, color:"#4caf50",
      info:"여의도 옆 밤섬은 사람이 떠난 뒤 철새 도래지가 됐어요. 도시 속 생태 복원의 상징이죠."},
-    {name:"인류세 화석", kind:"exhibit", icon:"🦴", x:0.78,y:0.42, color:"#8d6e63",
+    {name:"인류세 화석", kind:"exhibit", icon:"🦴", x:0.50,y:0.63, color:"#8d6e63",
      info:"인류세 — 플라스틱·콘크리트 같은 인간의 흔적이 지층에 쌓여 새로운 지질시대를 만들고 있어요."},
     {name:"분리수거 챌린지", kind:"game", file:"g.html", best:"recycle_best", label:"분리수거 챌린지",
-     icon:"♻️", room:"G전시실", x:0.35,y:0.62, color:"#4caf50"},
-    {name:"나가기", kind:"exit", icon:"🚪", x:0.50,y:0.87, color:"#b0a99a"},
+     icon:"♻️", room:"G전시실", x:0.28,y:0.80, color:"#4caf50"},
+    {name:"나가기", kind:"exit", icon:"🚪", x:0.50,y:0.91, color:"#b0a99a"},
   ]},
   room_quake:{ name:"지진 체험관", bg:"bg/room_quake_hq.png", tint:"#8a7a6a", floorName:"1층", start:[0.5,0.72], spots:[
     {name:"지진계", kind:"exhibit", icon:"📈", x:0.28,y:0.42, color:"#8a7a6a",
@@ -308,9 +308,12 @@ const ROOMS={
   ]},
 };
 
-/* 걸을 수 있는 영역(벽 안쪽). 배경별 정밀조정 전 공통 기본값 */
-Object.values(ROOMS).forEach(r=>{ if(!r.walkable) r.walkable=[0.06,0.18,0.94,0.90]; });   // 실내 방(하단=나가기 문 0.87 포함)
-FLOORS.forEach(f=>{ if(!f.walkable) f.walkable=[0.03,0.05,0.97,0.95]; });                 // 오버월드(검은 여백 밖으로 못 나감)
+/* 걸을 수 있는 영역 + 장애물(벽·전시물). 명시 안 된 실내 방은 공통 프로파일(전시물 좌우 배치 가정) */
+Object.values(ROOMS).forEach(r=>{
+  if(!r.obstacles) r.obstacles=[[0.10,0.13,0.44,0.50],[0.56,0.13,0.94,0.50]];   // 전시물 좌·우
+  if(!r.walkable) r.walkable=[0.05,0.13,0.95,0.93];
+});
+FLOORS.forEach(f=>{ if(!f.walkable) f.walkable=[0.03,0.05,0.97,0.95]; });        // 오버월드(맵 밖 방지)
 
 /* 스탬프 = 모든 game 핫스팟(층 오버월드 + 실내 방) */
 const STAMPS=[];
