@@ -203,7 +203,8 @@ const HUB_VERSION="5.0-pixel-bg";
    x,y = 배경 이미지 안에서의 비율좌표(0~1). kind: game|soon|elevator
    game은 file+best(localStorage 키)로 스탬프 판정 */
 const FLOORS=[
- {id:"B1", name:"지하주차장", bg:"bg/f_b1_hq.png", tint:"#3a3f4a", start:[0.5,0.60], spots:[
+ {id:"B1", name:"지하주차장", bg:"bg/f_b1_hq.png", tint:"#3a3f4a", start:[0.5,0.58],
+   obstacles:[[0.28,0.30,0.33,0.37],[0.20,0.45,0.25,0.52],[0.31,0.56,0.36,0.63],[0.38,0.20,0.43,0.27],[0.58,0.28,0.63,0.35],[0.70,0.33,0.75,0.40],[0.59,0.56,0.64,0.63],[0.50,0.68,0.55,0.75],[0.72,0.53,0.77,0.60],[0.69,0.66,0.74,0.73],[0.43,0.30,0.54,0.40]], spots:[
    {name:"수상한 상자", room:"B1 주차장", kind:"soon", icon:"📦", x:0.10,y:0.62, color:"#8a7a5a"},
    {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.48,y:0.42, color:"#9aa"},
  ]},
@@ -376,7 +377,7 @@ function hitObs(obs,px,py){ if(!obs)return false; for(let i=0;i<obs.length;i++){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="v202607111642";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="v202607111751";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=+(safeGet("ufo_floor")||1);   // 시작 1층
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
