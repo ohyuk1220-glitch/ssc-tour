@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>과학관 미니게임 프로토타입 · 재미 판정</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --font-sans:"Pretendard",-apple-system,sans-serif;
+    --bg:#12141c; --card:#1c1f2b; --card2:#232734; --ink:#eef1f7; --sub:#9aa3b8;
+    --line:#2c3140; --accent:#ffcf5c;
+  }
+  *{box-sizing:border-box}
+  html,body{word-break:keep-all;overflow-wrap:break-word;margin:0}
+  body{
+    font-family:var(--font-sans); background:var(--bg); color:var(--ink);
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+    padding:24px 16px calc(40px + env(safe-area-inset-bottom));
+    max-width:640px; margin:0 auto;
+  }
+  header{text-align:center; margin-bottom:8px}
+  h1{font-size:1.5rem; font-weight:800; margin:0 0 6px; letter-spacing:-.02em}
+  .lead{color:var(--sub); font-size:.92rem; margin:0 auto 4px; max-width:34ch}
+  .note{
+    background:var(--card2); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin:18px 0 22px; font-size:.86rem; color:var(--sub);
+  }
+  .note b{color:var(--accent); font-weight:700}
+  .grid{display:flex; flex-direction:column; gap:14px}
+  .card{
+    display:flex; align-items:center; gap:14px; text-decoration:none; color:inherit;
+    background:var(--card); border:1px solid var(--line); border-radius:18px;
+    padding:16px; transition:transform .12s ease, border-color .12s ease;
+  }
+  .card:active{transform:scale(.98); border-color:var(--accent)}
+  .emoji{
+    flex:0 0 56px; height:56px; width:56px; border-radius:14px;
+    display:grid; place-items:center; font-size:30px; background:var(--card2);
+  }
+  .meta{flex:1 1 auto; min-width:0}
+  .title-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:3px}
+  .gname{font-size:1.08rem; font-weight:700}
+  .tag{font-size:.72rem; color:var(--sub); background:var(--card2); border:1px solid var(--line);
+       padding:1px 8px; border-radius:999px; white-space:nowrap}
+  .desc{font-size:.85rem; color:var(--sub); margin:0}
+  .go{flex:0 0 auto; font-size:.82rem; font-weight:700; color:var(--bg);
+      background:var(--accent); padding:9px 14px; border-radius:999px}
+  footer{margin-top:26px; text-align:center; color:var(--sub); font-size:.84rem; line-height:1.7}
+  footer b{color:var(--ink)}
+</style>
+</head>
+<body>
+  <header>
+    <h1>🎮 미니게임 재미 판정</h1>
+    <p class="lead">과학관 전시실 소재로 만든 프로토타입 6종이에요.</p>
+  </header>
+
+  <div class="note">
+    ⚠️ <b>일부러 그림 없이</b> 도형으로만 만들었어요. 게임 회사는 그림에 돈 쓰기 전에 <b>"재미"부터</b> 확인하거든요.
+    <br>하나씩 눌러서 <b>30초~1분</b>씩 해보고 <b>"이건 재밌다 / 이건 노잼"</b>만 알려주세요. 재밌는 것만 골라 픽셀 아트를 입힙니다.
+  </div>
+
+  <div class="grid">
+    <a class="card" href="proto_tornado.html">
+      <div class="emoji">🌪️</div>
+      <div class="meta">
+        <div class="title-row"><span class="gname">토네이도 키우기</span><span class="tag">다이나믹토네이도</span></div>
+        <p class="desc">온도·바람 균형 맞춰 아시아 최대 토네이도 키우기</p>
+      </div>
+      <span class="go">플레이</span>
+    </a>
+
+    <a class="card" href="proto_doorlock.html">
+      <div class="emoji">🧩</div>
+      <div class="meta">
+        <div class="title-row"><span class="gname">도어록 추리</span><span class="tag">Yy전시실</span></div>
+        <p class="desc">힌트(🟢🟡⚫) 보고 비밀번호 4자리 추리</p>
+      </div>
+      <span class="go">플레이</span>
+    </a>
+
+    <a class="card" href="proto_light.html">
+      <div class="emoji">💡</div>
+      <div class="meta">
+        <div class="title-row"><span class="gname">빛 퍼즐</span><span class="tag">B전시실</span></div>
+        <p class="desc">거울·프리즘 놓아 빛을 전구까지 반사시키기</p>
+      </div>
+      <span class="go">플레이</span>
+    </a>
+
+    <a class="card" href="proto_bridge.html">
+      <div class="emoji">🌉</div>
+      <div class="meta">
+        <div class="title-row"><span class="gname">다리 건설</span><span class="tag">G전시실</span></div>
+        <p class="desc">삼각 구조로 다리 세워 트럭 무게 버티기</p>
+      </div>
+      <span class="go">플레이</span>
+    </a>
+
+    <a class="card" href="proto_vortex.html">
+      <div class="emoji">🎯</div>
+      <div class="meta">
+        <div class="title-row"><span class="gname">와류 대포</span><span class="tag">G전시실</span></div>
+        <p class="desc">각도·힘 조준해 공기 고리 발사, 표적 맞히기</p>
+      </div>
+      <span class="go">플레이</span>
+    </a>
+
+    <a class="card" href="proto_caffeine.html">
+      <div class="emoji">☕</div>
+      <div class="meta">
+        <div class="title-row"><span class="gname">카페인 분석</span><span class="tag">2교육실·화학</span></div>
+        <p class="desc">분광 실험으로 음료 속 카페인 측정·비교</p>
+      </div>
+      <span class="go">플레이</span>
+    </a>
+  </div>
+
+  <footer>
+    다 해보셨으면 <b>재밌었던 것 번호나 이름</b>만 알려주세요.<br>
+    골라주신 것만 <b>본 게임에 픽셀 아트로 통합</b>합니다. 🙌
+  </footer>
+</body>
+</html>

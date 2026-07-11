@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>다리 건설 프로토타입</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #0c1420; color: #eef3f8;
+    font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    word-break: keep-all; overflow-wrap: break-word;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body { line-height: 1.6; }
+
+  #app {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    height: 100dvh;
+  }
+
+  header {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #101a2b;
+    border-bottom: 1px solid #1f2f45;
+  }
+  header h1 {
+    font-size: 15px; margin: 0; font-weight: 800; letter-spacing: -0.01em;
+    color: #f4c95d;
+  }
+  #hud {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; font-weight: 600; color: #9db2c9;
+  }
+  #budget-pill {
+    background: #17273d; border: 1px solid #2c4360;
+    border-radius: 999px; padding: 4px 12px;
+    color: #d7e6f5; font-variant-numeric: tabular-nums;
+  }
+  #budget-pill.low { color: #ff8a65; border-color: #6b3324; }
+  #budget-pill.empty { color: #ff5252; border-color: #7a2020; }
+  #state-pill {
+    background: #17273d; border: 1px solid #2c4360;
+    border-radius: 999px; padding: 4px 12px;
+  }
+
+  #canvas-wrap {
+    position: relative; flex: 1 1 auto; min-height: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% -10%, #17263d 0%, #0c1420 65%);
+    touch-action: none;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    max-width: 100%; max-height: 100%;
+    touch-action: none;
+  }
+
+  #toast {
+    position: absolute; left: 50%; top: 14px;
+    transform: translate(-50%, -140%);
+    background: #24344a; border: 1px solid #3c5573;
+    color: #fff; font-size: 13px; font-weight: 700;
+    padding: 8px 16px; border-radius: 10px;
+    pointer-events: none; opacity: 0;
+    transition: transform .18s ease, opacity .18s ease;
+    white-space: nowrap;
+    z-index: 5;
+  }
+  #toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+  #overlay {
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(6,10,18,0.72);
+    z-index: 10;
+  }
+  #overlay.show { display: flex; }
+  #overlay-card {
+    background: #101c2e; border: 1px solid #2c4360;
+    border-radius: 16px; padding: 26px 28px;
+    max-width: 340px; width: calc(100% - 48px);
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  #overlay-icon { font-size: 40px; margin-bottom: 6px; }
+  #overlay-title { font-size: 19px; font-weight: 800; margin: 4px 0 8px; }
+  #overlay-title.success { color: #7ee0a8; }
+  #overlay-title.fail { color: #ff8a80; }
+  #overlay-desc { font-size: 13px; color: #a9bcd0; margin-bottom: 18px; }
+  .btn-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  button {
+    font-family: inherit; font-weight: 700; font-size: 13px;
+    border-radius: 10px; border: 1px solid #2c4360;
+    background: #1a2b42; color: #eef3f8;
+    padding: 10px 16px; cursor: pointer;
+    transition: background .12s ease, transform .08s ease;
+  }
+  button:active { transform: scale(0.96); }
+  button.primary { background: #f4c95d; color: #1a1206; border-color: #f4c95d; }
+  button.primary:disabled { background: #3a3627; color: #6b6650; border-color: #3a3627; cursor: not-allowed; }
+  button.ghost { background: transparent; }
+
+  footer {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: #101a2b; border-top: 1px solid #1f2f45;
+  }
+  #hint {
+    font-size: 11.5px; color: #7d92aa; flex: 1 1 auto; min-width: 0;
+  }
+  #hint b { color: #d7e6f5; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>🌉 다리 건설 — G전시실 프로토타입</h1>
+    <div id="hud">
+      <span id="budget-pill">빔 0/0</span>
+      <span id="state-pill">설계 중</span>
+    </div>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="cv"></canvas>
+    <div id="toast"></div>
+    <div id="overlay">
+      <div id="overlay-card">
+        <div id="overlay-icon">🚧</div>
+        <div id="overlay-title">결과</div>
+        <div id="overlay-desc">설명</div>
+        <div class="btn-row">
+          <button class="primary" id="btn-retry">다시 도전</button>
+          <button class="ghost" id="btn-reset-overlay">새로 설계</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div id="hint">노드를 <b>두 번 탭</b>해서 빔 연결 · 이미 연결된 두 노드를 다시 탭하면 <b>해체</b></div>
+    <div class="btn-row">
+      <button class="ghost" id="btn-clear">초기화</button>
+      <button class="primary" id="btn-test">테스트 주행 ▶</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- 캔버스 세팅 ----------
+  var canvas = document.getElementById('cv');
+  var ctx = canvas.getContext('2d');
+  var W = 900, H = 500; // 논리 좌표계
+  var dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
+
+  function resize(){
+    var wrap = document.getElementById('canvas-wrap');
+    var maxW = wrap.clientWidth - 4;
+    var maxH = wrap.clientHeight - 4;
+    var scale = Math.min(maxW / W, maxH / H);
+    scale = Math.max(scale, 0.3);
+    canvas.style.width = (W * scale) + 'px';
+    canvas.style.height = (H * scale) + 'px';
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    displayScale = scale;
+  }
+  var displayScale = 1;
+  window.addEventListener('resize', resize);
+
+  // ---------- 월드 상수 ----------
+  var GAP_L = 150, GAP_R = 750;     // 절벽 안쪽 끝
+  var TOP_Y = 200, BOT_Y = 320;     // 상현/하현 높이
+  var FLOOR_Y = 470;                // 계곡 바닥(추락 판정)
+  var COLS = [250, 350, 450, 550, 650]; // 자유 노드 x열 (계곡 내부)
+  var MAX_LEN = 175;                // 빔 최대 길이 (근접 연결만 허용)
+  var BEAM_BUDGET = 18;             // 상판6+하판6+대각선6(전 구간 삼각화)이 딱 맞는 예산
+
+  var GRAVITY = 0.30;
+  var CONSTRAINT_ITER = 6;
+  var STRESS_ADD = 1.0;
+  var STRESS_DECAY = 0.05;
+  var STRESS_LIMIT = 9.0;
+  var STRESS_RATIO_THRESHOLD = 0.10;
+  var SAG_LIMIT = 48; // 상판이 이 이상 처지면 트럭이 통과 불가로 판정(삼각화 안 된 다리는 넘김)
+
+  // ---------- 노드/빔 데이터 ----------
+  var nodes = [];   // {id,x,y,ox,oy,homeX,homeY,pinned,role}
+  var beams = [];   // {a,b,rest,stress,broken}
+  var nid = 0;
+
+  function addNode(x, y, pinned, role){
+    var n = { id: nid++, x:x, y:y, ox:x, oy:y, homeX:x, homeY:y, pinned:pinned, role:role, dead:false, vx:0 };
+    nodes.push(n);
+    return n;
+  }
+
+  var leftTop, leftBot, rightTop, rightBot;
+  var topChain = []; // [leftTop, ...COLS top nodes..., rightTop] 순서
+
+  function buildWorld(){
+    nodes = []; beams = []; nid = 0;
+    leftTop = addNode(GAP_L, TOP_Y, true, 'anchor');
+    leftBot = addNode(GAP_L, BOT_Y, true, 'anchor');
+    rightTop = addNode(GAP_R, TOP_Y, true, 'anchor');
+    rightBot = addNode(GAP_R, BOT_Y, true, 'anchor');
+
+    topChain = [leftTop];
+    var topFree = [], botFree = [];
+    for (var i=0;i<COLS.length;i++){
+      var t = addNode(COLS[i], TOP_Y, false, 'free');
+      var b = addNode(COLS[i], BOT_Y, false, 'free');
+      topFree.push(t); botFree.push(b);
+      topChain.push(t);
+    }
+    topChain.push(rightTop);
+  }
+
+  function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+  function findBeam(a,b){
+    for (var i=0;i<beams.length;i++){
+      var bm = beams[i];
+      if (!bm.broken && ((bm.a===a && bm.b===b) || (bm.a===b && bm.b===a))) return bm;
+    }
+    return null;
+  }
+
+  function budgetLeft(){
+    var used = 0;
+    for (var i=0;i<beams.length;i++) if (!beams[i].broken) used++;
+    return BEAM_BUDGET - used;
+  }
+
+  // ---------- 상태 ----------
+  var MODE = 'design'; // design | sim | success | fail
+  var selected = null;
+  var truck = null;
+  var shakeT = 0;
+  var particles = [];
+  var toastT = 0;
+
+  function toast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    toastT = 1.1;
+  }
+
+  function setHUD(){
+    var bl = budgetLeft();
+    var pill = document.getElementById('budget-pill');
+    pill.textContent = '빔 ' + (BEAM_BUDGET - bl) + '/' + BEAM_BUDGET;
+    pill.classList.toggle('low', bl <= 3 && bl > 0);
+    pill.classList.toggle('empty', bl <= 0);
+    var sp = document.getElementById('state-pill');
+    sp.textContent = MODE === 'design' ? '설계 중' : MODE === 'sim' ? '주행 중' : MODE === 'success' ? '성공' : '붕괴';
+    document.getElementById('btn-test').disabled = (MODE === 'sim');
+  }
+
+  // ---------- 입력 ----------
+  function toWorld(clientX, clientY){
+    var r = canvas.getBoundingClientRect();
+    var x = (clientX - r.left) / displayScale;
+    var y = (clientY - r.top) / displayScale;
+    return {x:x, y:y};
+  }
+
+  function nearestNode(pt){
+    var best = null, bd = 22; // 히트 반경(논리px)
+    for (var i=0;i<nodes.length;i++){
+      var n = nodes[i];
+      if (n.dead) continue;
+      var d = Math.hypot(n.x-pt.x, n.y-pt.y);
+      if (d < bd){ bd = d; best = n; }
+    }
+    return best;
+  }
+
+  function onTap(clientX, clientY){
+    if (MODE !== 'design') return;
+    var pt = toWorld(clientX, clientY);
+    var n = nearestNode(pt);
+    if (!n){ selected = null; return; }
+
+    if (!selected){ selected = n; return; }
+    if (selected === n){ selected = null; return; }
+
+    var a = selected, b = n;
+    selected = null;
+
+    var existing = findBeam(a,b);
+    if (existing){
+      existing.broken = true; // 해체 = 목록에서 제거 취급(예산 회수)
+      beams = beams.filter(function(x){ return x !== existing; });
+      toast('빔을 해체했습니다');
+      setHUD();
+      return;
+    }
+
+    var d = dist(a,b);
+    if (d > MAX_LEN){
+      toast('너무 멀어요 — 가까운 노드끼리만 연결');
+      return;
+    }
+    if (a.pinned && b.pinned){
+      toast('양쪽 다 절벽 고정점입니다');
+      return;
+    }
+    if (budgetLeft() <= 0){
+      toast('예산을 다 썼습니다');
+      return;
+    }
+    beams.push({ a:a, b:b, rest:d, stress:0, broken:false });
+    setHUD();
+  }
+
+  canvas.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    onTap(e.clientX, e.clientY);
+  });
+
+  // ---------- 물리(자체 구현 — Verlet + 거리 구속) ----------
+  function resetPhysicsPositions(){
+    for (var i=0;i<nodes.length;i++){
+      var n = nodes[i];
+      n.x = n.homeX; n.y = n.homeY;
+      n.ox = n.homeX; n.oy = n.homeY;
+      n.dead = false;
+      n.pinned = (n.role === 'anchor');
+    }
+    for (var j=0;j<beams.length;j++){ beams[j].stress = 0; beams[j].broken = false; }
+  }
+
+  function startSim(){
+    if (MODE !== 'design') return;
+    // 상판(top chord) 6구간이 모두 이어져 있는지 확인
+    var brokenAt = -1;
+    for (var i=0;i<topChain.length-1;i++){
+      if (!findBeam(topChain[i], topChain[i+1])){ brokenAt = i; break; }
+    }
+    if (brokenAt >= 0){
+      toast('상판(윗줄)이 끊겨 있어 트럭이 지나갈 수 없어요');
+      return;
+    }
+    for (var k=0;k<nodes.length;k++){
+      if (nodes[k].role === 'free') nodes[k].pinned = false;
+    }
+    truck = { x: leftTop.x - 60, y: TOP_Y - 14, seg: 0, falling:false, vy:0, angle:0, speed: 62 };
+    MODE = 'sim';
+    setHUD();
+  }
+
+  function verletStep(dt){
+    for (var i=0;i<nodes.length;i++){
+      var n = nodes[i];
+      if (n.pinned || n.dead) continue;
+      var vx = (n.x - n.ox) * 0.992;
+      var vy = (n.y - n.oy) * 0.992;
+      var nx = n.x + vx;
+      var ny = n.y + vy + GRAVITY;
+      n.ox = n.x; n.oy = n.y;
+      n.x = nx; n.y = ny;
+    }
+    // 트럭 하중: 근처 상현 노드를 추가로 끌어내림
+    if (truck && !truck.falling){
+      for (var t=0;t<nodes.length;t++){
+        var nn = nodes[t];
+        if (nn.pinned || nn.dead || nn.role !== 'free') continue;
+        if (Math.abs(nn.homeY - TOP_Y) > 1) continue; // 상현 노드만
+        var d = Math.abs(nn.x - truck.x);
+        if (d < 150){
+          var f = (1 - d/150) * 2.7;
+          nn.y += f;
+        }
+      }
+    }
+
+    for (var iter=0; iter<CONSTRAINT_ITER; iter++){
+      for (var b=0;b<beams.length;b++){
+        var bm = beams[b];
+        if (bm.broken) continue;
+        var a = bm.a, c = bm.b;
+        if (a.dead || c.dead) continue;
+        var dx = c.x - a.x, dy = c.y - a.y;
+        var d2 = Math.hypot(dx,dy) || 0.0001;
+        var diff = (bm.rest - d2) / d2;
+        var pinnedA = a.pinned, pinnedC = c.pinned;
+        var moveA = pinnedA ? 0 : (pinnedC ? 1 : 0.5);
+        var moveC = pinnedC ? 0 : (pinnedA ? 1 : 0.5);
+        var ox = dx * diff, oy = dy * diff;
+        if (!pinnedA){ a.x -= ox * moveA; a.y -= oy * moveA; }
+        if (!pinnedC){ c.x += ox * moveC; c.y += oy * moveC; }
+      }
+    }
+
+    // 스트레스 누적 & 파단 판정 (마지막 반복 후 잔여 변형으로 판단)
+    var brokeAny = false;
+    for (var b2=0;b2<beams.length;b2++){
+      var bm2 = beams[b2];
+      if (bm2.broken) continue;
+      var d3 = dist(bm2.a, bm2.b);
+      var ratio = Math.abs(d3 - bm2.rest) / bm2.rest;
+      if (ratio > STRESS_RATIO_THRESHOLD){
+        bm2.stress += STRESS_ADD * (ratio - STRESS_RATIO_THRESHOLD) * 6;
+      } else {
+        bm2.stress = Math.max(0, bm2.stress - STRESS_DECAY);
+      }
+      if (bm2.stress >= STRESS_LIMIT){
+        bm2.broken = true;
+        brokeAny = true;
+        spawnBreakFx(bm2);
+      }
+    }
+    if (brokeAny) shakeT = 0.25;
+
+    // 고립 노드 처리(붙어있는 빔이 하나도 없으면 낙하 잔해로)
+    for (var n2=0;n2<nodes.length;n2++){
+      var nd = nodes[n2];
+      if (nd.pinned || nd.dead || nd.role !== 'free') continue;
+      var has = false;
+      for (var b3=0;b3<beams.length;b3++){
+        if (beams[b3].broken) continue;
+        if (beams[b3].a===nd || beams[b3].b===nd){ has = true; break; }
+      }
+      if (!has && nd.y > TOP_Y + 6){ /* 여전히 표류 허용, 낙하는 y로 판정 */ }
+    }
+  }
+
+  function spawnBreakFx(bm){
+    var mx = (bm.a.x+bm.b.x)/2, my = (bm.a.y+bm.b.y)/2;
+    for (var i=0;i<7;i++){
+      particles.push({
+        x:mx, y:my,
+        vx:(Math.random()-0.5)*4, vy:(Math.random()-1.2)*3,
+        life:0.6, role:'spark'
+      });
+    }
+  }
+
+  function updateTruck(dt){
+    if (!truck) return;
+    if (truck.falling){
+      truck.vy += 0.5;
+      truck.y += truck.vy;
+      truck.angle += 0.12;
+      if (truck.y > FLOOR_Y + 60){
+        triggerFail(truck.failMsg || '다리가 끊겨 트럭이 계곡으로 떨어졌습니다');
+      }
+      return;
+    }
+    truck.x += truck.speed * dt;
+
+    // 현재 구간 찾기 (topChain 순서 기준)
+    var seg = 0;
+    for (var i=0;i<topChain.length-1;i++){
+      if (truck.x >= topChain[i].x){ seg = i; }
+    }
+    var nA = topChain[seg], nB = topChain[Math.min(seg+1, topChain.length-1)];
+    var segBeam = findBeam(nA, nB);
+    if (!segBeam && nB.x > nA.x && truck.x >= nA.x){
+      // 앞 구간이 끊어져 있는데 트럭이 그 위로 진입 -> 추락
+      truck.falling = true;
+      return;
+    }
+    var span = Math.max(1, nB.x - nA.x);
+    var f = Math.min(1, Math.max(0, (truck.x - nA.x) / span));
+    var groundY = nA.y + (nB.y - nA.y) * f;
+    truck.y = groundY - 14;
+
+    if (groundY - TOP_Y > SAG_LIMIT){
+      truck.falling = true;
+      truck.failMsg = '처짐이 너무 커서 다리가 무너졌습니다 — 삼각 구조로 힘을 분산해보세요';
+      return;
+    }
+
+    if (truck.y > FLOOR_Y){
+      truck.falling = true;
+      return;
+    }
+
+    if (truck.x >= rightTop.x + 46){
+      triggerSuccess();
+    }
+  }
+
+  function triggerSuccess(){
+    if (MODE !== 'sim') return;
+    MODE = 'success';
+    for (var i=0;i<26;i++){
+      particles.push({
+        x: rightTop.x - 20 + Math.random()*40, y: TOP_Y - 10,
+        vx:(Math.random()-0.5)*3, vy:-Math.random()*3-1,
+        life: 1.0 + Math.random()*0.6, role:'confetti',
+        hue: Math.floor(Math.random()*360)
+      });
+    }
+    showOverlay(true);
+    setHUD();
+  }
+  function triggerFail(msg){
+    if (MODE !== 'sim') return;
+    MODE = 'fail';
+    shakeT = 0.4;
+    showOverlay(false, msg);
+    setHUD();
+  }
+
+  function showOverlay(success, msg){
+    var ov = document.getElementById('overlay');
+    var icon = document.getElementById('overlay-icon');
+    var title = document.getElementById('overlay-title');
+    var desc = document.getElementById('overlay-desc');
+    if (success){
+      icon.textContent = '🎉';
+      title.textContent = '성공!';
+      title.className = 'success';
+      var usedBeams = beams.filter(function(b){return !b.broken;}).length;
+      desc.textContent = '트럭이 안전하게 건넜습니다. 사용한 빔 ' + usedBeams + '/' + BEAM_BUDGET + '개.';
+    } else {
+      icon.textContent = '💥';
+      title.textContent = '붕괴!';
+      title.className = 'fail';
+      desc.textContent = msg || '다리가 하중을 버티지 못했습니다.';
+    }
+    ov.classList.add('show');
+  }
+  document.getElementById('btn-retry').addEventListener('click', function(){
+    document.getElementById('overlay').classList.remove('show');
+    resetPhysicsPositions();
+    MODE = 'design';
+    setHUD();
+  });
+  document.getElementById('btn-reset-overlay').addEventListener('click', function(){
+    document.getElementById('overlay').classList.remove('show');
+    buildWorld();
+    MODE = 'design';
+    setHUD();
+  });
+  document.getElementById('btn-clear').addEventListener('click', function(){
+    if (MODE === 'sim') return;
+    buildWorld();
+    MODE = 'design';
+    toast('초기화했습니다');
+    setHUD();
+  });
+  document.getElementById('btn-test').addEventListener('click', startSim);
+
+  // ---------- 렌더 ----------
+  function drawCliffs(){
+    ctx.fillStyle = '#233348';
+    ctx.fillRect(0, FLOOR_Y+2, W, H-FLOOR_Y-2); // 계곡 바닥 그림자대 (물/안개 느낌)
+    var grad = ctx.createLinearGradient(0,FLOOR_Y-40,0,H);
+    grad.addColorStop(0,'#16324a');
+    grad.addColorStop(1,'#0a1826');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, FLOOR_Y-40, W, H-(FLOOR_Y-40));
+
+    ctx.fillStyle = '#4a5a6b';
+    // 왼쪽 절벽
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(GAP_L+14, TOP_Y-46);
+    ctx.lineTo(GAP_L, TOP_Y-30); ctx.lineTo(GAP_L, BOT_Y+40);
+    ctx.lineTo(GAP_L-30, BOT_Y+90); ctx.lineTo(0, H);
+    ctx.closePath(); ctx.fill();
+    // 오른쪽 절벽
+    ctx.beginPath();
+    ctx.moveTo(W,0); ctx.lineTo(GAP_R-14, TOP_Y-46);
+    ctx.lineTo(GAP_R, TOP_Y-30); ctx.lineTo(GAP_R, BOT_Y+40);
+    ctx.lineTo(GAP_R+30, BOT_Y+90); ctx.lineTo(W, H);
+    ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle = '#5f7285'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(GAP_L, TOP_Y-30); ctx.lineTo(GAP_L, BOT_Y+40); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(GAP_R, TOP_Y-30); ctx.lineTo(GAP_R, BOT_Y+40); ctx.stroke();
+  }
+
+  function beamColor(bm){
+    var s = Math.min(1, bm.stress / STRESS_LIMIT);
+    if (s < 0.45) return '#8fa6bd';
+    if (s < 0.8) return '#f4c95d';
+    return '#ff5252';
+  }
+
+  function drawBeams(){
+    for (var i=0;i<beams.length;i++){
+      var bm = beams[i];
+      if (bm.broken) continue;
+      ctx.strokeStyle = beamColor(bm);
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(bm.a.x, bm.a.y);
+      ctx.lineTo(bm.b.x, bm.b.y);
+      ctx.stroke();
+    }
+  }
+
+  function drawNodes(){
+    for (var i=0;i<nodes.length;i++){
+      var n = nodes[i];
+      if (n.dead) continue;
+      var r = n.role === 'anchor' ? 9 : 7;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI*2);
+      if (n.role === 'anchor'){
+        ctx.fillStyle = '#3c4c5f';
+        ctx.fill();
+        ctx.strokeStyle = '#8fa6bd'; ctx.lineWidth = 2; ctx.stroke();
+      } else {
+        ctx.fillStyle = MODE === 'design' ? '#0c1420' : '#132234';
+        ctx.fill();
+        ctx.strokeStyle = '#cbd9e6'; ctx.lineWidth = 2; ctx.stroke();
+      }
+      if (selected === n){
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r+6, 0, Math.PI*2);
+        ctx.strokeStyle = '#f4c95d'; ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawTruck(){
+    if (!truck) return;
+    ctx.save();
+    ctx.translate(truck.x, truck.y);
+    ctx.rotate(truck.falling ? truck.angle : 0);
+    ctx.fillStyle = '#f4c95d';
+    ctx.fillRect(-16, -10, 32, 14);
+    ctx.fillStyle = '#e8dfca';
+    ctx.fillRect(-13, -18, 14, 10);
+    ctx.fillStyle = '#1a1206';
+    ctx.beginPath(); ctx.arc(-10, 6, 5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(10, 6, 5, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawParticles(dt){
+    for (var i=particles.length-1;i>=0;i--){
+      var p = particles[i];
+      p.x += p.vx; p.y += p.vy; p.vy += (p.role==='confetti'? 0.08 : 0.15);
+      p.life -= dt;
+      if (p.life <= 0){ particles.splice(i,1); continue; }
+      if (p.role === 'confetti'){
+        ctx.fillStyle = 'hsl(' + p.hue + ',80%,65%)';
+        ctx.fillRect(p.x-2, p.y-2, 4, 4);
+      } else {
+        ctx.strokeStyle = 'rgba(255,180,120,' + Math.max(0,p.life) + ')';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx*2, p.y - p.vy*2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function render(dt){
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    if (shakeT > 0){
+      var sx = (Math.random()-0.5) * 8 * shakeT;
+      var sy = (Math.random()-0.5) * 8 * shakeT;
+      ctx.translate(sx, sy);
+    }
+    ctx.fillStyle = '#0c1420';
+    ctx.fillRect(-10,-10,W+20,H+20);
+    drawCliffs();
+    drawBeams();
+    drawNodes();
+    drawTruck();
+    drawParticles(dt);
+    ctx.restore();
+  }
+
+  // ---------- 메인 루프 ----------
+  var last = performance.now();
+  function frame(now){
+    var dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+
+    if (shakeT > 0) shakeT = Math.max(0, shakeT - dt);
+    if (toastT > 0){
+      toastT -= dt;
+      if (toastT <= 0) document.getElementById('toast').classList.remove('show');
+    }
+
+    if (MODE === 'sim'){
+      verletStep(dt);
+      updateTruck(dt);
+    } else if (MODE === 'success' || MODE === 'fail'){
+      verletStep(dt); // 붕괴/도착 후 잔여 흔들림 살짝
+    }
+
+    render(dt);
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- 디버그 훅 (QA 전용, 프로덕션에서도 무해) ----------
+  window.__BRIDGE_DEBUG = {
+    getNodes: function(){ return nodes; },
+    getBeams: function(){ return beams; },
+    getTruck: function(){ return truck; },
+    getMode: function(){ return MODE; },
+    getTopY: function(){ return TOP_Y; }
+  };
+
+  // ---------- 시작 ----------
+  buildWorld();
+  resize();
+  setHUD();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

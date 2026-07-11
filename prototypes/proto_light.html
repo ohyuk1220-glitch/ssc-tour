@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>빛 퍼즐 프로토타입</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #0a0d16; color: #eef3f8;
+    font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    word-break: keep-all; overflow-wrap: break-word;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body { line-height: 1.6; }
+
+  #app {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    height: 100dvh;
+  }
+
+  header {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #0f1522;
+    border-bottom: 1px solid #1e2a3d;
+  }
+  header h1 {
+    font-size: 15px; margin: 0; font-weight: 800; letter-spacing: -0.01em;
+    color: #5eead4;
+  }
+  header p.sub { font-size: 11px; color: #6b7c93; margin: 2px 0 0; }
+  #hud { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .dot-btn {
+    width: 22px; height: 22px; border-radius: 50%; border: 1px solid #2a3a52;
+    background: #16223a; color: #7d92aa; font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    padding: 0;
+  }
+  .dot-btn.done { background: #123c34; border-color: #1f6e5c; color: #5eead4; }
+  .dot-btn.active { background: #5eead4; border-color: #5eead4; color: #0a0d16; }
+
+  #canvas-wrap {
+    position: relative; flex: 1 1 auto; min-height: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% -10%, #101c2e 0%, #0a0d16 65%);
+    touch-action: none;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    max-width: 100%; max-height: 100%;
+    touch-action: none;
+  }
+
+  #toast {
+    position: absolute; left: 50%; top: 14px;
+    transform: translate(-50%, -140%);
+    background: #1a2740; border: 1px solid #33486a;
+    color: #fff; font-size: 13px; font-weight: 700;
+    padding: 8px 16px; border-radius: 10px;
+    pointer-events: none; opacity: 0;
+    transition: transform .18s ease, opacity .18s ease;
+    white-space: nowrap; max-width: 88%;
+    text-align: center;
+    z-index: 5;
+  }
+  #toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+  #overlay {
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(6,10,18,0.78);
+    z-index: 10;
+  }
+  #overlay.show { display: flex; }
+  #overlay-card {
+    background: #101c2e; border: 1px solid #2c4360;
+    border-radius: 16px; padding: 26px 28px;
+    max-width: 340px; width: calc(100% - 48px);
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  #overlay-title { font-size: 20px; font-weight: 800; margin: 4px 0 8px; color: #5eead4; }
+  #overlay-desc { font-size: 13px; color: #a9bcd0; margin-bottom: 18px; }
+  .btn-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  button {
+    font-family: inherit; font-weight: 700; font-size: 13px;
+    border-radius: 10px; border: 1px solid #2c4360;
+    background: #1a2b42; color: #eef3f8;
+    padding: 10px 16px; cursor: pointer;
+    transition: background .12s ease, transform .08s ease;
+  }
+  button:active { transform: scale(0.96); }
+  button.primary { background: #5eead4; color: #0a1f1a; border-color: #5eead4; }
+  button.ghost { background: transparent; }
+
+  footer {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: #0f1522; border-top: 1px solid #1e2a3d;
+  }
+  #hint {
+    font-size: 11.5px; color: #7d92aa; flex: 1 1 auto; min-width: 0;
+  }
+  #hint b { color: #d7e6f5; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div>
+      <h1>빛 퍼즐 — B전시실(연결) 프로토타입</h1>
+      <p class="sub" id="stageSub">스테이지 1/5 · 거울로 빛을 전구까지</p>
+    </div>
+    <div id="hud"></div>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="cv"></canvas>
+    <div id="toast"></div>
+    <div id="overlay">
+      <div id="overlay-card">
+        <div id="overlay-title">모든 스테이지 클리어</div>
+        <div id="overlay-desc">5개 스테이지를 모두 통과했습니다.</div>
+        <div class="btn-row">
+          <button class="primary" id="btn-restart">처음부터 다시</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div id="hint">칸을 <b>탭</b>해서 거울을 놓고, 다시 탭하면 <b>회전</b> · 한 번 더 탭하면 <b>제거</b></div>
+    <div class="btn-row">
+      <button class="ghost" id="btn-reset">초기화</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- 캔버스 세팅 ----------
+  var canvas = document.getElementById('cv');
+  var ctx = canvas.getContext('2d');
+  var CELL = 92; // 논리 좌표계 셀 크기(px)
+  var W = 500, H = 460; // 스테이지 로드 시 갱신
+  var dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
+  var displayScale = 1;
+
+  function resize(){
+    var wrap = document.getElementById('canvas-wrap');
+    var maxW = wrap.clientWidth - 4;
+    var maxH = wrap.clientHeight - 4;
+    var scale = Math.min(maxW / W, maxH / H);
+    scale = Math.max(scale, 0.2);
+    canvas.style.width = (W * scale) + 'px';
+    canvas.style.height = (H * scale) + 'px';
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    displayScale = scale;
+  }
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', resize);
+
+  // ---------- 방향 ----------
+  var DIR = { R:{dx:1,dy:0}, L:{dx:-1,dy:0}, U:{dx:0,dy:-1}, D:{dx:0,dy:1} };
+  function reflectSlash(dx,dy){ return { dx:-dy, dy:-dx }; }      // '/'
+  function reflectBackslash(dx,dy){ return { dx:dy, dy:dx }; }    // '\'
+  function turnCW(dx,dy){ return { dx:-dy, dy:dx }; }             // 프리즘 분산용
+
+  // ---------- 스테이지 데이터 ----------
+  var STAGES = [
+    {
+      title: '거울 하나로', hint: '거울 방향을 바꿔가며 빛을 전구까지 보내보세요',
+      w:5, h:5, source:{x:0,y:0,dir:'R'}, target:{x:4,y:4}, walls:[], prisms:[], mirrorLimit:null
+    },
+    {
+      title: '두 번 꺾기', hint: '거울 두 개로 길을 두 번 꺾어야 해요',
+      w:6, h:5, source:{x:0,y:1,dir:'R'}, target:{x:5,y:3},
+      walls:[{x:5,y:1}], prisms:[], mirrorLimit:null
+    },
+    {
+      title: '갈라지는 빛', hint: '프리즘 칸을 지나면 빛이 두 갈래로 갈라져요',
+      w:7, h:5, source:{x:0,y:2,dir:'R'}, target:{x:5,y:4},
+      walls:[], prisms:[{x:3,y:2}], mirrorLimit:null
+    },
+    {
+      title: '거울 세 개', hint: '거울은 딱 3개까지만 놓을 수 있어요',
+      w:8, h:6, source:{x:0,y:0,dir:'D'}, target:{x:7,y:5},
+      walls:[{x:5,y:2},{x:2,y:1},{x:6,y:1}], prisms:[], mirrorLimit:3
+    },
+    {
+      title: '갈라진 길 잇기', hint: '프리즘 + 거울 2개. 갈라진 빛 중 하나만 전구로 보내면 돼요',
+      w:8, h:6, source:{x:0,y:0,dir:'R'}, target:{x:1,y:5},
+      walls:[{x:5,y:4},{x:6,y:1}], prisms:[{x:2,y:3}], mirrorLimit:2
+    }
+  ];
+
+  var stageIndex = 0;
+  var stage = null;
+  var mirrors = {};      // "x,y" -> '/' | '\\'
+  var mirrorTime = {};   // "x,y" -> placedAt(ms) 팝인 애니메이션용
+  var flashCells = {};   // "x,y" -> {t, kind:'invalid'|'limit'} 잘못된 탭 피드백
+  var trace = { segments: [], hit: false };
+  var cleared = false;
+  var locked = false;
+  var clearStart = 0;
+  var particles = [];
+  var toastT = 0;
+  var maxStageReached = 0;
+
+  function key(x,y){ return x+','+y; }
+
+  function cellType(x,y){
+    if (stage.source.x === x && stage.source.y === y) return 'source';
+    if (stage.target.x === x && stage.target.y === y) return 'target';
+    for (var i=0;i<stage.walls.length;i++){ if (stage.walls[i].x===x && stage.walls[i].y===y) return 'wall'; }
+    for (var j=0;j<stage.prisms.length;j++){ if (stage.prisms[j].x===x && stage.prisms[j].y===y) return 'prism'; }
+    return 'open';
+  }
+
+  function placedCount(){
+    var n = 0;
+    for (var k in mirrors) if (mirrors[k]) n++;
+    return n;
+  }
+
+  // ---------- 빛 경로 계산 ----------
+  function traceBeams(){
+    var wallSet = {}; for (var i=0;i<stage.walls.length;i++) wallSet[key(stage.walls[i].x, stage.walls[i].y)] = true;
+    var prismSet = {}; for (var j=0;j<stage.prisms.length;j++) prismSet[key(stage.prisms[j].x, stage.prisms[j].y)] = true;
+
+    var results = [];
+    var hit = false;
+    var visited = {};
+    var start = DIR[stage.source.dir];
+    var queue = [{ x:stage.source.x, y:stage.source.y, dx:start.dx, dy:start.dy, kind:'main',
+                   path:[{x:stage.source.x,y:stage.source.y}] }];
+    var steps = 0;
+
+    while (queue.length && steps < 400){
+      steps++;
+      var beam = queue.shift();
+      var x=beam.x, y=beam.y, dx=beam.dx, dy=beam.dy, path=beam.path, kind=beam.kind, alive=true;
+
+      while (alive){
+        var nx = x+dx, ny = y+dy;
+        if (nx<0 || nx>=stage.w || ny<0 || ny>=stage.h){ alive=false; break; }
+        var vkey = nx+','+ny+','+dx+','+dy;
+        if (visited[vkey]){ alive=false; break; }
+        visited[vkey] = true;
+        x=nx; y=ny;
+        var k = key(x,y);
+
+        if (wallSet[k]){ alive=false; break; }
+
+        path.push({x:x,y:y});
+
+        if (x===stage.target.x && y===stage.target.y){
+          hit = true;
+          results.push({ path: path, kind: kind });
+          path = null; alive = false; break;
+        }
+
+        var m = mirrors[k];
+        if (m === '/'){ var r1 = reflectSlash(dx,dy); dx=r1.dx; dy=r1.dy; continue; }
+        if (m === '\\'){ var r2 = reflectBackslash(dx,dy); dx=r2.dx; dy=r2.dy; continue; }
+
+        if (prismSet[k]){
+          var t = turnCW(dx,dy);
+          queue.push({ x:x, y:y, dx:t.dx, dy:t.dy, kind:'split', path: path.slice() });
+          continue; // 직진 빔은 그대로 계속
+        }
+        // 빈 칸: 직진 계속
+      }
+      if (path) results.push({ path: path, kind: kind });
+    }
+    return { segments: results, hit: hit };
+  }
+
+  function recompute(){
+    trace = traceBeams();
+    if (trace.hit && !cleared){
+      cleared = true;
+      locked = true;
+      clearStart = performance.now();
+      sfxWin();
+      spawnBurst(stage.target.x, stage.target.y);
+      setTimeout(goNext, 950);
+    }
+  }
+
+  function goNext(){
+    if (stageIndex >= STAGES.length - 1){
+      showFinalOverlay();
+      return;
+    }
+    loadStage(stageIndex + 1);
+  }
+
+  // ---------- 스테이지 로드 ----------
+  function loadStage(i){
+    stageIndex = i;
+    stage = STAGES[i];
+    mirrors = {};
+    mirrorTime = {};
+    flashCells = {};
+    cleared = false;
+    locked = false;
+    particles = [];
+    if (i > maxStageReached) maxStageReached = i;
+    W = stage.w * CELL;
+    H = stage.h * CELL;
+    resize();
+    document.getElementById('stageSub').textContent =
+      '스테이지 ' + (i+1) + '/' + STAGES.length + ' · ' + stage.title + ' — ' + stage.hint;
+    renderHud();
+    recompute();
+  }
+
+  function renderHud(){
+    var hud = document.getElementById('hud');
+    hud.innerHTML = '';
+    for (var i=0;i<STAGES.length;i++){
+      var b = document.createElement('button');
+      b.className = 'dot-btn' + (i === stageIndex ? ' active' : (i < maxStageReached ? ' done' : (i <= maxStageReached ? '' : '')));
+      if (i < stageIndex) b.classList.add('done');
+      if (i === stageIndex) { b.className = 'dot-btn active'; }
+      b.textContent = String(i+1);
+      b.type = 'button';
+      b.disabled = i > maxStageReached;
+      (function(idx){ b.addEventListener('click', function(){ if (!locked) loadStage(idx); }); })(i);
+      hud.appendChild(b);
+    }
+  }
+
+  // ---------- 오디오 (Web Audio, 파일 없음) ----------
+  var actx = null;
+  function actxGet(){
+    if (!actx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      actx = new AC();
+    }
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  function beep(freq, dur, type, vol, delay){
+    try{
+      var c = actxGet();
+      if (!c) return;
+      var t0 = c.currentTime + (delay||0);
+      var osc = c.createOscillator();
+      var gain = c.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.linearRampToValueAtTime(vol||0.12, t0+0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+      osc.connect(gain); gain.connect(c.destination);
+      osc.start(t0); osc.stop(t0+dur+0.03);
+    } catch(e){ /* 오디오 미지원 환경도 게임은 계속 동작 */ }
+  }
+  function sfxPlace(){ beep(520, 0.05, 'square', 0.05); }
+  function sfxRotate(){ beep(680, 0.05, 'square', 0.05); }
+  function sfxRemove(){ beep(260, 0.06, 'square', 0.04); }
+  function sfxInvalid(){ beep(140, 0.12, 'sawtooth', 0.08); }
+  function sfxWin(){
+    beep(659.25, 0.12, 'sine', 0.13, 0);
+    beep(783.99, 0.12, 'sine', 0.13, 0.11);
+    beep(1046.5, 0.22, 'sine', 0.14, 0.22);
+  }
+
+  function toast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    toastT = 1.0;
+  }
+
+  function spawnBurst(gx, gy){
+    var cx = (gx+0.5)*CELL, cy = (gy+0.5)*CELL;
+    for (var i=0;i<20;i++){
+      var ang = Math.random()*Math.PI*2;
+      var spd = 1.4 + Math.random()*2.2;
+      particles.push({ x:cx, y:cy, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd, life:0.75, hue: 165+Math.random()*30 });
+    }
+  }
+
+  // ---------- 입력 ----------
+  function toWorld(clientX, clientY){
+    var r = canvas.getBoundingClientRect();
+    return { x:(clientX-r.left)/displayScale, y:(clientY-r.top)/displayScale };
+  }
+
+  function handleTap(clientX, clientY){
+    if (locked) return;
+    var pt = toWorld(clientX, clientY);
+    var col = Math.floor(pt.x / CELL);
+    var row = Math.floor(pt.y / CELL);
+    if (col<0 || col>=stage.w || row<0 || row>=stage.h) return;
+
+    var type = cellType(col,row);
+    if (type !== 'open'){
+      flashCells[key(col,row)] = { t: 1, kind: 'invalid' };
+      sfxInvalid();
+      toast(type === 'wall' ? '벽에는 거울을 놓을 수 없어요' : '여기엔 놓을 수 없어요');
+      return;
+    }
+    var k = key(col,row);
+    var cur = mirrors[k];
+    if (!cur){
+      if (stage.mirrorLimit && placedCount() >= stage.mirrorLimit){
+        flashCells[k] = { t: 1, kind: 'limit' };
+        sfxInvalid();
+        toast('거울은 최대 ' + stage.mirrorLimit + '개까지만 놓을 수 있어요');
+        return;
+      }
+      mirrors[k] = '/';
+      sfxPlace();
+    } else if (cur === '/'){
+      mirrors[k] = '\\';
+      sfxRotate();
+    } else {
+      delete mirrors[k];
+      sfxRemove();
+    }
+    mirrorTime[k] = performance.now();
+    recompute();
+  }
+
+  canvas.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    handleTap(e.clientX, e.clientY);
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', function(){
+    if (locked) return;
+    mirrors = {}; mirrorTime = {};
+    recompute();
+    toast('초기화했습니다');
+  });
+  document.getElementById('btn-restart').addEventListener('click', function(){
+    document.getElementById('overlay').classList.remove('show');
+    maxStageReached = 0;
+    loadStage(0);
+  });
+
+  // ---------- 렌더 ----------
+  function cellCenter(x,y){ return { px:(x+0.5)*CELL, py:(y+0.5)*CELL }; }
+
+  function drawGrid(){
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    for (var c=0;c<=stage.w;c++){
+      ctx.beginPath(); ctx.moveTo(c*CELL,0); ctx.lineTo(c*CELL,H); ctx.stroke();
+    }
+    for (var r=0;r<=stage.h;r++){
+      ctx.beginPath(); ctx.moveTo(0,r*CELL); ctx.lineTo(W,r*CELL); ctx.stroke();
+    }
+  }
+
+  function drawWalls(){
+    ctx.fillStyle = '#1a2236';
+    ctx.strokeStyle = '#2c3a54';
+    ctx.lineWidth = 1;
+    for (var i=0;i<stage.walls.length;i++){
+      var wcell = stage.walls[i];
+      var px = wcell.x*CELL, py = wcell.y*CELL;
+      ctx.fillRect(px+2, py+2, CELL-4, CELL-4);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(px+2, py+2, CELL-4, CELL-4);
+      ctx.clip();
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      for (var d=-CELL; d<CELL*2; d+=12){
+        ctx.beginPath();
+        ctx.moveTo(px+d, py); ctx.lineTo(px+d+CELL, py+CELL);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawPrisms(now){
+    for (var i=0;i<stage.prisms.length;i++){
+      var p = stage.prisms[i];
+      var c = cellCenter(p.x,p.y);
+      var s = CELL*0.34;
+      ctx.save();
+      ctx.translate(c.px, c.py);
+      ctx.rotate(Math.sin(now/900)*0.05);
+      var grad = ctx.createLinearGradient(-s, -s, s, s);
+      grad.addColorStop(0, '#ff6b6b');
+      grad.addColorStop(0.5, '#7ee787');
+      grad.addColorStop(1, '#6ea8ff');
+      ctx.beginPath();
+      ctx.moveTo(0, -s);
+      ctx.lineTo(s*0.87, s*0.6);
+      ctx.lineTo(-s*0.87, s*0.6);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = 0.85;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawSource(){
+    var c = cellCenter(stage.source.x, stage.source.y);
+    ctx.beginPath();
+    ctx.arc(c.px, c.py, CELL*0.22, 0, Math.PI*2);
+    ctx.fillStyle = '#5eead4';
+    ctx.shadowColor = '#5eead4';
+    ctx.shadowBlur = 14;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // 방향 화살표
+    var d = DIR[stage.source.dir];
+    var ang = Math.atan2(d.dy, d.dx);
+    ctx.save();
+    ctx.translate(c.px, c.py);
+    ctx.rotate(ang);
+    ctx.beginPath();
+    ctx.moveTo(CELL*0.30, 0);
+    ctx.lineTo(CELL*0.14, -CELL*0.12);
+    ctx.lineTo(CELL*0.14, CELL*0.12);
+    ctx.closePath();
+    ctx.fillStyle = '#0a1f1a';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTarget(now){
+    var c = cellCenter(stage.target.x, stage.target.y);
+    var lit = trace.hit;
+    var pulse = 1 + Math.sin(now/260) * (lit ? 0.10 : 0.05);
+    var r = CELL*0.20*pulse;
+    ctx.beginPath();
+    ctx.arc(c.px, c.py, r, 0, Math.PI*2);
+    ctx.fillStyle = lit ? '#ffe08a' : '#2c2a22';
+    ctx.strokeStyle = lit ? '#ffd24a' : '#5a5540';
+    ctx.lineWidth = 2;
+    if (lit){ ctx.shadowColor = '#ffd24a'; ctx.shadowBlur = 22; }
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+    // 방사선(전구 느낌)
+    var rays = 8;
+    for (var i=0;i<rays;i++){
+      var a = (i/rays)*Math.PI*2 + now/2000;
+      var r1 = r*1.35, r2 = r*(lit ? 1.9 : 1.6);
+      ctx.beginPath();
+      ctx.moveTo(c.px + Math.cos(a)*r1, c.py + Math.sin(a)*r1);
+      ctx.lineTo(c.px + Math.cos(a)*r2, c.py + Math.sin(a)*r2);
+      ctx.strokeStyle = lit ? 'rgba(255,210,74,0.65)' : 'rgba(120,116,90,0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+
+  function drawMirrors(now){
+    for (var k in mirrors){
+      var v = mirrors[k];
+      if (!v) continue;
+      var parts = k.split(',');
+      var x = parseInt(parts[0],10), y = parseInt(parts[1],10);
+      var c = cellCenter(x,y);
+      var age = now - (mirrorTime[k] || 0);
+      var pop = age < 160 ? (1.5 - age/160*0.5) : 1;
+      var s = CELL*0.30*pop;
+      ctx.save();
+      ctx.translate(c.px, c.py);
+      ctx.beginPath();
+      if (v === '/'){ ctx.moveTo(-s, s); ctx.lineTo(s, -s); }
+      else { ctx.moveTo(-s, -s); ctx.lineTo(s, s); }
+      ctx.strokeStyle = '#cfe3ff';
+      ctx.shadowColor = '#8fb8ff';
+      ctx.shadowBlur = 8;
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+  }
+
+  function drawBeams(now){
+    var dashOffset = -(now/22) % 24;
+    for (var i=0;i<trace.segments.length;i++){
+      var seg = trace.segments[i];
+      var pts = seg.path;
+      if (!pts || pts.length < 2) continue;
+      ctx.beginPath();
+      for (var j=0;j<pts.length;j++){
+        var c = cellCenter(pts[j].x, pts[j].y);
+        if (j===0) ctx.moveTo(c.px, c.py); else ctx.lineTo(c.px, c.py);
+      }
+      var color = seg.kind === 'split' ? '#f472b6' : '#5eead4';
+      ctx.strokeStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = trace.hit ? 16 : 9;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([10,6]);
+      ctx.lineDashOffset = dashOffset;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  function drawFlashes(dt){
+    for (var k in flashCells){
+      var f = flashCells[k];
+      f.t -= dt*2.2;
+      if (f.t <= 0){ delete flashCells[k]; continue; }
+      var parts = k.split(',');
+      var x = parseInt(parts[0],10), y = parseInt(parts[1],10);
+      var px = x*CELL, py = y*CELL;
+      ctx.fillStyle = 'rgba(255,90,90,' + (0.28*f.t) + ')';
+      ctx.fillRect(px+2, py+2, CELL-4, CELL-4);
+    }
+  }
+
+  function drawParticles(dt){
+    for (var i=particles.length-1;i>=0;i--){
+      var p = particles[i];
+      p.x += p.vx; p.y += p.vy; p.vy += 0.05;
+      p.life -= dt;
+      if (p.life <= 0){ particles.splice(i,1); continue; }
+      ctx.fillStyle = 'hsla(' + p.hue + ',85%,70%,' + Math.max(0,p.life) + ')';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  function drawClearFlash(now){
+    if (!cleared) return;
+    var t = (now - clearStart) / 400;
+    if (t > 1) return;
+    ctx.fillStyle = 'rgba(94,234,212,' + (0.18*(1-t)) + ')';
+    ctx.fillRect(0,0,W,H);
+  }
+
+  function render(dt, now){
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#0a0d16';
+    ctx.fillRect(0,0,W,H);
+    drawGrid();
+    drawWalls();
+    drawPrisms(now);
+    drawBeams(now);
+    drawFlashes(dt);
+    drawMirrors(now);
+    drawSource();
+    drawTarget(now);
+    drawParticles(dt);
+    drawClearFlash(now);
+  }
+
+  function showFinalOverlay(){
+    var ov = document.getElementById('overlay');
+    document.getElementById('overlay-title').textContent = '모든 스테이지 클리어';
+    document.getElementById('overlay-desc').textContent = STAGES.length + '개 스테이지를 모두 통과했습니다.';
+    ov.classList.add('show');
+  }
+
+  // ---------- 메인 루프 ----------
+  var last = performance.now();
+  function frame(now){
+    var dt = Math.min(0.033, (now-last)/1000);
+    last = now;
+    if (toastT > 0){
+      toastT -= dt;
+      if (toastT <= 0) document.getElementById('toast').classList.remove('show');
+    }
+    render(dt, now);
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- 시작 ----------
+  loadStage(0);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

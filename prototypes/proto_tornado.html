@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>토네이도 키우기 — 프로토타입</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#171b22; --panel2:#1f2530; --line:#2c3340;
+    --ink:#eef1f6; --muted:#8b93a3;
+    --cyan:#7ec8e3; --green:#3ddc84; --amber:#ffb648; --red:#ff5f5f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;word-break:keep-all;overflow-wrap:break-word}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    position:fixed;inset:0;height:100dvh;width:100vw;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    user-select:none;-webkit-user-select:none;overflow:hidden;
+    line-height:1.6;
+  }
+  .wrap{width:100%;max-width:420px;height:100%;display:flex;flex-direction:column;padding:12px 14px 14px;gap:8px}
+
+  /* 헤더 */
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .title-box h1{font-size:18px;font-weight:800;letter-spacing:-0.3px}
+  .title-box p{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .restart-btn{flex-shrink:0;background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+    border-radius:10px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
+  .restart-btn:active{background:var(--line)}
+
+  /* 상태 바 (타이머 / 최고기록) */
+  .stat-row{display:flex;gap:8px}
+  .stat-box{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:8px 10px;text-align:center}
+  .stat-box .lbl{font-size:10.5px;color:var(--muted);font-weight:600}
+  .stat-box .val{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:1px}
+  .stat-box.timer .val{color:var(--cyan)}
+  .stat-box.timer.warn .val{color:var(--red)}
+  .stat-box.best .val{font-size:14px;color:var(--amber);margin-top:5px}
+
+  /* 캔버스 스테이지 */
+  .stage{position:relative;flex:1;min-height:0;background:radial-gradient(circle at 50% 78%, #1c222c 0%, var(--panel) 70%);
+    border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .stability-hud{position:absolute;top:8px;left:8px;right:8px;display:flex;align-items:center;gap:6px;
+    background:rgba(14,17,22,.55);border-radius:10px;padding:5px 8px;backdrop-filter:blur(2px)}
+  .stability-hud .lbl{font-size:10px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .stability-track{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+  .stability-fill{height:100%;width:0%;background:var(--red);border-radius:3px;transition:background .25s}
+  .gust-toast{position:absolute;top:38px;left:50%;transform:translateX(-50%) translateY(-6px);
+    background:rgba(255,182,72,.16);border:1px solid rgba(255,182,72,.5);color:var(--amber);
+    font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;opacity:0;
+    transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap}
+  .gust-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .vignette{position:absolute;inset:0;pointer-events:none;opacity:0;
+    box-shadow:inset 0 0 60px 10px rgba(255,95,95,.55);transition:opacity .15s}
+
+  /* 높이 게이지 */
+  .gauge{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:8px 10px}
+  .gauge .glbl{font-size:11px;color:var(--muted);font-weight:700;flex-shrink:0}
+  .gauge-track{flex:1;height:12px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);
+    position:relative;overflow:hidden}
+  .gauge-fill{height:100%;width:0%;border-radius:6px 0 0 6px;
+    background:linear-gradient(90deg,#4a90c2,var(--cyan));transition:background .2s}
+  .gauge-target{position:absolute;top:-2px;right:0;bottom:-2px;width:2px;background:var(--ink);opacity:.5}
+  .gauge .gval{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0;min-width:64px;text-align:right}
+
+  /* 컨트롤 */
+  .controls{display:flex;flex-direction:column;gap:8px}
+  .ctrl{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px 10px}
+  .ctrl .ctrl-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .ctrl .ctrl-head .name{font-size:12.5px;font-weight:700}
+  .ctrl .ctrl-head .num{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .slider-wrap{position:relative;height:26px;display:flex;align-items:center}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:4px;
+    background:var(--panel2);outline:none;position:relative;z-index:2;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:24px;height:24px;border-radius:50%;
+    background:var(--ink);border:3px solid var(--cyan);cursor:pointer;margin-top:0;
+    box-shadow:0 2px 6px rgba(0,0,0,.4);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:24px;height:24px;border-radius:50%;background:var(--ink);border:3px solid var(--cyan);cursor:pointer;
+  }
+  .target-marker{position:absolute;top:2px;bottom:2px;width:3px;background:var(--amber);
+    border-radius:2px;z-index:1;pointer-events:none;box-shadow:0 0 6px rgba(255,182,72,.7)}
+  .hint{font-size:10px;color:var(--muted);margin-top:2px;text-align:center}
+
+  /* 오버레이 */
+  .overlay{position:absolute;inset:0;background:rgba(10,11,14,.9);
+    display:flex;align-items:center;justify-content:center;padding:22px;z-index:20;
+    backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+  .overlay.hidden{display:none}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 20px;
+    max-width:340px;width:100%;text-align:center}
+  .card h2{font-size:20px;font-weight:800;margin-bottom:10px}
+  .card p{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .rule-list{text-align:left;font-size:12.5px;color:var(--ink);margin:14px 0;padding-left:0;list-style:none}
+  .rule-list li{margin-bottom:8px;padding-left:22px;position:relative}
+  .rule-list li::before{content:"•";position:absolute;left:6px;color:var(--cyan);font-weight:900}
+  .card .big-btn{margin-top:10px;width:100%;background:var(--cyan);border:none;color:#0e1116;
+    font-size:14px;font-weight:800;padding:13px 0;border-radius:12px;cursor:pointer}
+  .card .big-btn:active{filter:brightness(.85)}
+  .result-height{font-size:44px;font-weight:900;margin:10px 0 2px;font-variant-numeric:tabular-nums}
+  .result-height.win{color:var(--cyan)}
+  .result-height.fail{color:var(--muted)}
+  .result-sub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+  .badge{display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-bottom:8px}
+  .badge.win{background:rgba(61,220,132,.15);color:var(--green);border:1px solid rgba(61,220,132,.4)}
+  .badge.fail{background:rgba(255,95,95,.15);color:var(--red);border:1px solid rgba(255,95,95,.4)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title-box">
+      <h1>🌪️ 토네이도 키우기</h1>
+      <p>온도차 × 회전력, 균형을 잡아 11m까지</p>
+    </div>
+    <button class="restart-btn" id="restartBtnTop" type="button">다시 도전</button>
+  </header>
+
+  <div class="stat-row">
+    <div class="stat-box timer" id="timerBox">
+      <div class="lbl">남은 시간</div>
+      <div class="val" id="timerVal">90</div>
+    </div>
+    <div class="stat-box best">
+      <div class="lbl">최고 기록</div>
+      <div class="val" id="bestVal">-</div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="stability-hud">
+      <span class="lbl">정렬 상태</span>
+      <div class="stability-track"><div class="stability-fill" id="stabilityFill"></div></div>
+    </div>
+    <div class="gust-toast" id="gustToast">💨 돌풍! 목표가 바뀌었어요</div>
+    <div class="vignette" id="vignette"></div>
+  </div>
+
+  <div class="gauge">
+    <span class="glbl">높이</span>
+    <div class="gauge-track"><div class="gauge-fill" id="heightFill"></div><div class="gauge-target"></div></div>
+    <span class="gval" id="heightVal">0.0 / 11m</span>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl">
+      <div class="ctrl-head"><span class="name">🌡️ 온도차</span><span class="num" id="tempNum">50</span></div>
+      <div class="slider-wrap">
+        <div class="target-marker" id="tempMarker"></div>
+        <input type="range" id="tempSlider" min="0" max="100" value="50" aria-label="온도차 조절">
+      </div>
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-head"><span class="name">🌀 회전력</span><span class="num" id="rotNum">50</span></div>
+      <div class="slider-wrap">
+        <div class="target-marker" id="rotMarker"></div>
+        <input type="range" id="rotSlider" min="0" max="100" value="50" aria-label="회전력 조절">
+      </div>
+    </div>
+    <p class="hint">노란 막대(목표)에 두 값을 맞춰 유지 · 데스크톱은 방향키(←→ 온도차, ↑↓ 회전력)도 가능</p>
+  </div>
+
+  <!-- 시작 오버레이 -->
+  <div class="overlay" id="introOverlay">
+    <div class="card">
+      <h2>🌪️ 토네이도 키우기</h2>
+      <p>서울시립과학관 대표 전시 "아시아 최대 11m 인공 토네이도" — 온도차와 회전(수렴)이 만나면 소용돌이가 생깁니다.</p>
+      <ul class="rule-list">
+        <li>슬라이더 2개로 <b>온도차</b>·<b>회전력</b>을 조절해 노란 목표 지점에 맞추세요.</li>
+        <li>목표는 몇 초마다 <b>돌풍</b>으로 흔들립니다. 계속 따라가야 해요.</li>
+        <li>너무 세거나 약해도(목표에서 멀어지면) 소용돌이가 흩어져 줄어듭니다.</li>
+        <li><b>90초</b> 안에 높이 게이지를 <b>11m</b>까지 채우면 성공!</li>
+      </ul>
+      <button class="big-btn" id="startBtn" type="button">시작하기</button>
+    </div>
+  </div>
+
+  <!-- 결과 오버레이 -->
+  <div class="overlay hidden" id="resultOverlay">
+    <div class="card">
+      <span class="badge" id="resultBadge">결과</span>
+      <h2 id="resultTitle">-</h2>
+      <div class="result-height" id="resultHeight">0.0m</div>
+      <p class="result-sub" id="resultSub">-</p>
+      <button class="big-btn" id="restartBtn2" type="button">다시 도전</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ===== 상수 (sim.mjs로 사전 튜닝: 숙련자 ~39초 클리어 / 보통 ~79초 아슬아슬 클리어 / 미숙 실패) ===== */
+  var MAX_HEIGHT = 11;       // m
+  var ROUND_TIME = 90;       // 초
+  var GROW_RATE = 0.75;      // matchScore가 임계 이상일 때 성장 계수
+  var DECAY_RATE = 1.2;      // matchScore가 임계 미만일 때 감소 계수
+  var THRESHOLD = 0.5;       // 이 matchScore 이상이어야 자람
+  var GUST_MIN = 4.2, GUST_MAX = 6.2; // 돌풍 간격(초)
+  var KEY_RATE = 62;         // 방향키 초당 변화량
+
+  /* ===== DOM ===== */
+  var $ = function(id){ return document.getElementById(id); };
+  var stageEl = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
+  var timerVal = $("timerVal"), timerBox = $("timerBox"), bestVal = $("bestVal");
+  var heightFill = $("heightFill"), heightVal = $("heightVal");
+  var stabilityFill = $("stabilityFill");
+  var gustToast = $("gustToast"), vignette = $("vignette");
+  var tempSlider = $("tempSlider"), rotSlider = $("rotSlider");
+  var tempNum = $("tempNum"), rotNum = $("rotNum");
+  var tempMarker = $("tempMarker"), rotMarker = $("rotMarker");
+  var introOverlay = $("introOverlay"), resultOverlay = $("resultOverlay");
+  var startBtn = $("startBtn"), restartBtn2 = $("restartBtn2"), restartBtnTop = $("restartBtnTop");
+  var resultBadge = $("resultBadge"), resultTitle = $("resultTitle"),
+      resultHeight = $("resultHeight"), resultSub = $("resultSub");
+
+  /* ===== 상태 ===== */
+  var running = false;
+  var tempVal = 50, rotVal = 50;
+  var idealTemp = 60, idealRot = 60;
+  var nextGustAt = 0;
+  var elapsed = 0, timeLeft = ROUND_TIME;
+  var height = 0;
+  var matchScore = 0, matchSmoothed = 0;
+  var shakeMag = 0;
+  var lastTs = null;
+  var keys = { left:false, right:false, up:false, down:false };
+  var particles = [];
+  var best = loadBest();
+
+  function loadBest(){
+    try{
+      var raw = localStorage.getItem("tornado_proto_best_2026");
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return { bestTime: null, bestHeight: 0 };
+  }
+  function saveBest(){
+    try{ localStorage.setItem("tornado_proto_best_2026", JSON.stringify(best)); }catch(e){}
+  }
+  function renderBest(){
+    if(best.bestTime !== null){
+      bestVal.textContent = best.bestTime.toFixed(1) + "초 클리어";
+    } else if(best.bestHeight > 0){
+      bestVal.textContent = "최고 " + best.bestHeight.toFixed(1) + "m";
+    } else {
+      bestVal.textContent = "-";
+    }
+  }
+
+  /* ===== 오디오 (프로시저럴 바람 소리, 외부 파일 없음) ===== */
+  var audioCtx = null, windGain = null, windFilter = null, audioReady = false;
+  function ensureAudio(){
+    if(audioReady) return;
+    audioReady = true;
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+      var bufSize = audioCtx.sampleRate * 2;
+      var buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      var data = buf.getChannelData(0);
+      for(var i=0;i<bufSize;i++){ data[i] = Math.random()*2-1; }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      windFilter = audioCtx.createBiquadFilter();
+      windFilter.type = "lowpass";
+      windFilter.frequency.value = 3800;
+      windGain = audioCtx.createGain();
+      windGain.gain.value = 0.0001;
+      src.connect(windFilter); windFilter.connect(windGain); windGain.connect(audioCtx.destination);
+      src.start(0);
+    }catch(e){ audioCtx = null; }
+  }
+  function updateAudio(dt){
+    if(!audioCtx || !windGain || !windFilter) return;
+    if(audioCtx.state === "suspended"){ audioCtx.resume(); }
+    var growFrac = height / MAX_HEIGHT;
+    var targetGain = running ? (0.02 + growFrac*0.11) * (0.4 + 0.6*matchSmoothed) : 0.0001;
+    var targetFreq = 3800 - growFrac*2900;
+    windGain.gain.value += (targetGain - windGain.gain.value) * Math.min(1, dt*3);
+    windFilter.frequency.value += (targetFreq - windFilter.frequency.value) * Math.min(1, dt*3);
+  }
+  function playBlip(kind){
+    if(!audioCtx) return;
+    try{
+      var o = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      if(kind === "gust"){
+        o.type = "triangle"; o.frequency.value = 620;
+        g.gain.value = 0.06; o.frequency.linearRampToValueAtTime(420, audioCtx.currentTime+0.18);
+      } else if(kind === "win"){
+        o.type = "sine"; o.frequency.value = 520;
+        g.gain.value = 0.08; o.frequency.linearRampToValueAtTime(1040, audioCtx.currentTime+0.35);
+      } else {
+        o.type = "sawtooth"; o.frequency.value = 220;
+        g.gain.value = 0.05; o.frequency.linearRampToValueAtTime(80, audioCtx.currentTime+0.4);
+      }
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.45);
+      o.start(); o.stop(audioCtx.currentTime + 0.5);
+    }catch(e){}
+  }
+
+  /* ===== 캔버스 리사이즈 ===== */
+  var W=0, H=0, DPR=1;
+  function resizeCanvas(){
+    var rect = stageEl.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = Math.max(1, rect.width); H = Math.max(1, rect.height);
+    cv.width = W*DPR; cv.height = H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener("resize", resizeCanvas);
+
+  /* ===== 파티클(도형만, 아트 없음) ===== */
+  var N_PARTICLES = 70;
+  function initParticles(){
+    particles = [];
+    for(var i=0;i<N_PARTICLES;i++){
+      particles.push({
+        u0: Math.random(),
+        angleOffset: Math.random()*Math.PI*2,
+        speedJitter: 0.8+Math.random()*0.5,
+        radiusJitter: 0.82+Math.random()*0.36,
+        sizeJitter: 0.7+Math.random()*0.8
+      });
+    }
+  }
+
+  /* ===== 게임 로직 ===== */
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function lerp(a,b,t){ return a + (b-a)*t; }
+
+  function scheduleGust(now){
+    nextGustAt = now + (GUST_MIN + Math.random()*(GUST_MAX-GUST_MIN));
+  }
+  function doGust(){
+    idealTemp = 22 + Math.random()*63; // 22~85
+    idealRot = 22 + Math.random()*63;
+    tempMarker.style.left = idealTemp + "%";
+    rotMarker.style.left = idealRot + "%";
+    gustToast.classList.add("show");
+    setTimeout(function(){ gustToast.classList.remove("show"); }, 900);
+    playBlip("gust");
+    if(navigator.vibrate) navigator.vibrate(40);
+  }
+
+  function computeMatch(){
+    var errT = Math.abs(tempVal - idealTemp);
+    var errR = Math.abs(rotVal - idealRot);
+    return clamp(1 - (errT+errR)/70, 0, 1);
+  }
+
+  function resetState(){
+    tempVal = 50; rotVal = 50;
+    tempSlider.value = 50; rotSlider.value = 50;
+    idealTemp = 60; idealRot = 60;
+    tempMarker.style.left = "60%"; rotMarker.style.left = "60%";
+    elapsed = 0; timeLeft = ROUND_TIME;
+    height = 0; matchScore = 0; matchSmoothed = 0; shakeMag = 0;
+    keys.left=keys.right=keys.up=keys.down=false;
+    scheduleGust(0);
+    initParticles();
+    updateHUDStatic();
+  }
+
+  function updateHUDStatic(){
+    tempNum.textContent = Math.round(tempVal);
+    rotNum.textContent = Math.round(rotVal);
+    timerVal.textContent = Math.ceil(timeLeft);
+    heightVal.textContent = height.toFixed(1) + " / " + MAX_HEIGHT + "m";
+    heightFill.style.width = (height/MAX_HEIGHT*100) + "%";
+  }
+
+  function endGame(win){
+    running = false;
+    if(win){
+      var clearTime = elapsed;
+      if(best.bestTime === null || clearTime < best.bestTime) best.bestTime = clearTime;
+      if(height > best.bestHeight) best.bestHeight = height;
+      saveBest(); renderBest();
+      resultBadge.textContent = "성공"; resultBadge.className = "badge win";
+      resultTitle.textContent = "토네이도 완성!";
+      resultHeight.textContent = height.toFixed(1)+"m"; resultHeight.className = "result-height win";
+      resultSub.textContent = clearTime.toFixed(1) + "초 만에 11m 도달";
+      playBlip("win");
+      if(navigator.vibrate) navigator.vibrate([40,60,40]);
+    } else {
+      if(height > best.bestHeight) best.bestHeight = height;
+      saveBest(); renderBest();
+      resultBadge.textContent = "실패"; resultBadge.className = "badge fail";
+      resultTitle.textContent = "시간 종료";
+      resultHeight.textContent = height.toFixed(1)+"m"; resultHeight.className = "result-height fail";
+      resultSub.textContent = "균형을 더 오래 유지해보세요";
+      playBlip("fail");
+      if(navigator.vibrate) navigator.vibrate(120);
+    }
+    resultOverlay.classList.remove("hidden");
+  }
+
+  function startGame(){
+    introOverlay.classList.add("hidden");
+    resultOverlay.classList.add("hidden");
+    resetState();
+    ensureAudio();
+    running = true;
+    lastTs = null;
+    requestAnimationFrame(loop);
+  }
+
+  /* ===== 입력 ===== */
+  tempSlider.addEventListener("input", function(){
+    tempVal = Number(tempSlider.value);
+    ensureAudio();
+  });
+  rotSlider.addEventListener("input", function(){
+    rotVal = Number(rotSlider.value);
+    ensureAudio();
+  });
+  window.addEventListener("keydown", function(e){
+    var k = e.key;
+    if(k==="ArrowLeft"||k==="ArrowRight"||k==="ArrowUp"||k==="ArrowDown"){
+      e.preventDefault(); ensureAudio();
+      if(k==="ArrowLeft") keys.left = true;
+      if(k==="ArrowRight") keys.right = true;
+      if(k==="ArrowUp") keys.up = true;
+      if(k==="ArrowDown") keys.down = true;
+    }
+  });
+  window.addEventListener("keyup", function(e){
+    var k = e.key;
+    if(k==="ArrowLeft") keys.left = false;
+    if(k==="ArrowRight") keys.right = false;
+    if(k==="ArrowUp") keys.up = false;
+    if(k==="ArrowDown") keys.down = false;
+  });
+
+  startBtn.addEventListener("click", startGame);
+  restartBtn2.addEventListener("click", startGame);
+  restartBtnTop.addEventListener("click", function(){
+    if(running){
+      running = false;
+      introOverlay.classList.remove("hidden");
+      resultOverlay.classList.add("hidden");
+      resetState();
+    } else {
+      resultOverlay.classList.add("hidden");
+      introOverlay.classList.remove("hidden");
+    }
+  });
+
+  /* ===== 렌더 ===== */
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    var cx = W*0.5;
+    var baseY = H*0.86;
+    var maxFunnelPx = H*0.72;
+    var growFrac = height / MAX_HEIGHT;
+    var funnelPx = maxFunnelPx * (0.14 + 0.86*growFrac);
+    var coherence = 0.35 + 0.65*matchSmoothed; // 낮을수록 흩어짐
+
+    // 흔들림
+    var sx = (Math.random()-0.5)*shakeMag*2;
+    var sy = (Math.random()-0.5)*shakeMag*1.2;
+    ctx.save();
+    ctx.translate(sx, sy);
+
+    // 바닥 그림자
+    ctx.beginPath();
+    ctx.ellipse(cx, baseY+6, 46+growFrac*30, 8+growFrac*4, 0, 0, Math.PI*2);
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fill();
+
+    // 중심 글로우
+    if(growFrac > 0.02){
+      var glow = ctx.createRadialGradient(cx, baseY-funnelPx*0.35, 4, cx, baseY-funnelPx*0.35, 90+growFrac*60);
+      glow.addColorStop(0, "rgba(126,200,227,"+(0.10+0.18*growFrac)+")");
+      glow.addColorStop(1, "rgba(126,200,227,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0,0,W,H);
+    }
+
+    // 파티클(소용돌이)
+    var t = performance.now()/1000;
+    var rotSpeed = 0.6 + (rotVal/100)*5.4; // rad/s
+    for(var i=0;i<particles.length;i++){
+      var p = particles[i];
+      var u = (p.u0 + t*0.16*p.speedJitter) % 1; // 0(바닥)~1(꼭대기) 순환
+      var y = baseY - u*funnelPx;
+      var radiusBase = lerp(48, 6, u); // 바닥이 넓고 위로 갈수록 좁아짐
+      var radius = radiusBase * p.radiusJitter * coherence + (1-coherence)*22*Math.sin(t*3+i);
+      var angle = t*rotSpeed*p.speedJitter + p.angleOffset + u*3.4;
+      var jitter = (1-coherence) * 10 * (Math.random()-0.5);
+      var x = cx + Math.cos(angle)*radius + jitter;
+      var yy = y + Math.sin(angle*0.6)*3;
+
+      var alpha = clamp(0.25 + growFrac*0.55 + (1-u)*0.15, 0.1, 0.95);
+      var size = (1.6 + growFrac*2.2) * p.sizeJitter;
+      var colorMix = clamp(growFrac*0.8 + matchSmoothed*0.2, 0, 1);
+      ctx.beginPath();
+      ctx.arc(x, yy, size, 0, Math.PI*2);
+      ctx.fillStyle = colorMix > 0.5 ? "rgba(126,200,227,"+alpha+")" : "rgba(139,147,163,"+alpha+")";
+      ctx.fill();
+    }
+
+    ctx.restore();
+
+    // 비네트(불안정 경고)
+    var unstable = (height > 2.5 && matchSmoothed < 0.35 && running) ? clamp((0.35-matchSmoothed)/0.35,0,1) : 0;
+    vignette.style.opacity = unstable.toFixed(2);
+  }
+
+  /* ===== 메인 루프 ===== */
+  function loop(ts){
+    if(!running) return;
+    if(lastTs === null) lastTs = ts;
+    var dt = Math.min(0.05, (ts - lastTs)/1000);
+    lastTs = ts;
+
+    // 키보드 입력 반영
+    if(keys.left) tempVal -= KEY_RATE*dt;
+    if(keys.right) tempVal += KEY_RATE*dt;
+    if(keys.down) rotVal -= KEY_RATE*dt;
+    if(keys.up) rotVal += KEY_RATE*dt;
+    if(keys.left||keys.right){ tempVal = clamp(tempVal,0,100); tempSlider.value = tempVal; }
+    if(keys.up||keys.down){ rotVal = clamp(rotVal,0,100); rotSlider.value = rotVal; }
+
+    elapsed += dt;
+    timeLeft = Math.max(0, ROUND_TIME - elapsed);
+
+    if(elapsed >= nextGustAt){ doGust(); scheduleGust(elapsed); }
+
+    matchScore = computeMatch();
+    matchSmoothed += (matchScore - matchSmoothed) * Math.min(1, dt*4);
+
+    var delta = matchScore > THRESHOLD
+      ? (matchScore - THRESHOLD) * GROW_RATE
+      : -(THRESHOLD - matchScore) * DECAY_RATE;
+    height = clamp(height + delta*dt, 0, MAX_HEIGHT);
+
+    var targetShake = (height > 2.5 && matchSmoothed < 0.35) ? clamp((0.35-matchSmoothed)*22, 0, 7) : 0;
+    shakeMag += (targetShake - shakeMag) * Math.min(1, dt*5);
+
+    updateAudio(dt);
+
+    // HUD
+    tempNum.textContent = Math.round(tempVal);
+    rotNum.textContent = Math.round(rotVal);
+    timerVal.textContent = Math.ceil(timeLeft);
+    timerBox.classList.toggle("warn", timeLeft <= 15);
+    heightVal.textContent = height.toFixed(1) + " / " + MAX_HEIGHT + "m";
+    heightFill.style.width = (height/MAX_HEIGHT*100) + "%";
+    var stabPct = Math.round(matchSmoothed*100);
+    stabilityFill.style.width = stabPct + "%";
+    stabilityFill.style.background = matchSmoothed > 0.66 ? "var(--green)" : (matchSmoothed > 0.35 ? "var(--amber)" : "var(--red)");
+
+    draw();
+
+    if(height >= MAX_HEIGHT){ endGame(true); return; }
+    if(timeLeft <= 0){ endGame(false); return; }
+
+    requestAnimationFrame(loop);
+  }
+
+  /* ===== 초기화 ===== */
+  resizeCanvas();
+  initParticles();
+  renderBest();
+  requestAnimationFrame(function tick(){
+    // 대기 화면에서도 캔버스에 옅은 소용돌이 프리뷰
+    if(!running){
+      draw();
+      requestAnimationFrame(tick);
+    }
+  });
+})();
+</script>
+</body>
+</html>

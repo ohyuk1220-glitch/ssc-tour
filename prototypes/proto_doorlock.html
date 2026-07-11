@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>도어록 추리 — 프로토타입</title>
+<style>
+  :root{
+    --bg:#15171c; --panel:#1f232b; --panel2:#262b34; --line:#343b47;
+    --ink:#eef1f6; --muted:#8b93a3;
+    --green:#3ddc84; --yellow:#f4c542; --black:#4a5261;
+    --red:#ff5f5f; --accent:#4a90e2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;word-break:keep-all;overflow-wrap:break-word}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    position:fixed;inset:0;height:100dvh;width:100vw;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    user-select:none;-webkit-user-select:none;overflow:hidden;
+    line-height:1.5;
+  }
+  .wrap{width:100%;max-width:420px;height:100%;display:flex;flex-direction:column;padding:14px 14px 16px;gap:10px}
+
+  /* 헤더 */
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .title-box h1{font-size:19px;font-weight:800;letter-spacing:-0.3px}
+  .title-box p{font-size:12px;color:var(--muted);margin-top:3px}
+  .restart-btn{flex-shrink:0;background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+    border-radius:10px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
+  .restart-btn:active{background:var(--line)}
+
+  /* 진행 슬롯(시도 8칸) */
+  .slots{display:flex;gap:5px}
+  .slot{flex:1;height:6px;border-radius:3px;background:var(--line)}
+  .slot.used{background:var(--accent)}
+  .slot.fail{background:var(--red)}
+
+  /* 도어 패널 (LED + 문) */
+  .door-stage{position:relative;perspective:600px;flex-shrink:0}
+  .door-panel{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:14px 16px;display:flex;flex-direction:column;gap:10px;
+    transform-origin:left center;transition:transform .9s cubic-bezier(.3,.9,.4,1),opacity .9s;
+  }
+  .door-panel.open{transform:rotateY(-78deg) translateX(2px);opacity:.35}
+  .led-row{display:flex;align-items:center;justify-content:space-between}
+  .led{width:11px;height:11px;border-radius:50%;background:var(--red);
+    box-shadow:0 0 6px rgba(255,95,95,.7);transition:background .3s,box-shadow .3s}
+  .led.on{background:var(--green);box-shadow:0 0 9px rgba(61,220,132,.9)}
+  .led-label{font-size:11px;color:var(--muted);font-weight:600}
+  .display{display:flex;gap:8px;justify-content:center}
+  .digit-box{
+    flex:1;max-width:56px;aspect-ratio:1/1.15;border-radius:10px;
+    background:#0c0e12;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-family:"SF Mono",Consolas,Menlo,monospace;font-size:26px;font-weight:700;color:var(--accent);
+    box-shadow:inset 0 0 8px rgba(0,0,0,.6);
+  }
+  .digit-box.filled{color:var(--ink)}
+  .digit-box.cursor{border-color:var(--accent)}
+  .status-line{font-size:12.5px;color:var(--muted);text-align:center;min-height:16px}
+  .status-line.err{color:var(--red);font-weight:700}
+  .status-line.win{color:var(--green);font-weight:700}
+
+  /* 시도 기록 */
+  .history{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column-reverse;gap:6px;
+    padding:2px 2px 2px 0;-webkit-overflow-scrolling:touch}
+  .hrow{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:6px 10px;font-size:12px;animation:slideIn .25s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .hrow .no{color:var(--muted);font-weight:700;min-width:16px}
+  .hrow .g{font-family:"SF Mono",Consolas,Menlo,monospace;font-weight:700;letter-spacing:2px;flex:1}
+  .hrow .dots{display:flex;gap:3px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .dot.g{background:var(--green)}
+  .dot.y{background:var(--yellow)}
+  .dot.b{background:var(--black)}
+
+  /* 범례 */
+  .legend{display:flex;gap:12px;justify-content:center;font-size:10.5px;color:var(--muted);flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:4px}
+  .legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+  /* 키패드 */
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex-shrink:0}
+  .key{
+    background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+    color:var(--ink);font-size:21px;font-weight:700;padding:14px 0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;position:relative;
+  }
+  .key:active{background:var(--line);transform:scale(.96)}
+  .key.fn{color:var(--muted);font-size:15px}
+  .key.confirm{background:rgba(61,220,132,.14);border-color:rgba(61,220,132,.4);color:var(--green)}
+  .key.confirm:active{background:rgba(61,220,132,.3)}
+  .key.del{color:var(--red)}
+  .shake{animation:shake .35s}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}
+    60%{transform:translateX(-5px)}80%{transform:translateX(5px)}
+  }
+
+  /* 오버레이(시작/결과) */
+  .overlay{position:absolute;inset:0;background:rgba(10,11,14,.88);
+    display:flex;align-items:center;justify-content:center;padding:24px;z-index:20;
+    backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+  .overlay.hidden{display:none}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 22px;
+    max-width:340px;width:100%;text-align:center}
+  .card h2{font-size:20px;font-weight:800;margin-bottom:10px}
+  .card p{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .stars{font-size:30px;letter-spacing:4px;margin:14px 0;color:var(--line)}
+  .stars .on{color:var(--yellow);text-shadow:0 0 10px rgba(244,197,66,.6)}
+  .card .big-btn{margin-top:14px;width:100%;background:var(--accent);border:none;color:#fff;
+    font-size:14px;font-weight:800;padding:12px 0;border-radius:12px;cursor:pointer}
+  .card .big-btn:active{filter:brightness(.85)}
+  .hint-list{text-align:left;font-size:12px;color:var(--muted);margin:12px 0;padding-left:18px}
+  .hint-list li{margin-bottom:5px}
+
+  /* 컨페티 */
+  .confetti-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:15}
+  .confetti{position:absolute;top:-10px;border-radius:2px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(115vh) rotate(400deg);opacity:.2}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title-box">
+      <h1>도어록 추리</h1>
+      <p>딩동, 우리 집 앞이에요 — 힌트로 비밀번호를 맞혀보세요</p>
+    </div>
+    <button class="restart-btn" id="restartBtn" type="button">다시 도전</button>
+  </header>
+
+  <div class="slots" id="slots"></div>
+
+  <div class="door-stage">
+    <div class="door-panel" id="doorPanel">
+      <div class="led-row">
+        <span class="led-label">SMART DOOR LOCK</span>
+        <span class="led" id="led"></span>
+      </div>
+      <div class="display" id="display"></div>
+      <div class="status-line" id="statusLine">4자리를 입력하고 #으로 확인하세요</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i style="background:var(--green)"></i>자리·숫자 정확</span>
+    <span><i style="background:var(--yellow)"></i>숫자만 맞음</span>
+    <span><i style="background:var(--black)"></i>없음</span>
+  </div>
+
+  <div class="history" id="history"></div>
+
+  <div class="keypad" id="keypad">
+    <button class="key" data-k="1">1</button>
+    <button class="key" data-k="2">2</button>
+    <button class="key" data-k="3">3</button>
+    <button class="key" data-k="4">4</button>
+    <button class="key" data-k="5">5</button>
+    <button class="key" data-k="6">6</button>
+    <button class="key" data-k="7">7</button>
+    <button class="key" data-k="8">8</button>
+    <button class="key" data-k="9">9</button>
+    <button class="key fn del" data-k="del">⌫</button>
+    <button class="key" data-k="0">0</button>
+    <button class="key fn confirm" data-k="ok">확인 #</button>
+  </div>
+</div>
+
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<!-- 시작 오버레이 -->
+<div class="overlay" id="introOverlay">
+  <div class="card">
+    <h2>도어록을 열어라</h2>
+    <p>서울시립과학관 Yy전시실 '딩동, 우리 집 앞이에요'</p>
+    <ul class="hint-list">
+      <li>4자리 비밀번호(0~9, 중복 없음)를 <b>8번 안에</b> 추리하세요</li>
+      <li>🟢 자리와 숫자가 모두 정확</li>
+      <li>🟡 숫자는 맞지만 자리가 틀림</li>
+      <li>⚫ 그 숫자는 비밀번호에 없음</li>
+      <li>적을수록 별점이 높아요</li>
+    </ul>
+    <button class="big-btn" id="startBtn" type="button">시작하기</button>
+  </div>
+</div>
+
+<!-- 결과 오버레이 -->
+<div class="overlay hidden" id="resultOverlay">
+  <div class="card">
+    <h2 id="resultTitle">문이 열렸습니다!</h2>
+    <div class="stars" id="resultStars">★★★</div>
+    <p id="resultDesc">3번 만에 성공했어요</p>
+    <button class="big-btn" id="retryBtn" type="button">다시 도전</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var MAX_ATTEMPTS = 8;
+  var CODE_LEN = 4;
+
+  var el = {
+    display: document.getElementById('display'),
+    statusLine: document.getElementById('statusLine'),
+    history: document.getElementById('history'),
+    slots: document.getElementById('slots'),
+    led: document.getElementById('led'),
+    doorPanel: document.getElementById('doorPanel'),
+    keypad: document.getElementById('keypad'),
+    introOverlay: document.getElementById('introOverlay'),
+    resultOverlay: document.getElementById('resultOverlay'),
+    resultTitle: document.getElementById('resultTitle'),
+    resultStars: document.getElementById('resultStars'),
+    resultDesc: document.getElementById('resultDesc'),
+    confettiLayer: document.getElementById('confettiLayer'),
+    startBtn: document.getElementById('startBtn'),
+    retryBtn: document.getElementById('retryBtn'),
+    restartBtn: document.getElementById('restartBtn')
+  };
+
+  var state = { secret: [], current: [], attempts: [], over: false, won: false };
+
+  /* ---------- 사운드 (Web Audio, 파일 없음) ---------- */
+  var actx = null;
+  function ctx(){
+    if(!actx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      actx = new AC();
+    }
+    if(actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  function beep(freq, dur, type, vol, delay){
+    try{
+      var c = ctx();
+      var t0 = c.currentTime + (delay||0);
+      var osc = c.createOscillator();
+      var gain = c.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.linearRampToValueAtTime(vol||0.12, t0+0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+      osc.connect(gain); gain.connect(c.destination);
+      osc.start(t0); osc.stop(t0+dur+0.03);
+    }catch(e){ /* 오디오 미지원 환경도 게임은 계속 동작 */ }
+  }
+  function sfxClick(){ beep(640, 0.05, 'square', 0.05); }
+  function sfxDel(){ beep(300, 0.06, 'square', 0.05); }
+  function sfxError(){ beep(150, 0.28, 'sawtooth', 0.11); }
+  function sfxConfirm(){ beep(420, 0.09, 'sine', 0.09); }
+  function sfxWin(){
+    beep(523.25, 0.14, 'sine', 0.14, 0);
+    beep(659.25, 0.14, 'sine', 0.14, 0.13);
+    beep(783.99, 0.16, 'sine', 0.15, 0.26);
+    beep(1046.5, 0.30, 'sine', 0.16, 0.42);
+  }
+  function sfxLose(){
+    beep(220, 0.30, 'sawtooth', 0.11, 0);
+    beep(174.6, 0.30, 'sawtooth', 0.12, 0.22);
+    beep(130.8, 0.45, 'sawtooth', 0.13, 0.44);
+  }
+
+  /* ---------- 로직 ---------- */
+  function genSecret(){
+    var digits = [0,1,2,3,4,5,6,7,8,9];
+    for(var i=digits.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var tmp = digits[i]; digits[i]=digits[j]; digits[j]=tmp;
+    }
+    return digits.slice(0,CODE_LEN).map(String);
+  }
+
+  function evaluate(guess, secret){
+    var green = 0;
+    var secretLeft = [], guessLeft = [];
+    for(var i=0;i<CODE_LEN;i++){
+      if(guess[i] === secret[i]) green++;
+      else { secretLeft.push(secret[i]); guessLeft.push(guess[i]); }
+    }
+    var used = new Array(secretLeft.length).fill(false);
+    var yellow = 0;
+    for(var k=0;k<guessLeft.length;k++){
+      var g = guessLeft[k];
+      for(var s=0;s<secretLeft.length;s++){
+        if(!used[s] && secretLeft[s] === g){ used[s]=true; yellow++; break; }
+      }
+    }
+    var black = CODE_LEN - green - yellow;
+    return { green: green, yellow: yellow, black: black };
+  }
+
+  function starsFor(attemptsUsed){
+    if(attemptsUsed <= 3) return 3;
+    if(attemptsUsed <= 5) return 2;
+    return 1;
+  }
+
+  /* ---------- 렌더 ---------- */
+  function renderSlots(){
+    el.slots.innerHTML = '';
+    for(var i=0;i<MAX_ATTEMPTS;i++){
+      var s = document.createElement('div');
+      s.className = 'slot';
+      if(i < state.attempts.length){
+        s.classList.add('used');
+      }
+      el.slots.appendChild(s);
+    }
+  }
+
+  function renderDisplay(){
+    el.display.innerHTML = '';
+    for(var i=0;i<CODE_LEN;i++){
+      var box = document.createElement('div');
+      box.className = 'digit-box';
+      var v = state.current[i];
+      if(v !== undefined){ box.textContent = v; box.classList.add('filled'); }
+      else { box.textContent = '·'; }
+      if(i === state.current.length && !state.over) box.classList.add('cursor');
+      el.display.appendChild(box);
+    }
+  }
+
+  function renderHistoryRow(attempt, idx){
+    var row = document.createElement('div');
+    row.className = 'hrow';
+    var no = document.createElement('span');
+    no.className = 'no';
+    no.textContent = (idx+1) + '.';
+    var g = document.createElement('span');
+    g.className = 'g';
+    g.textContent = attempt.guess.join(' ');
+    var dots = document.createElement('span');
+    dots.className = 'dots';
+    var order = [];
+    for(var a=0;a<attempt.result.green;a++) order.push('g');
+    for(var b=0;b<attempt.result.yellow;b++) order.push('y');
+    for(var c=0;c<attempt.result.black;c++) order.push('b');
+    order.forEach(function(t){
+      var d = document.createElement('span');
+      d.className = 'dot ' + t;
+      dots.appendChild(d);
+    });
+    row.appendChild(no); row.appendChild(g); row.appendChild(dots);
+    el.history.appendChild(row);
+  }
+
+  function setStatus(text, cls){
+    el.statusLine.textContent = text;
+    el.statusLine.className = 'status-line' + (cls ? ' ' + cls : '');
+  }
+
+  function remaining(){ return MAX_ATTEMPTS - state.attempts.length; }
+
+  /* ---------- 액션 ---------- */
+  function pressDigit(d){
+    if(state.over) return;
+    if(state.current.length >= CODE_LEN) return;
+    state.current.push(d);
+    sfxClick();
+    renderDisplay();
+  }
+
+  function pressDel(){
+    if(state.over) return;
+    if(state.current.length === 0) return;
+    state.current.pop();
+    sfxDel();
+    renderDisplay();
+  }
+
+  function shakePanel(){
+    el.doorPanel.classList.remove('shake');
+    void el.doorPanel.offsetWidth;
+    el.doorPanel.classList.add('shake');
+  }
+
+  function pressConfirm(){
+    if(state.over) return;
+    if(state.current.length < CODE_LEN){
+      sfxError();
+      shakePanel();
+      setStatus('4자리를 모두 입력하세요', 'err');
+      return;
+    }
+    sfxConfirm();
+    var guess = state.current.slice();
+    var result = evaluate(guess, state.secret);
+    state.attempts.push({ guess: guess, result: result });
+    state.current = [];
+    renderDisplay();
+    renderSlots();
+    renderHistoryRow(state.attempts[state.attempts.length-1], state.attempts.length-1);
+
+    if(result.green === CODE_LEN){
+      win();
+      return;
+    }
+    if(state.attempts.length >= MAX_ATTEMPTS){
+      lose();
+      return;
+    }
+    setStatus('남은 기회 ' + remaining() + '/' + MAX_ATTEMPTS, '');
+  }
+
+  function spawnConfetti(){
+    var colors = ['#3ddc84', '#f4c542', '#4a90e2', '#eef1f6'];
+    for(var i=0;i<28;i++){
+      var c = document.createElement('div');
+      c.className = 'confetti';
+      var size = 5 + Math.random()*5;
+      c.style.width = size + 'px';
+      c.style.height = (size*0.6) + 'px';
+      c.style.left = (Math.random()*100) + 'vw';
+      c.style.background = colors[Math.floor(Math.random()*colors.length)];
+      c.style.animationDuration = (1.1 + Math.random()*0.9) + 's';
+      c.style.animationDelay = (Math.random()*0.3) + 's';
+      el.confettiLayer.appendChild(c);
+      (function(node){
+        setTimeout(function(){ node.remove(); }, 2600);
+      })(c);
+    }
+  }
+
+  function win(){
+    state.over = true; state.won = true;
+    el.led.classList.add('on');
+    el.doorPanel.classList.add('open');
+    setStatus('문이 열렸습니다!', 'win');
+    sfxWin();
+    spawnConfetti();
+    var used = state.attempts.length;
+    var stars = starsFor(used);
+    setTimeout(function(){
+      showResult(true, used, stars);
+    }, 850);
+  }
+
+  function lose(){
+    state.over = true; state.won = false;
+    setStatus('문이 잠겼습니다', 'err');
+    sfxLose();
+    shakePanel();
+    setTimeout(function(){
+      showResult(false, MAX_ATTEMPTS, 0);
+    }, 500);
+  }
+
+  function showResult(won, used, stars){
+    el.resultTitle.textContent = won ? '문이 열렸습니다!' : '문이 잠겼습니다';
+    var starStr = '';
+    for(var i=0;i<3;i++){
+      starStr += (i < stars) ? '<span class="on">★</span>' : '<span>★</span>';
+    }
+    el.resultStars.innerHTML = starStr;
+    el.resultDesc.textContent = won
+      ? (used + '번 만에 성공했어요')
+      : ('정답은 ' + state.secret.join('') + ' 였어요. 다시 도전해보세요');
+    el.resultOverlay.classList.remove('hidden');
+  }
+
+  function startGame(){
+    state.secret = genSecret();
+    state.current = [];
+    state.attempts = [];
+    state.over = false;
+    state.won = false;
+    el.led.classList.remove('on');
+    el.doorPanel.classList.remove('open');
+    el.history.innerHTML = '';
+    el.confettiLayer.innerHTML = '';
+    el.resultOverlay.classList.add('hidden');
+    renderDisplay();
+    renderSlots();
+    setStatus('4자리를 입력하고 #으로 확인하세요', '');
+  }
+
+  /* ---------- 입력 바인딩 ---------- */
+  el.keypad.addEventListener('click', function(e){
+    var btn = e.target.closest('.key');
+    if(!btn) return;
+    var k = btn.getAttribute('data-k');
+    if(k === 'del') pressDel();
+    else if(k === 'ok') pressConfirm();
+    else pressDigit(k);
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(el.introOverlay && !el.introOverlay.classList.contains('hidden')) return;
+    if(e.key >= '0' && e.key <= '9') pressDigit(e.key);
+    else if(e.key === 'Backspace') pressDel();
+    else if(e.key === 'Enter') pressConfirm();
+  });
+
+  el.startBtn.addEventListener('click', function(){
+    el.introOverlay.classList.add('hidden');
+    startGame();
+  });
+  el.retryBtn.addEventListener('click', function(){
+    startGame();
+  });
+  el.restartBtn.addEventListener('click', function(){
+    startGame();
+  });
+
+  /* 초기 상태 (오버레이 뒤에서도 화면이 비어있지 않도록) */
+  state.secret = genSecret();
+  renderDisplay();
+  renderSlots();
+})();
+</script>
+</body>
+</html>
