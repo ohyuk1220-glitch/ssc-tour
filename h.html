@@ -186,52 +186,52 @@ const HUB_VERSION="5.0-pixel-bg";
    x,y = 배경 이미지 안에서의 비율좌표(0~1). kind: game|soon|elevator
    game은 file+best(localStorage 키)로 스탬프 판정 */
 const FLOORS=[
- {id:"B1", name:"지하주차장", bg:"bg/bg_b1.png", tint:"#3a3f4a", start:[0.5,0.52], spots:[
+ {id:"B1", name:"지하주차장", bg:"bg/f_b1_hq.png", tint:"#3a3f4a", start:[0.5,0.52], spots:[
    {name:"수상한 상자", room:"B1 주차장", kind:"soon", icon:"📦", x:0.80,y:0.34, color:"#8a7a5a"},
    {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.5,y:0.52, color:"#9aa"},
  ]},
- {id:"1F", name:"1층", bg:"bg/f1_bg.png", tint:"#4caf50", start:[0.5,0.52], spots:[
-   {name:"G전시실 · 생태", kind:"door", room:"room_G", icon:"🌿", x:0.205,y:0.19, color:"#4caf50"},
-   {name:"지진 체험관", kind:"door", room:"room_quake", icon:"🌋", x:0.16,y:0.40, color:"#8a7a6a"},
-   {name:"아이디어 제작소", room:"G전시실 내", kind:"soon", icon:"🛠️", x:0.34,y:0.57, color:"#4caf50"},
-   {name:"안내 · 매표소", kind:"info", icon:"🎫", x:0.60,y:0.43, color:"#4a90e2",
+ {id:"1F", name:"1층", bg:"bg/f1_hq.png", tint:"#4caf50", start:[0.46,0.50], spots:[
+   {name:"G전시실 · 생태", kind:"door", room:"room_G", icon:"🌿", x:0.18,y:0.15, color:"#4caf50"},
+   {name:"지진 체험관", kind:"door", room:"room_quake", icon:"🌋", x:0.135,y:0.44, color:"#8a7a6a"},
+   {name:"아이디어 제작소", room:"G전시실 내", kind:"soon", icon:"🛠️", x:0.30,y:0.62, color:"#4caf50"},
+   {name:"안내 · 매표소", kind:"info", icon:"🎫", x:0.55,y:0.44, color:"#4a90e2",
     info:"관람 안내를 받고 탐방을 시작하는 곳이에요. 여기서 출발!"},
-   {name:"무인 발권기", kind:"info", icon:"🎟️", x:0.72,y:0.53, color:"#9c6ade",
+   {name:"무인 발권기", kind:"info", icon:"🎟️", x:0.62,y:0.54, color:"#9c6ade",
     info:"직접 표를 뽑는 기계예요. 줄 서지 않고 빠르게 입장!"},
-   {name:"북카페", kind:"info", icon:"☕", x:0.84,y:0.36, color:"#8d6e63",
+   {name:"북카페", kind:"info", icon:"☕", x:0.87,y:0.32, color:"#8d6e63",
     info:"과학책을 보며 쉬어가는 공간. 음료도 마실 수 있어요."},
-   {name:"별관 · 메이커 스튜디오", kind:"info", icon:"🔧", x:0.82,y:0.74, color:"#ef8c3b",
+   {name:"별관 · 메이커 스튜디오", kind:"info", icon:"🔧", x:0.82,y:0.84, color:"#ef8c3b",
     info:"직접 만들고 실험하는 창작 공간. 메이커 강좌가 열려요."},
-   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.43,y:0.35, color:"#9aa"},
+   {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.38,y:0.26, color:"#9aa"},
  ]},
- {id:"HALF", name:"½층", bg:"bg/bg_half.png", tint:"#f4c430", start:[0.46,0.55], spots:[
+ {id:"HALF", name:"½층", bg:"bg/f_half_hq.png", tint:"#f4c430", start:[0.46,0.55], spots:[
    {name:"Y전시실 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.20,y:0.34, color:"#f4c430"},
    {name:"사이언스홀", room:"½층", kind:"soon", icon:"🎪", x:0.38,y:0.17, color:"#8bbf6b"},
    {name:"다이나믹 토네이도", room:"½층 · 아시아 최대", kind:"soon", icon:"🌪️", x:0.51,y:0.46, color:"#7ec8e3"},
    {name:"제4교육장 · 물리", room:"제4교육장", kind:"soon", icon:"🧲", x:0.63,y:0.24, color:"#b06ab3"},
    {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.44,y:0.33, color:"#9aa"},
  ]},
- {id:"SQRT2", name:"√2층", bg:"bg/bg_sqrt2.png", tint:"#ef8c3b", start:[0.44,0.55], spots:[
+ {id:"SQRT2", name:"√2층", bg:"bg/f_sqrt2_hq.png", tint:"#ef8c3b", start:[0.44,0.55], spots:[
    {name:"O전시실 · 생존", kind:"door", room:"room_O", icon:"🧬", x:0.42,y:0.16, color:"#ef8c3b"},
    {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.42,y:0.42, color:"#9aa"},
  ]},
- {id:"2F", name:"2층", bg:"bg/bg_2f.png", tint:"#4a90e2", start:[0.45,0.55], spots:[
+ {id:"2F", name:"2층", bg:"bg/f_2f_hq.png", tint:"#4a90e2", start:[0.45,0.55], spots:[
    {name:"B전시실 · 연결", kind:"door", room:"room_B", icon:"🪐", x:0.27,y:0.44, color:"#4a90e2"},
    {name:"Yy전시실 · 공간", room:"Yy전시실", kind:"soon", icon:"🧩", x:0.87,y:0.42, color:"#f4c430"},
    {name:"천문대 · 태양관측", kind:"door", room:"room_astro", icon:"🔭", x:0.66,y:0.78, color:"#2e3a6b"},
    {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.45,y:0.30, color:"#9aa"},
  ]},
- {id:"PI", name:"π층", bg:"bg/bg_pi.png", tint:"#7cb342", start:[0.45,0.55], spots:[
+ {id:"PI", name:"π층", bg:"bg/f_pi_hq.png", tint:"#7cb342", start:[0.45,0.55], spots:[
    {name:"1교육실 · 생물", room:"1교육실", kind:"soon", icon:"🧫", x:0.62,y:0.28, color:"#7cb342"},
    {name:"2교육실 · 화학", kind:"door", room:"room_chem", icon:"⚗️", x:0.72,y:0.33, color:"#9c6ade"},
    {name:"3교육실 · 지구과학", kind:"door", room:"room_earth", icon:"🌍", x:0.84,y:0.40, color:"#8d6e63"},
    {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.66,y:0.60, color:"#9aa"},
  ]},
- {id:"3F", name:"3층", bg:"bg/bg_3f.png", tint:"#90a4ae", start:[0.5,0.55], spots:[
+ {id:"3F", name:"3층", bg:"bg/f_3f_hq.png", tint:"#90a4ae", start:[0.5,0.55], spots:[
    {name:"X전시실 · 기획전시", room:"X전시실", kind:"soon", icon:"🎨", x:0.5,y:0.34, color:"#90a4ae"},
    {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.5,y:0.62, color:"#9aa"},
  ]},
- {id:"R", name:"옥상", bg:"bg/bg_rooftop.png", tint:"#7ec8e3", start:[0.5,0.62], spots:[
+ {id:"R", name:"옥상", bg:"bg/f_rooftop_hq.png", tint:"#7ec8e3", start:[0.5,0.62], spots:[
    {name:"태양광 발전소", room:"옥상", kind:"soon", icon:"☀️", x:0.4,y:0.32, color:"#f6b93b"},
    {name:"엘리베이터", kind:"elevator", icon:"🛗", x:0.6,y:0.55, color:"#9aa"},
  ]},
@@ -240,7 +240,8 @@ const FLOORS=[
 /* ══════════ 전시실 실내 씬 (2계층: 오버월드 층 ↔ 실내 방) ══════════
    문(door)으로 들어가면 실내에서 자유 이동하며 전시물(exhibit) 관람 + 미니게임(game) + 나가기(exit) */
 const ROOMS={
-  room_G:{ name:"G전시실 · 생태", bg:"bg/room_G.png", tint:"#4caf50", floorName:"1층", start:[0.5,0.72], spots:[
+  room_G:{ name:"G전시실 · 생태", bg:"bg/room_G_hq.png", tint:"#4caf50", floorName:"1층", start:[0.5,0.72],
+    obstacles:[[0.08,0.14,0.37,0.39],[0.40,0.14,0.63,0.39],[0.66,0.14,0.92,0.39]], spots:[
     {name:"한강 수족관", kind:"exhibit", icon:"🐟", x:0.22,y:0.42, color:"#4a90e2",
      info:"한강에는 참붕어·끄리·강준치 같은 토종 물고기가 살아요. 도심 하천이 되살아난 증거랍니다."},
     {name:"밤섬 생태", kind:"exhibit", icon:"🦆", x:0.50,y:0.42, color:"#4caf50",
@@ -251,7 +252,7 @@ const ROOMS={
      icon:"♻️", room:"G전시실", x:0.35,y:0.62, color:"#4caf50"},
     {name:"나가기", kind:"exit", icon:"🚪", x:0.50,y:0.87, color:"#b0a99a"},
   ]},
-  room_quake:{ name:"지진 체험관", bg:"bg/room_quake.png", tint:"#8a7a6a", floorName:"1층", start:[0.5,0.72], spots:[
+  room_quake:{ name:"지진 체험관", bg:"bg/room_quake_hq.png", tint:"#8a7a6a", floorName:"1층", start:[0.5,0.72], spots:[
     {name:"지진계", kind:"exhibit", icon:"📈", x:0.28,y:0.42, color:"#8a7a6a",
      info:"땅의 흔들림을 기록하는 기계예요. 지진의 세기(규모)를 알려줘요."},
     {name:"대피 요령", kind:"exhibit", icon:"🚨", x:0.72,y:0.42, color:"#e05a4a",
@@ -260,7 +261,7 @@ const ROOMS={
      icon:"🌋", room:"지진 체험관", x:0.5,y:0.60, color:"#8a7a6a"},
     {name:"나가기", kind:"exit", icon:"🚪", x:0.5,y:0.87, color:"#b0a99a"},
   ]},
-  room_O:{ name:"O전시실 · 생존", bg:"bg/room_O.png", tint:"#ef8c3b", floorName:"√2층", start:[0.5,0.72], spots:[
+  room_O:{ name:"O전시실 · 생존", bg:"bg/room_O_hq.png", tint:"#ef8c3b", floorName:"√2층", start:[0.5,0.72], spots:[
     {name:"DNA 이중나선", kind:"exhibit", icon:"🧬", x:0.28,y:0.42, color:"#ef8c3b",
      info:"우리 몸의 설계도예요. 두 가닥이 꼬인 사다리(이중나선) 모양이죠."},
     {name:"주기율표", kind:"exhibit", icon:"🔬", x:0.72,y:0.42, color:"#e0a040",
@@ -269,7 +270,7 @@ const ROOMS={
      icon:"🧬", room:"O전시실", x:0.5,y:0.60, color:"#ef8c3b"},
     {name:"나가기", kind:"exit", icon:"🚪", x:0.5,y:0.87, color:"#b0a99a"},
   ]},
-  room_B:{ name:"B전시실 · 연결", bg:"bg/room_B.png", tint:"#4a90e2", floorName:"2층", start:[0.5,0.72], spots:[
+  room_B:{ name:"B전시실 · 연결", bg:"bg/room_B_hq.png", tint:"#4a90e2", floorName:"2층", start:[0.5,0.72], spots:[
     {name:"태양계", kind:"exhibit", icon:"🪐", x:0.28,y:0.42, color:"#4a90e2",
      info:"태양과 8개 행성. 지구는 태양에서 세 번째 행성이에요."},
     {name:"뇌 모형", kind:"exhibit", icon:"🧠", x:0.72,y:0.42, color:"#e07ab0",
@@ -278,7 +279,7 @@ const ROOMS={
      icon:"🪐", room:"B전시실", x:0.5,y:0.60, color:"#4a90e2"},
     {name:"나가기", kind:"exit", icon:"🚪", x:0.5,y:0.87, color:"#b0a99a"},
   ]},
-  room_astro:{ name:"천문대 · 태양관측", bg:"bg/room_astro.png", tint:"#2e3a6b", floorName:"2층", start:[0.5,0.72], spots:[
+  room_astro:{ name:"천문대 · 태양관측", bg:"bg/room_astro_hq.png", tint:"#2e3a6b", floorName:"2층", start:[0.5,0.72], spots:[
     {name:"태양 관측", kind:"exhibit", icon:"☀️", x:0.28,y:0.42, color:"#f6b93b",
      info:"특수 망원경으로 태양의 흑점을 안전하게 관찰해요. 맨눈으로 보면 안 돼요!"},
     {name:"별자리", kind:"exhibit", icon:"✨", x:0.72,y:0.42, color:"#2e3a6b",
@@ -287,7 +288,7 @@ const ROOMS={
      icon:"🔭", room:"천문대 BOOT", x:0.5,y:0.60, color:"#2e3a6b"},
     {name:"나가기", kind:"exit", icon:"🚪", x:0.5,y:0.87, color:"#b0a99a"},
   ]},
-  room_chem:{ name:"2교육실 · 화학", bg:"bg/room_chem.png", tint:"#9c6ade", floorName:"π층", start:[0.5,0.72], spots:[
+  room_chem:{ name:"2교육실 · 화학", bg:"bg/room_chem_hq.png", tint:"#9c6ade", floorName:"π층", start:[0.5,0.72], spots:[
     {name:"실험 도구", kind:"exhibit", icon:"⚗️", x:0.28,y:0.42, color:"#9c6ade",
      info:"플라스크·비커로 물질이 섞이고 변하는 걸 관찰해요."},
     {name:"분자 모형", kind:"exhibit", icon:"🔴", x:0.72,y:0.42, color:"#7c4ade",
@@ -296,7 +297,7 @@ const ROOMS={
      icon:"⚗️", room:"2교육실", x:0.5,y:0.60, color:"#9c6ade"},
     {name:"나가기", kind:"exit", icon:"🚪", x:0.5,y:0.87, color:"#b0a99a"},
   ]},
-  room_earth:{ name:"3교육실 · 지구과학", bg:"bg/room_earth.png", tint:"#8d6e63", floorName:"π층", start:[0.5,0.72], spots:[
+  room_earth:{ name:"3교육실 · 지구과학", bg:"bg/room_earth_hq.png", tint:"#8d6e63", floorName:"π층", start:[0.5,0.72], spots:[
     {name:"지층", kind:"exhibit", icon:"🪨", x:0.28,y:0.42, color:"#8d6e63",
      info:"땅이 켜켜이 쌓인 것. 오래된 지구의 일기장이에요."},
     {name:"화산·암석", kind:"exhibit", icon:"🌋", x:0.72,y:0.42, color:"#c0563a",
@@ -323,6 +324,9 @@ const STAMP_TOTAL=STAMPS.length;
 function safeGet(k){ try{return localStorage.getItem(k);}catch(e){return null;} }
 function safeSet(k,v){ try{localStorage.setItem(k,v);}catch(e){/* 무시: 저장 실패해도 진행 */} }
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+// 장애물(전시물·벽) 충돌: 점(px,py)이 어떤 obstacle rect 안이면 true
+function hitObs(obs,px,py){ if(!obs)return false; for(let i=0;i<obs.length;i++){const o=obs[i];
+  if(px>o[0]&&px<o[2]&&py>o[1]&&py<o[3])return true;} return false; }
 
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
@@ -550,14 +554,17 @@ function update(){
   computeBgRect();   // clamp가 현재 화면 배치를 알아야 함(cover 시 캐릭터 화면이탈 방지)
   if(fadeState){ player.vx=player.vy=0; }
   else{
-    player.px+=player.vx; player.py+=player.vy;
     // 이동 방향 → 스프라이트 방향
     if(Math.abs(player.vx)>0.0004||Math.abs(player.vy)>0.0004){
       if(Math.abs(player.vx)>Math.abs(player.vy)) player.dir=player.vx>0?"right":"left";
       else player.dir=player.vy>0?"down":"up";
     }
-    // 걸을 수 있는 영역(벽 막힘). walkable=[x0,y0,x1,y1] 비율, 없으면 맵 전체
-    const wa=curScene().walkable;
+    const sc=curScene(), obs=sc.obstacles;
+    // 축별 이동 + 장애물(전시물·벽) 충돌 → 벽 따라 미끄러짐
+    const nx=player.px+player.vx; if(!hitObs(obs,nx,player.py)) player.px=nx;
+    const ny=player.py+player.vy; if(!hitObs(obs,player.px,ny)) player.py=ny;
+    // 걸을 수 있는 영역 경계 clamp. walkable=[x0,y0,x1,y1] 비율
+    const wa=sc.walkable;
     if(wa){ player.px=clamp(player.px,wa[0],wa[2]); player.py=clamp(player.py,wa[1],wa[3]); }
     else { player.px=clamp(player.px,0.04,0.96); player.py=clamp(player.py,0.06,0.95); }
   }
