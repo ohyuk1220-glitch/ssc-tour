@@ -20,7 +20,8 @@
     background:#0d0b08;font-family:var(--font-sans);color:var(--ink);
     user-select:none;-webkit-user-select:none;touch-action:none}
   #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
-  canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+  canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
+    position:fixed;inset:0;width:100vw;height:100vh}
 
   /* ---- 세로 회전 안내 ---- */
   #rotate{position:fixed;inset:0;z-index:200;background:#0d0b08;color:#fff;
@@ -28,7 +29,7 @@
   #rotate .ph{font-size:64px;animation:tilt 1.4s ease-in-out infinite}
   @keyframes tilt{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(78deg)}}
   #rotate p{font-size:17px;line-height:1.6;opacity:.9}
-  @media (orientation:portrait){#rotate{display:flex}}
+  /* 세로도 플레이 허용 — 회전 강제 안내 끔 */
 
   /* ---- HUD ---- */
   .hud{position:fixed;z-index:40;pointer-events:none}
@@ -472,8 +473,7 @@ function s2y(py){return bgRect.y+py*bgRect.h;}
 
 let t=0;
 function render(){
-  // 세로/숨김이면 렌더 낭비 안 함
-  if(document.hidden||window.matchMedia("(orientation:portrait)").matches){return;}
+  if(document.hidden){return;}   // 숨김 탭만 스킵(세로에서도 화면 꽉 렌더)
   t++;
   computeBgRect();
   const f=curScene();
