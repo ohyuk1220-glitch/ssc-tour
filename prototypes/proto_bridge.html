@@ -622,7 +622,12 @@
 
     if (truck.sag > SAG_LIMIT){
       truck.falling = true;
-      truck.failMsg = '처짐이 너무 커서 다리가 무너졌습니다 — 삼각 구조로 힘을 분산해보세요';
+      // R3 커즈메틱: hazard가 있는 레벨(3)은 범용 문구 대신 전용 힌트로 —
+      // 이 레벨의 진짜 교훈은 "어디에" 대각선을 놓느냐이기 때문에 콕 집어 안내한다.
+      var lvl = LEVELS[currentLevelIdx];
+      truck.failMsg = lvl.hazard
+        ? ('처짐이 너무 커서 다리가 무너졌습니다 — ' + (HAZARD_LABEL || '관측 장비') + '가 있는 구간에 대각선을 넣어보세요')
+        : '처짐이 너무 커서 다리가 무너졌습니다 — 삼각 구조로 힘을 분산해보세요';
       return;
     }
 
@@ -754,19 +759,35 @@
     if (MODE !== 'sim' && MODE !== 'fail') return;
     var y = TOP_Y + SAG_LIMIT;
     ctx.save();
-    ctx.setLineDash([6,6]);
-    ctx.strokeStyle = 'rgba(255,120,120,0.4)';
-    ctx.lineWidth = 1.5;
+    // R3 커즈메틱: 레벨1(SAG_LIMIT=15)은 상판(TOP_Y)에서 불과 15px 아래라
+    // 기존 옅은 핑크(0.4 알파)가 빔 스트레스색(노랑/빨강)에 묻혔다.
+    // → 팔레트에 없는 시안 계열로 바꾸고 알파/굵기를 올려 항상 도드라지게 함.
+    ctx.setLineDash([7,5]);
+    ctx.strokeStyle = 'rgba(125,216,255,0.85)';
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(GAP_L, y);
     ctx.lineTo(GAP_R, y);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(255,150,150,0.55)';
-    ctx.font = '10px -apple-system, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('처짐 한계선', GAP_R, y - 6);
+    // 양끝 세로 눈금 — 선이 배경/구조물과 섞여도 경계가 뚜렷하게
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(GAP_L, y-5); ctx.lineTo(GAP_L, y+5);
+    ctx.moveTo(GAP_R, y-5); ctx.lineTo(GAP_R, y+5);
+    ctx.stroke();
+    // 라벨은 어두운 배경 박스 위에 그려 어떤 배경(빔·계곡·하늘)과 겹쳐도 읽히게
+    var label = '처짐 한계선';
+    ctx.font = 'bold 10px -apple-system, sans-serif';
+    var tw = ctx.measureText(label).width;
+    var padX = 6;
+    var boxW = tw + padX*2, boxH = 15;
+    var boxX = GAP_R - boxW, boxY = y - 6 - boxH;
+    ctx.fillStyle = 'rgba(8,14,24,0.8)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.fillStyle = '#c9ecff';
     ctx.textAlign = 'left';
+    ctx.fillText(label, boxX + padX, boxY + 11);
     ctx.restore();
   }
 

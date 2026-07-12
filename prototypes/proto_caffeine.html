@@ -335,11 +335,15 @@
     combo: 0,             // 2026-07-12(R2) 연속 정확측정(80%+) 콤보
     maxCombo: 0,
     lastComboBroke: false,
-    startTime: null       // 실험 시작 시각(전체 소요시간 표시용)
+    startTime: null,      // 실험 시작 시각(전체 소요시간 표시용)
+    rankStartTime: null,  // 2026-07-13(R3) 랭킹 선택 시작 시각
+    rankBonusMissed: false // 2026-07-13(R3) 제한시간 내 3개 모두 못 고르면 true
   };
 
   var rafId = null;
   var dialData = null; // {startTime, speed, targetStart, targetW, running}
+  var RANK_TIME_LIMIT = 15; // 2026-07-13(R3) 랭킹 선택 소프트 제한시간(초) — 못 맞춰도 실패 아님, 신속 보너스만 없음
+  var rankTimerId = null;
 
   function getSample(id){
     for (var i=0;i<SAMPLES.length;i++){ if (SAMPLES[i].id===id) return SAMPLES[i]; }
@@ -374,6 +378,29 @@
     return m + ":" + (r<10?"0":"") + r;
   }
 
+  /* ---------------- 랭킹 선택 소프트 타이머(2026-07-13 R3) ----------------
+     실패 처리 없음 — 시간 내 3개 다 고르면 신속 판단 보너스(+10점)만 붙는다.
+     그래프를 천천히 읽는 것 자체는 막지 않고, "약간의 긴장"만 얹는 용도. */
+  function startRankTimer(){
+    stopRankTimer();
+    if (state.rankStartTime == null) state.rankStartTime = Date.now();
+    updateRankTimer();
+    rankTimerId = setInterval(updateRankTimer, 100);
+  }
+  function stopRankTimer(){
+    if (rankTimerId){ clearInterval(rankTimerId); rankTimerId = null; }
+  }
+  function updateRankTimer(){
+    var bar = document.getElementById("rankTimerBar");
+    if (!bar || state.rankStartTime == null){ stopRankTimer(); return; }
+    var elapsed = (Date.now() - state.rankStartTime) / 1000;
+    var remainRatio = clamp(1 - elapsed / RANK_TIME_LIMIT, 0, 1);
+    bar.style.width = (remainRatio * 100) + "%";
+    bar.classList.toggle("warn", remainRatio <= 0.4 && remainRatio > 0.15);
+    bar.classList.toggle("bad", remainRatio <= 0.15);
+    if (elapsed >= RANK_TIME_LIMIT){ stopRankTimer(); }
+  }
+
   /* ---------------- 반복 플레이 기록(localStorage, 실패해도 게임 진행에 영향 없음) ---------------- */
   var STORAGE_KEY = "caffeineProto_best_v1";
   var PLAYS_KEY = "caffeineProto_plays_v1";
@@ -402,6 +429,7 @@
 
   function render(){
     stopDialLoop();
+    stopRankTimer();
     var el = app();
     if (state.screen === "intro") el.innerHTML = renderIntro();
     else if (state.screen === "select") el.innerHTML = renderSelect();
@@ -411,6 +439,7 @@
     bindEvents();
     if (state.screen === "measure" && state.measureSub === "measuring") startDialLoop();
     if (state.screen === "result") requestAnimationFrame(animateBars);
+    if (state.screen === "result" && state.rankOrder.length < 3) startRankTimer();
   }
 
   /* ---------------- 인트로 ---------------- */
@@ -553,6 +582,14 @@
       + '</button>';
     }).join('');
 
+    // 2026-07-13(R3): 3개를 다 고르기 전까지만 소프트 타이머 표시. 시간 못 지켜도 실패는 아님(보너스만 없음)
+    var rankTimerBlock = "";
+    if (state.rankOrder.length < 3){
+      rankTimerBlock = ''
+      + '<div class="timer-row"><div class="timer-track"><div class="timer-bar" id="rankTimerBar"></div></div></div>'
+      + '<div class="dial-hint">'+RANK_TIME_LIMIT+'초 안에 3개 모두 고르면 신속 판단 보너스 +10점 (놓쳐도 정확도 점수엔 영향 없음)</div>';
+    }
+
     var evalBlock = "";
     if (state.rankOrder.length === 3){
       var correctOrder = SAMPLES.slice().sort(function(a,b){return a.trueValue-b.trueValue;}).map(function(s){return s.id;});
@@ -565,7 +602,11 @@
         : (correctCount===0
             ? "측정 오차가 커서 막대 높이가 비슷하게 나왔고, 순서를 헷갈렸습니다. 다이얼을 더 정확히 멈춰보세요."
             : "측정 오차 때문에 일부 막대 높이가 비슷해져 순서가 뒤바뀌었습니다. 정확도를 높이면 더 잘 구분됩니다.");
+      var speedMsg = state.rankBonusMissed
+        ? '<div class="combo-broke">⏱ 시간 초과 · 신속 판단 보너스는 없지만 정확도 점수엔 영향 없습니다</div>'
+        : '<div class="combo-badge">⚡ 신속 판단 보너스 +10점</div>';
       evalBlock = ''
+      + speedMsg
       + '<div class="rank-feedback '+fbClass+'">'+fbMsg+'</div>'
       + '<div class="true-order">정답 순서: ' + correctOrder.map(function(id){return getSample(id).name.split('(')[0];}).join(' &lt; ') + '</div>'
       + '<button class="btn" id="btnToFinal" style="margin-top:16px;">점수 확인</button>';
@@ -576,6 +617,7 @@
     + '<div class="card">'
     + '  <div class="graph">' + bars + '</div>'
     + '  <div class="rank-instruction">카페인 함량이 <b>낮은 순서</b>대로 음료를 클릭하세요</div>'
+    + rankTimerBlock
     + '  <div class="rank-row">' + rankBtns + '</div>'
     + evalBlock
     + '</div>';
@@ -587,17 +629,18 @@
     stopElapsedTimer(); // 2026-07-12 R2: 실험 종료 시점에 표시용 타이머 정지(채점엔 미반영)
 
     var avgAcc = SAMPLES.reduce(function(sum,s){return sum+s.accuracy;},0) / SAMPLES.length;
-    // 2026-07-12 R2: 콤보 점수(10점) 신설에 맞춰 배점 재배분(정확도 60→55, 순위 40→35, 콤보 신규 10) = 총 100 유지
-    var accuracyScore = Math.round(avgAcc*0.55);
+    // 2026-07-13 R3: 랭킹 신속 판단 보너스(10점) 신설에 맞춰 배점 재배분(정확도 55→50, 순위 35→30, 콤보 10 유지, 신속 신규 10) = 총 100 유지
+    var accuracyScore = Math.round(avgAcc*0.50);
 
     var correctOrder = SAMPLES.slice().sort(function(a,b){return a.trueValue-b.trueValue;}).map(function(s){return s.id;});
     var correctCount = 0;
     for (var i=0;i<3;i++){ if (state.rankOrder[i]===correctOrder[i]) correctCount++; }
-    var rankScore = Math.round(correctCount/3*35);
+    var rankScore = Math.round(correctCount/3*30);
 
     var comboScore = state.maxCombo>=3 ? 10 : (state.maxCombo===2 ? 5 : 0);
+    var speedScore = (state.rankOrder.length===3 && !state.rankBonusMissed) ? 10 : 0;
 
-    var total = Math.min(100, accuracyScore + rankScore + comboScore);
+    var total = Math.min(100, accuracyScore + rankScore + comboScore + speedScore);
     var grade = total>=90 ? "S" : total>=75 ? "A" : total>=60 ? "B" : "C";
 
     // 반복 플레이 훅: 최고 기록 갱신 여부 + 도전 횟수 (localStorage 실패해도 채점엔 영향 없음)
@@ -615,9 +658,10 @@
     + '  <div class="num">'+total+' / 100점</div>'
     + recordTag
     + '  <div class="breakdown">'
-    + '    <div><span>측정 정확도 평균</span><span>'+Math.round(avgAcc)+'% → '+accuracyScore+'/55점</span></div>'
-    + '    <div><span>순위 정답 ('+correctCount+'/3 일치)</span><span>'+rankScore+'/35점</span></div>'
+    + '    <div><span>측정 정확도 평균</span><span>'+Math.round(avgAcc)+'% → '+accuracyScore+'/50점</span></div>'
+    + '    <div><span>순위 정답 ('+correctCount+'/3 일치)</span><span>'+rankScore+'/30점</span></div>'
     + '    <div><span>최고 콤보</span><span>'+state.maxCombo+'콤보 → '+comboScore+'/10점</span></div>'
+    + '    <div><span>신속 판단 보너스</span><span>'+speedScore+'/10점</span></div>'
     + '    <div><span>소요 시간</span><span>'+elapsedStr+'</span></div>'
     + '  </div>'
     + '  <div class="play-count">총 '+playCount+'회 도전 · 최고 기록 '+(isNewRecord?grade:prevBest.grade)+'등급 ('+(isNewRecord?total:prevBest.total)+'점)</div>'
@@ -638,7 +682,7 @@
     var btnToResult = document.getElementById("btnToResult");
     if (btnToResult) btnToResult.addEventListener("click", function(){
       if (!allMeasured()) return;
-      state.screen="result"; state.rankOrder=[]; render();
+      state.screen="result"; state.rankOrder=[]; state.rankStartTime=null; state.rankBonusMissed=false; render();
     });
 
     var cards = document.querySelectorAll(".sample-card");
@@ -681,6 +725,10 @@
         if (state.rankOrder.indexOf(id) >= 0) return;
         if (state.rankOrder.length >= 3) return;
         state.rankOrder.push(id);
+        if (state.rankOrder.length === 3){
+          var elapsed = state.rankStartTime != null ? (Date.now() - state.rankStartTime) / 1000 : Infinity;
+          state.rankBonusMissed = elapsed >= RANK_TIME_LIMIT;
+        }
         render();
       });
     });
@@ -692,7 +740,8 @@
     if (btnRestart) btnRestart.addEventListener("click", function(){
       SAMPLES.forEach(function(s){ s.measured=null; s.accuracy=null; s.timedOut=null; });
       stopElapsedTimer();
-      state = { screen:"intro", measureSub:"insert", currentId:null, rankOrder:[], combo:0, maxCombo:0, lastComboBroke:false, startTime:null };
+      stopRankTimer();
+      state = { screen:"intro", measureSub:"insert", currentId:null, rankOrder:[], combo:0, maxCombo:0, lastComboBroke:false, startTime:null, rankStartTime:null, rankBonusMissed:false };
       render();
     });
 

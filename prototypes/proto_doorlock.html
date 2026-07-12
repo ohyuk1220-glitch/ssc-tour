@@ -50,10 +50,13 @@
   }
   .door-panel.open{transform:rotateY(-78deg) translateX(2px);opacity:.35}
   .led-row{display:flex;align-items:center;justify-content:space-between}
+  .led-wrap{display:flex;align-items:center;gap:6px}
   .led{width:11px;height:11px;border-radius:50%;background:var(--red);
     box-shadow:0 0 6px rgba(255,95,95,.7);transition:background .3s,box-shadow .3s}
   .led.on{background:var(--green);box-shadow:0 0 9px rgba(61,220,132,.9)}
   .led-label{font-size:11px;color:var(--muted);font-weight:600}
+  .led-state{font-size:10px;color:var(--red);font-weight:800;letter-spacing:.3px}
+  .led-state.on{color:var(--green)}
   .display{display:flex;gap:8px;justify-content:center}
   .digit-box{
     flex:1;max-width:56px;aspect-ratio:1/1.15;border-radius:10px;
@@ -188,7 +191,10 @@
     <div class="door-panel" id="doorPanel">
       <div class="led-row">
         <span class="led-label">SMART DOOR LOCK</span>
-        <span class="led" id="led"></span>
+        <span class="led-wrap">
+          <span class="led-state" id="ledState">🔒 잠김</span>
+          <span class="led" id="led" role="img" aria-label="잠금 상태"></span>
+        </span>
       </div>
       <div class="display" id="display"></div>
       <div class="status-line" id="statusLine">준비되면 확인을 눌러 시작하세요</div>
@@ -294,6 +300,7 @@
     history: document.getElementById('history'),
     slots: document.getElementById('slots'),
     led: document.getElementById('led'),
+    ledState: document.getElementById('ledState'),
     doorPanel: document.getElementById('doorPanel'),
     keypad: document.getElementById('keypad'),
     legend: document.getElementById('legend'),
@@ -314,7 +321,7 @@
     restartBtn: document.getElementById('restartBtn')
   };
 
-  var state = { mode: MODES.normal, secret: [], current: [], attempts: [], over: false, won: false, hintUsed: false };
+  var state = { mode: MODES.normal, secret: [], current: [], attempts: [], over: false, won: false, hintUsed: false, epoch: 0 };
 
   /* ---------- 기록 저장 (반복 플레이 훅) ---------- */
   function loadBest(){
@@ -749,6 +756,8 @@
   function win(){
     state.over = true; state.won = true;
     el.led.classList.add('on');
+    el.ledState.classList.add('on');
+    el.ledState.textContent = '🔓 열림';
     el.doorPanel.classList.add('open');
     setStatus('문이 열렸습니다!', 'win');
     sfxWin();
@@ -756,7 +765,9 @@
     var used = state.attempts.length;
     var stars = starsFor(used, state.mode.maxAttempts, state.hintUsed);
     var isRecord = maybeUpdateBest(state.mode.id, used, state.hintUsed);
+    var myEpoch = state.epoch;
     setTimeout(function(){
+      if(state.epoch !== myEpoch) return; // 그 사이 새 게임이 시작됐으면 낡은 결과창을 띄우지 않음
       showResult(true, used, stars, isRecord);
     }, 850);
   }
@@ -766,7 +777,12 @@
     setStatus('문이 잠겼습니다', 'err');
     sfxLose();
     shakePanel();
+    /* 진행 슬롯을 실패색으로 바꿔 "기회 소진"을 시각적으로 표시 (죽은 CSS .slot.fail 활용) */
+    var usedSlots = el.slots.querySelectorAll('.slot.used');
+    if(usedSlots.length) usedSlots[usedSlots.length-1].classList.add('fail');
+    var myEpoch = state.epoch;
     setTimeout(function(){
+      if(state.epoch !== myEpoch) return; // 그 사이 새 게임이 시작됐으면 낡은 결과창을 띄우지 않음
       showResult(false, state.mode.maxAttempts, 0, false);
     }, 500);
   }
@@ -793,6 +809,7 @@
   }
 
   function startGame(modeId){
+    state.epoch++; // 진행 중이던 게임의 지연 타이머(승/패 오버레이)를 무효화 — 새 판에 새어 들어오지 않도록
     var mode = MODES[modeId] || state.mode || MODES.normal;
     state.mode = mode;
     state.secret = genSecret(mode);
@@ -802,6 +819,8 @@
     state.won = false;
     state.hintUsed = false;
     el.led.classList.remove('on');
+    el.ledState.classList.remove('on');
+    el.ledState.textContent = '🔒 잠김';
     el.doorPanel.classList.remove('open');
     el.history.innerHTML = '';
     el.confettiLayer.innerHTML = '';

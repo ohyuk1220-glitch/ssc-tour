@@ -208,14 +208,18 @@
 
   function maybeSpawnBonus(){
     bonusTarget = null;
-    // R2: 등장확률 45%→25% (설명 카드의 "가끔 등장"이라는 문구와 실제 빈도가
-    // 어긋나 있었음 - 45%는 사실상 매 게임 등장. 25%로 낮춰 "가끔"에 맞춤)
-    // 스폰 영역도 축소(가로로 넓고 낮은 화면에서 "멀고+높은" 코너는 역풍 시
-    // 도달 불가능한 좌표가 섞여 있었음 - 플레이테스트로 확인 후 안전 영역으로 축소)
+    // R3 밸런스(몬테카를로 재검증, scratchpad/vortex_bonus_reach.mjs):
+    // R2의 fy 0.27~0.38(세로폭 0.11)이 너무 좁아 보너스가 매번 비슷한 높이에만 떠서
+    // 시각 변주가 줄었다는 지적 → fy를 0.20~0.40(세로폭 0.20, 약 2배)로 넓힘.
+    // 단, 전수 격자검증(6개 화면비 x 바람 전구간 x bob흔들림) 결과 R2의 fx 우측 끝(0.56)은
+    // "최대폭+낮은화면" 조합에서 강한 역풍 시 0.15% 확률로 물리적 도달 불가 지점이 있었음
+    // (R2 때는 몬테카를로 난수가 이 좁은 코너를 우연히 안 뽑아서 못 잡았던 회귀 버그) →
+    // fx 상한을 0.56→0.50으로 당겨 닫음. 최종 fx 0.30~0.50 x fy 0.20~0.40, 9261개 격자점
+    // 전수 재검증 도달불가 0건 확인(고해상도 재검증 포함).
     if(Math.random() < 0.25){
       bonusTarget = {
-        fx: 0.30 + Math.random()*0.26,
-        fy: 0.27 + Math.random()*0.11,
+        fx: 0.30 + Math.random()*0.20,
+        fy: 0.20 + Math.random()*0.20,
         baseR: 15,
         score: 280 + Math.round(Math.random()*8)*10
       };
@@ -596,10 +600,15 @@
 
   function gameOver(){
     phase = 'gameover';
+    // R3 등급 재조정(몬테카를로 12,000게임 시뮬, scratchpad/vortex_threshold_tune.mjs):
+    // R2의 1100/650/250은 "숙련(반복방문)" 봇 기준 명사수 48%가 나와 너무 흔했음(설명이
+    // 필요없는 사실상 기본 등급이 되어버림). 백분위 재계산 결과 1350/750/280으로 올리면
+    // 숙련 15% · 중급 4% · 초보 1%로 갈려 "명사수"가 실제로 희소한 성취가 됨(연습필요~베테랑
+    // 구간도 같이 검증: 초보 연습필요6%/초보사수56%/베테랑37%, 중급 초보사수34%/베테랑61%).
     var grade = '연습이 더 필요해요';
-    if(score >= 1100) grade = '명사수!';
-    else if(score >= 650) grade = '베테랑 사수';
-    else if(score >= 250) grade = '초보 사수';
+    if(score >= 1350) grade = '명사수!';
+    else if(score >= 750) grade = '베테랑 사수';
+    else if(score >= 280) grade = '초보 사수';
     el.resultScore.textContent = score;
     el.resultGrade.textContent = grade;
     el.resultDesc.textContent = MAX_SHOTS + '발 중 ' + hitCount + '발 명중';
