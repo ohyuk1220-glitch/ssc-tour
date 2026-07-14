@@ -208,18 +208,21 @@ const FLOORS=[
    {name:"수상한 상자", room:"B1 주차장", kind:"soon", icon:"📦", x:0.10,y:0.62, color:"#8a7a5a"},
    {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.48,y:0.42, color:"#9aa"},
  ]},
- {id:"1F", name:"1층", bg:"bg/f1_town.png", tint:"#4caf50", start:[0.47,0.60], spots:[
-   {name:"G전시실 입구", kind:"door", room:"room_G", icon:"🌿", x:0.15,y:0.47, color:"#4caf50"},
-   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.68,y:0.40, color:"#4a90e2",
-    info:"안내·매표 데스크(카페테리아 앞)예요. 옆 메인 엘리베이터로 지하1층·2층·π층을 오가요. (½·√2·3층은 화물 엘리베이터나 계단으로)"},
-   {name:"북카페", kind:"info", icon:"☕", x:0.86,y:0.50, color:"#8d6e63",
+ {id:"1F", name:"1층", bg:"bg/f1_town.png", tint:"#4caf50", start:[0.55,0.62],
+   obstacles:[[0.24,0.20,0.31,0.33],[0.58,0.13,0.65,0.27],[0.42,0.60,0.49,0.75],[0.60,0.27,0.82,0.42],[0.71,0.53,0.87,0.72]], walkable:[0.04,0.12,0.98,0.94], spots:[
+   {name:"G전시실 입구 · 공존", kind:"door", room:"room_G", icon:"🌿", x:0.14,y:0.28, color:"#4caf50"},
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.47,y:0.34, color:"#9aa"},
+   {name:"↑ ½층 에스컬레이터", kind:"stair", to:"HALF", icon:"🪜", x:0.37,y:0.20, color:"#b0a99a"},
+   {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.22,y:0.38, color:"#b0a99a"},
+   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","1F","HALF"], icon:"🛗", x:0.15,y:0.50, color:"#9aa"},
+   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.70,y:0.35, color:"#4a90e2",
+    info:"안내·매표 데스크예요. 옆 메인 엘리베이터로 지하1층·2층·π층을 오가요. (½·√2·3층은 화물 엘리베이터나 계단으로)"},
+   {name:"갈릴레오의 책", kind:"info", icon:"📖", x:0.78,y:0.60, color:"#8d6e63",
+    info:"'색다르게 갈릴레오 읽기' — 갈릴레오의 책 《대화》를 거대한 나무 조형으로 만든 포토존이에요."},
+   {name:"북카페", kind:"info", icon:"☕", x:0.94,y:0.33, color:"#8d6e63",
     info:"과학책을 보며 쉬어가는 공간. 음료도 마실 수 있어요."},
-   {name:"별관 · 메이커 스튜디오", kind:"info", icon:"🔧", x:0.95,y:0.58, color:"#ef8c3b",
+   {name:"별관 · 메이커 스튜디오", kind:"info", icon:"🔧", x:0.98,y:0.46, color:"#ef8c3b",
     info:"직접 만들고 실험하는 창작 공간. 메이커 강좌가 열려요."},
-   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.47,y:0.26, color:"#9aa"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","1F","HALF"], icon:"🛗", x:0.28,y:0.44, color:"#9aa"},
-   {name:"↓ ½층 계단", kind:"stair", to:"HALF", icon:"🪜", x:0.40,y:0.30, color:"#b0a99a"},
-   {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.58,y:0.28, color:"#b0a99a"},
  ]},
  {id:"HALF", name:"½층", bg:"bg/f_half_town.png", tint:"#f4c430", start:[0.47,0.66], spots:[
    {name:"Y전시실 입구 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.24,y:0.40, color:"#f4c430"},
@@ -265,19 +268,22 @@ const FLOORS=[
 /* ══════════ 전시실 실내 씬 (2계층: 오버월드 층 ↔ 실내 방) ══════════
    문(door)으로 들어가면 실내에서 자유 이동하며 전시물(exhibit) 관람 + 미니게임(game) + 나가기(exit) */
 const ROOMS={
-  room_G:{ name:"G전시실 · 생태", bg:"bg/room_G_hq.png", tint:"#4caf50", floorName:"1층", start:[0.5,0.80],
-    obstacles:[[0.09,0.13,0.43,0.50],[0.58,0.13,0.94,0.48],[0.33,0.52,0.67,0.75]], walkable:[0.05,0.13,0.95,0.93], spots:[
-    {name:"한강 수족관", kind:"exhibit", icon:"🐟", x:0.24,y:0.30, color:"#4a90e2",
-     info:"한강에는 참붕어·끄리·강준치 같은 토종 물고기가 살아요. 도심 하천이 되살아난 증거랍니다."},
-    {name:"밤섬 생태", kind:"exhibit", icon:"🦆", x:0.76,y:0.30, color:"#4caf50",
-     info:"여의도 옆 밤섬은 사람이 떠난 뒤 철새 도래지가 됐어요. 도시 속 생태 복원의 상징이죠."},
-    {name:"인류세 화석", kind:"exhibit", icon:"🦴", x:0.50,y:0.63, color:"#8d6e63",
-     info:"인류세 — 플라스틱·콘크리트 같은 인간의 흔적이 지층에 쌓여 새로운 지질시대를 만들고 있어요."},
+  room_G:{ name:"G전시실 · 공존", bg:"bg/room_G_hq.png", tint:"#4caf50", floorName:"1층", start:[0.5,0.80],
+    obstacles:[[0.15,0.15,0.42,0.42],[0.20,0.50,0.46,0.72],[0.62,0.13,0.95,0.42],[0.80,0.50,0.97,0.68]], walkable:[0.05,0.13,0.95,0.90], spots:[
+    {name:"티움 실험실", kind:"exhibit", icon:"🔬", x:0.25,y:0.30, color:"#4caf50",
+     info:"티움(Tium)은 생태를 관찰하고 실험하는 코너예요. 유리 부스 안에서 자연을 들여다봐요."},
+    {name:"원소 사물함", kind:"exhibit", icon:"🧪", x:0.08,y:0.52, color:"#7cb342",
+     info:"주기율표 모양의 사물함이에요. 헬륨(He)·네온(Ne)·크립톤(Kr)… 원소 기호로 내 칸을 찾아요."},
+    {name:"지질 단면", kind:"exhibit", icon:"🪨", x:0.31,y:0.60, color:"#8d6e63",
+     info:"땅을 세로로 자른 모습. 층층이 쌓인 지층 속 화석이 지구의 역사를 기록해요."},
+    {name:"인류세 철망", kind:"exhibit", icon:"🗑️", x:0.76,y:0.27, color:"#9e9e9e",
+     info:"철망 안에 눌러 담은 플라스틱 쓰레기. '인류세' — 인간이 만든 새 지질시대의 상징이에요."},
+    {name:"미세플라스틱 현미경", kind:"exhibit", icon:"🔎", x:0.88,y:0.57, color:"#4a90e2",
+     info:"눈에 안 보이는 작은 플라스틱 조각을 현미경으로 관찰해요. 우리 밥상까지 돌아온답니다."},
+    {name:"지진 체험관", kind:"door", room:"room_quake", icon:"🌋", x:0.50,y:0.31, color:"#8a7a6a"},
     {name:"분리수거 챌린지", kind:"game", file:"g.html", best:"recycle_best", label:"분리수거 챌린지",
-     icon:"♻️", room:"G전시실", x:0.28,y:0.80, color:"#4caf50"},
-    {name:"지진 체험관", kind:"door", room:"room_quake", icon:"🌋", x:0.12,y:0.55, color:"#8a7a6a"},
-    {name:"아이디어 제작소", kind:"soon", icon:"🛠️", x:0.88,y:0.55, color:"#4caf50"},
-    {name:"나가기", kind:"exit", icon:"🚪", x:0.50,y:0.91, color:"#b0a99a"},
+     icon:"♻️", room:"G전시실", x:0.50,y:0.68, color:"#4caf50"},
+    {name:"나가기", kind:"exit", icon:"🚪", x:0.50,y:0.84, color:"#b0a99a"},
   ]},
   room_quake:{ name:"지진 체험관", bg:"bg/room_quake_hq.png", tint:"#8a7a6a", floorName:"1층", start:[0.5,0.82],
     obstacles:[[0.06,0.28,0.37,0.83],[0.57,0.20,0.93,0.73]], walkable:[0.05,0.15,0.95,0.93], spots:[
@@ -379,8 +385,8 @@ function hitObs(obs,px,py){ if(!obs)return false; for(let i=0;i<obs.length;i++){
    보안 NPC = 오버월드 7개 층(옥상 제외), waypoint 2~3개 순찰, 근접+A로 짧은 대사 */
 const GUIDE_NPCS=[
   {scene:"room_G", name:"S.C", x:0.35,y:0.83, lines:[
-    "여긴 공존의 방이에요. 한강엔 우리 생각보다 훨씬 많은 생물이 살아요.",
-    "저기 인류세 화석 보이죠? 플라스틱·닭뼈·콘크리트… 먼 훗날 인류를 기억할 흔적이래요."]},
+    "여긴 '공존'의 방이에요. 사람과 자연, 과거와 미래가 어떻게 얽혀 사는지 보여줘요.",
+    "저기 철망에 눌러 담은 쓰레기가 '인류세'예요. 플라스틱·콘크리트가 지층에 쌓여 먼 훗날 인류를 기억할 흔적이 된대요."]},
   {scene:"room_quake", name:"S.C", x:0.47,y:0.85, lines:[
     "여기는 지진 체험관이에요. 흔들리면 책상 아래로, 멈추면 계단으로 대피하세요.",
     "지진과 화산은 땅속 판이 움직여 생겨요. 저 용암 균열존이 그 증거랍니다."]},
@@ -399,7 +405,7 @@ const GUIDE_NPCS=[
   {scene:"room_earth", name:"S.C", x:0.42,y:0.87, lines:[
     "여긴 지구과학 실험실이에요. 편광현미경으로 암석 속 결정을 들여다볼 수 있어요.",
     "땅이 켜켜이 쌓아온 시간, 지층과 화석으로 지구의 역사를 읽어요."]},
-  {scene:"1F", name:"메인데스크 안내원", x:0.63,y:0.44, lines:[
+  {scene:"1F", name:"메인데스크 안내원", x:0.70,y:0.27, lines:[
     "어서오세요! 서울시립과학관은 무료입장이에요.",
     "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요."]},
 ];
@@ -467,7 +473,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607141257";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607141734";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=+(safeGet("ufo_floor")||1);   // 시작 1층
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
@@ -725,10 +731,7 @@ function drawNPC(npc){
     // 전용 스프라이트(색 틴트·이모지 없음) — 전시실별 과학커뮤니케이터
     const h=44, w=own.naturalWidth*h/own.naturalHeight;
     ctx.drawImage(own, Math.round(x-w/2), Math.round(y+12-h-bob), Math.round(w), Math.round(h));
-    if(DESKIMG&&DESKIMG.complete&&DESKIMG.naturalWidth){   // S.C 앞 안내데스크(하반신 살짝 가림=카운터 뒤)
-      const dh=24, dw=DESKIMG.naturalWidth*dh/DESKIMG.naturalHeight;
-      ctx.drawImage(DESKIMG, Math.round(x-dw/2), Math.round(y+15-dh), Math.round(dw), Math.round(dh));
-    }
+    // 데스크 스프라이트 제거(2026-07-14): 새 로비 배경에 안내데스크가 이미 그려져 있어 중복 — NPC만 카운터 뒤에 배치
   }else{
     // 폴백: 플레이어 스프라이트 색 틴트 + 이모지 (보안 NPC·전용 로드 실패 시)
     const spr=CHAR[npc.dir||"down"];
