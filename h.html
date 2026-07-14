@@ -378,25 +378,25 @@ function hitObs(obs,px,py){ if(!obs)return false; for(let i=0;i<obs.length;i++){
    안내 NPC = 전시실 7곳 + 1층 메인데스크, 고정 위치, 근접+A로 대사(전시 서사, ssc_game_corpus 기반)
    보안 NPC = 오버월드 7개 층(옥상 제외), waypoint 2~3개 순찰, 근접+A로 짧은 대사 */
 const GUIDE_NPCS=[
-  {scene:"room_G", name:"안내 도슨트", x:0.35,y:0.83, lines:[
+  {scene:"room_G", name:"S.C", x:0.35,y:0.83, lines:[
     "여긴 공존의 방이에요. 한강엔 우리 생각보다 훨씬 많은 생물이 살아요.",
     "저기 인류세 화석 보이죠? 플라스틱·닭뼈·콘크리트… 먼 훗날 인류를 기억할 흔적이래요."]},
-  {scene:"room_quake", name:"안내 도슨트", x:0.47,y:0.85, lines:[
+  {scene:"room_quake", name:"S.C", x:0.47,y:0.85, lines:[
     "여기는 지진 체험관이에요. 흔들리면 책상 아래로, 멈추면 계단으로 대피하세요.",
     "지진과 화산은 땅속 판이 움직여 생겨요. 저 용암 균열존이 그 증거랍니다."]},
-  {scene:"room_O", name:"안내 도슨트", x:0.50,y:0.85, lines:[
+  {scene:"room_O", name:"S.C", x:0.50,y:0.85, lines:[
     "생존의 방에 온 걸 환영해요. DNA 한 가닥에 나를 만든 설계도가 담겨 있어요.",
     "지금 내 몸속엔 수많은 미생물이 함께 살아요. DNA 지문은 세상에 단 하나뿐이래요."]},
-  {scene:"room_B", name:"안내 도슨트", x:0.20,y:0.85, lines:[
+  {scene:"room_B", name:"S.C", x:0.20,y:0.85, lines:[
     "연결의 방이에요. 아주 작은 원자부터 저 멀리 우주까지, 세상 모든 건 이어져 있어요.",
     "저 프리즘 보이죠? 하얀 빛 속에 무지개가 숨어 있었대요."]},
-  {scene:"room_astro", name:"안내 도슨트", x:0.50,y:0.85, lines:[
+  {scene:"room_astro", name:"S.C", x:0.50,y:0.85, lines:[
     "천문대 BOOT에 오신 걸 환영해요. 금·토엔 진짜 별을 볼 수 있어요.",
     "지구가 우주에서 얼마나 작은 점인지, 망원경으로 보면 느껴져요."]},
-  {scene:"room_chem", name:"안내 도슨트", x:0.50,y:0.86, lines:[
+  {scene:"room_chem", name:"S.C", x:0.50,y:0.86, lines:[
     "π층 일상실험실, 2교육실이에요. 분광광도계로 카페인 농도를 직접 재볼 수 있어요.",
     "비커 속에서 물질이 섞이고 변하는 순간을 눈으로 확인해보세요."]},
-  {scene:"room_earth", name:"안내 도슨트", x:0.42,y:0.87, lines:[
+  {scene:"room_earth", name:"S.C", x:0.42,y:0.87, lines:[
     "여긴 지구과학 실험실이에요. 편광현미경으로 암석 속 결정을 들여다볼 수 있어요.",
     "땅이 켜켜이 쌓아온 시간, 지층과 화석으로 지구의 역사를 읽어요."]},
   {scene:"1F", name:"메인데스크 안내원", x:0.63,y:0.44, lines:[
@@ -404,19 +404,19 @@ const GUIDE_NPCS=[
     "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요."]},
 ];
 const SECURITY_NPCS=[
-  {scene:"B1", name:"보안 요원", waypoints:[[0.15,0.75],[0.85,0.75],[0.85,0.20]], lines:[
+  {scene:"B1", name:"보안", waypoints:[[0.15,0.75],[0.85,0.75],[0.85,0.20]], lines:[
     "지하 주차장 순찰 중입니다. 위쪽 엘리베이터로 안전하게 이동하세요!"]},
-  {scene:"1F", name:"보안 요원", waypoints:[[0.20,0.70],[0.75,0.70],[0.50,0.45]], lines:[
+  {scene:"1F", name:"보안", waypoints:[[0.20,0.70],[0.75,0.70],[0.50,0.45]], lines:[
     "1층 로비를 순찰하고 있어요. 궁금한 건 메인데스크로!"]},
-  {scene:"HALF", name:"보안 요원", waypoints:[[0.20,0.65],[0.75,0.60],[0.45,0.45]], lines:[
+  {scene:"HALF", name:"보안", waypoints:[[0.20,0.65],[0.75,0.60],[0.45,0.45]], lines:[
     "½층 순찰 중! 다이나믹 토네이도 라이브쇼 시간 놓치지 마세요."]},
-  {scene:"SQRT2", name:"보안 요원", waypoints:[[0.20,0.65],[0.70,0.60]], lines:[
+  {scene:"SQRT2", name:"보안", waypoints:[[0.20,0.65],[0.70,0.60]], lines:[
     "√2층이에요. 전시실 통로에서는 뛰지 말아주세요!"]},
-  {scene:"2F", name:"보안 요원", waypoints:[[0.20,0.60],[0.70,0.60],[0.45,0.75]], lines:[
+  {scene:"2F", name:"보안", waypoints:[[0.20,0.60],[0.70,0.60],[0.45,0.75]], lines:[
     "2층 순찰 중입니다. 천문대 BOOT는 예약이 필요해요, 참고하세요!"]},
-  {scene:"PI", name:"보안 요원", waypoints:[[0.20,0.60],[0.70,0.60],[0.45,0.75]], lines:[
+  {scene:"PI", name:"보안", waypoints:[[0.20,0.60],[0.70,0.60],[0.45,0.75]], lines:[
     "π층 순찰이에요. 교육실 실험 도구는 조심히 다뤄주세요."]},
-  {scene:"3F", name:"보안 요원", waypoints:[[0.30,0.65],[0.70,0.65]], lines:[
+  {scene:"3F", name:"보안", waypoints:[[0.30,0.65],[0.70,0.65]], lines:[
     "3층 순찰 중. 지금 기획전시 '지구의 맥박' 놓치지 마세요!"]},
 ];
 GUIDE_NPCS.forEach(n=>{n.type="guide"; n._lineIdx=0; n.dir="down";});
@@ -428,18 +428,20 @@ function sceneNPCs(){
 }
 function updateNPCPatrol(npc){
   if(npc._pause>0){ npc._pause--; npc.vx=npc.vy=0; return; }
-  const wp=npc.waypoints[npc._wp];
-  const dx=wp[0]-npc.x, dy=wp[1]-npc.y, d=Math.hypot(dx,dy);
+  const fl=FLOORS.find(f=>f.id===npc.scene);
+  const wa=(fl&&fl.walkable)||[0.12,0.4,0.88,0.88];
+  // 랜덤 목표점(walkable 안)으로 돌아다님 — 도달하면 잠깐 멈췄다 새 목표
+  if(!npc._tgt){ npc._tgt=[wa[0]+Math.random()*(wa[2]-wa[0]), wa[1]+Math.random()*(wa[3]-wa[1])]; }
+  const dx=npc._tgt[0]-npc.x, dy=npc._tgt[1]-npc.y, d=Math.hypot(dx,dy);
   const SPD=0.0009;
-  if(d<0.012){ npc._wp=(npc._wp+1)%npc.waypoints.length; npc._pause=70; npc.vx=npc.vy=0; return; }
+  if(d<0.02){ npc._tgt=null; npc._pause=40+Math.floor(Math.random()*70); npc.vx=npc.vy=0; return; }
   const vx=dx/d*SPD, vy=dy/d*SPD;
-  const fl=FLOORS.find(f=>f.id===npc.scene), obs=fl&&fl.obstacles;
-  const nx=npc.x+vx; if(!hitObs(obs,nx,npc.y)) npc.x=nx; else npc._wp=(npc._wp+1)%npc.waypoints.length;
-  const ny=npc.y+vy; if(!hitObs(obs,npc.x,ny)) npc.y=ny;
+  const obs=fl&&fl.obstacles;
+  const nx=npc.x+vx; if(!hitObs(obs,nx,npc.y)) npc.x=nx; else { npc._tgt=null; }  // 막히면 새 목표
+  const ny=npc.y+vy; if(!hitObs(obs,npc.x,ny)) npc.y=ny; else { npc._tgt=null; }
   npc.vx=vx; npc.vy=vy;
   if(Math.abs(vx)>Math.abs(vy)) npc.dir=vx>0?"right":"left"; else if(vy!==0) npc.dir=vy>0?"down":"up";
-  const wa=fl&&fl.walkable;
-  if(wa){ npc.x=clamp(npc.x,wa[0],wa[2]); npc.y=clamp(npc.y,wa[1],wa[3]); }
+  npc.x=clamp(npc.x,wa[0],wa[2]); npc.y=clamp(npc.y,wa[1],wa[3]);
 }
 function updateNPCs(){ SECURITY_NPCS.forEach(updateNPCPatrol); }
 let nearNPC=null;
@@ -454,7 +456,10 @@ function updateNearNPC(){
 function npcDialogue(npc){
   const line=npc.lines[npc._lineIdx%npc.lines.length]; npc._lineIdx++;
   document.getElementById("exhibitIcon").textContent=npc.type==="guide"?"🧑‍🏫":"👮";
-  document.getElementById("exhibitName").textContent=npc.name;
+  const _nEl=document.getElementById("exhibitName");
+  if(npc.type==="guide"&&npc.name==="S.C"){
+    _nEl.innerHTML='S.C<span style="display:block;font-size:11px;font-weight:600;opacity:.7;margin-top:1px">과학커뮤니케이터</span>';
+  }else{ _nEl.textContent=npc.name; }
   document.getElementById("exhibitInfo").textContent=line;
   document.getElementById("exhibit").classList.add("show");
 }
@@ -462,7 +467,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="v202607111847";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607141257";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=+(safeGet("ufo_floor")||1);   // 시작 1층
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
@@ -473,6 +478,10 @@ let shake=0, shX=0, shY=0;   // 화면 흔들림(juice)
 let bgRect={x:0,y:0,w:0,h:0};
 const images={}; let curImg=null;
 const CHAR={};   // 캐릭터 4방향 스프라이트(codex)
+const CHARWALK={}; // 걷기 프레임(방향별 반대발) — 이동 중 CHAR와 토글
+let DESKIMG=null;  // 전시실 안내데스크 스프라이트
+const NPCSPR={}; // 전시실별 과학커뮤니케이터 전용 스프라이트
+const GUIDE_SPR={room_G:"npc_G",room_quake:"npc_quake",room_O:"npc_O",room_B:"npc_B",room_astro:"npc_astro",room_chem:"npc_chem",room_earth:"npc_earth"};
 let nearSpot=null;
 let inRoom=null, roomStack=[];   // inRoom=현재 방 / roomStack=방→방 진입 히스토리(나가기=이전 방)
 let doneCache={};
@@ -524,6 +533,11 @@ function preload(){
   });
   ["down","up","left","right"].forEach(d=>{ const im=new Image(); pending++;
     im.onload=done; im.onerror=done; im.src="character/"+d+".png?v="+VER; CHAR[d]=im; });
+  ["npc_G","npc_quake","npc_O","npc_B","npc_astro","npc_chem","npc_earth"].forEach(n=>{ const im=new Image(); pending++;
+    im.onload=done; im.onerror=done; im.src="character/"+n+".png?v="+VER; NPCSPR[n]=im; });
+  ["down","up","left","right"].forEach(d=>{ const im=new Image(); pending++;
+    im.onload=done; im.onerror=done; im.src="character/walk_"+d+".png?v="+VER; CHARWALK[d]=im; });
+  { const im=new Image(); pending++; im.onload=done; im.onerror=done; im.src="character/desk.png?v="+VER; DESKIMG=im; }
   function done(){pending--; if(pending<=0)boot();}
 }
 function boot(){
@@ -665,7 +679,9 @@ function drawPlayer(x,y){
   const bob=moving?Math.abs(Math.sin(ph))*5:0;         // 상하 통통(발 구름)
   const tilt=moving?Math.sin(ph*0.5)*0.07:0;           // 좌우 갸웃(리듬)
   const sq=moving?1+Math.sin(ph)*0.06:1;               // 착지 스쿼시(세로)
-  const spr=CHAR[player.dir||"down"];
+  let spr=CHAR[player.dir||"down"];
+  // 이동 중이면 걷기 프레임(반대발)과 토글 → 다리 교차 애니
+  if(moving){ const ws=CHARWALK[player.dir||"down"]; if(ws&&ws.complete&&ws.naturalWidth&&Math.floor(t/7)%2===1) spr=ws; }
   // 그림자(발 뗄수록 작아짐 → 뜬 느낌)
   const shs=1-bob*0.03;
   ctx.beginPath();ctx.ellipse(x,y+16,18*shs,7*shs,0,0,7);ctx.fillStyle="rgba(0,0,0,.3)";ctx.fill();
@@ -702,19 +718,31 @@ function drawNPC(npc){
   const bob=npc.type==="security"
     ? (moving?Math.abs(Math.sin(t*0.30+seed))*4:0)
     : Math.abs(Math.sin(t*0.03+seed))*1.5;   // 안내 NPC = 잔잔한 숨쉬기 bob
-  const spr=CHAR[npc.dir||"down"];
-  const tint=npc.type==="guide"?"#3a6fd8":"#d83a3a";   // 파랑(안내)/빨강(보안) 유니폼
   ctx.beginPath();ctx.ellipse(x,y+16,17,7,0,0,7);ctx.fillStyle="rgba(0,0,0,.28)";ctx.fill();
-  const timg=tintedSprite(spr,tint);
-  if(timg&&timg.width){
-    const h=38, w=timg.width*h/timg.height;
-    ctx.drawImage(timg, Math.round(x-w/2), Math.round(y+12-h-bob), Math.round(w), Math.round(h));
+  const ownName = npc.type==="guide" ? GUIDE_SPR[npc.scene] : null;
+  const own = ownName ? NPCSPR[ownName] : null;
+  if(own && own.complete && own.naturalWidth){
+    // 전용 스프라이트(색 틴트·이모지 없음) — 전시실별 과학커뮤니케이터
+    const h=44, w=own.naturalWidth*h/own.naturalHeight;
+    ctx.drawImage(own, Math.round(x-w/2), Math.round(y+12-h-bob), Math.round(w), Math.round(h));
+    if(DESKIMG&&DESKIMG.complete&&DESKIMG.naturalWidth){   // S.C 앞 안내데스크(하반신 살짝 가림=카운터 뒤)
+      const dh=24, dw=DESKIMG.naturalWidth*dh/DESKIMG.naturalHeight;
+      ctx.drawImage(DESKIMG, Math.round(x-dw/2), Math.round(y+15-dh), Math.round(dw), Math.round(dh));
+    }
   }else{
-    // 스프라이트 로드 실패 대비: 도형+이모지 폴백
-    ctx.beginPath(); ctx.arc(x,y-10-bob,14,0,7); ctx.fillStyle=tint; ctx.fill();
+    // 폴백: 플레이어 스프라이트 색 틴트 + 이모지 (보안 NPC·전용 로드 실패 시)
+    const spr=CHAR[npc.dir||"down"];
+    const tint=npc.type==="guide"?"#3a6fd8":"#d83a3a";   // 파랑(안내)/빨강(보안) 유니폼
+    const timg=tintedSprite(spr,tint);
+    if(timg&&timg.width){
+      const h=38, w=timg.width*h/timg.height;
+      ctx.drawImage(timg, Math.round(x-w/2), Math.round(y+12-h-bob), Math.round(w), Math.round(h));
+    }else{
+      ctx.beginPath(); ctx.arc(x,y-10-bob,14,0,7); ctx.fillStyle=tint; ctx.fill();
+    }
+    ctx.font="15px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(npc.type==="guide"?"🧑‍🏫":"👮", x, y-40-bob);
   }
-  ctx.font="15px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText(npc.type==="guide"?"🧑‍🏫":"👮", x, y-40-bob);
   if(npc===nearNPC){
     ctx.beginPath(); ctx.ellipse(x,y+16,22,9,0,0,7);
     ctx.lineWidth=2.5; ctx.strokeStyle="#fff"; ctx.stroke();
