@@ -6,9 +6,9 @@
 <title>토네이도 키우기 — 프로토타입</title>
 <style>
   :root{
-    --bg:#0e1116; --panel:#171b22; --panel2:#1f2530; --line:#2c3340;
-    --ink:#eef1f6; --muted:#8b93a3;
-    --cyan:#7ec8e3; --green:#3ddc84; --amber:#ffb648; --red:#ff5f5f;
+    --bg:#0d1520; --panel:#152030; --panel2:#1c2d40; --line:#2a4055;
+    --ink:#ddeeff; --muted:#7a9ab8;
+    --cyan:#60c8f0; --green:#3ddc84; --amber:#f0d040; --red:#ff6060;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;word-break:keep-all;overflow-wrap:break-word}
@@ -25,7 +25,7 @@
 
   /* 헤더 */
   header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-  .title-box h1{font-size:18px;font-weight:800;letter-spacing:-0.3px}
+  .title-box h1{font-size:18px;font-weight:800;letter-spacing:-0.3px;color:var(--amber);text-shadow:0 0 14px rgba(240,208,64,.4)}
   .title-box p{font-size:11.5px;color:var(--muted);margin-top:3px}
   .restart-btn{flex-shrink:0;background:var(--panel2);border:1px solid var(--line);color:var(--muted);
     border-radius:10px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
@@ -42,7 +42,7 @@
   .stat-box.best .val{font-size:14px;color:var(--amber);margin-top:5px}
 
   /* 캔버스 스테이지 */
-  .stage{position:relative;flex:1;min-height:0;background:radial-gradient(circle at 50% 78%, #1c222c 0%, var(--panel) 70%);
+  .stage{position:relative;flex:1;min-height:0;background:radial-gradient(ellipse at 50% 110%, #1e3a5a 0%, #0d1520 60%, #06090f 100%);
     border:1px solid var(--line);border-radius:16px;overflow:hidden}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   .stability-hud{position:absolute;top:8px;left:8px;right:8px;display:flex;align-items:center;gap:6px;

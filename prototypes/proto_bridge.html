@@ -8,7 +8,7 @@
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%;
-    background: #0c1420; color: #eef3f8;
+    background: #12100a; color: #f5ead0;
     font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
     word-break: keep-all; overflow-wrap: break-word;
     overscroll-behavior: none;
@@ -27,8 +27,8 @@
     display: flex; align-items: center; justify-content: space-between;
     gap: 8px;
     padding: 10px 14px;
-    background: #101a2b;
-    border-bottom: 1px solid #1f2f45;
+    background: #1e1808;
+    border-bottom: 1px solid #4a3810;
   }
   header h1 {
     font-size: 15px; margin: 0; font-weight: 800; letter-spacing: -0.01em;
@@ -40,7 +40,7 @@
     flex-wrap: wrap; justify-content: flex-end;
   }
   #level-pill, #budget-pill, #state-pill, #sag-pill {
-    background: #17273d; border: 1px solid #2c4360;
+    background: #2a1e08; border: 1px solid #5a3e18;
     border-radius: 999px; padding: 4px 12px;
     color: #d7e6f5; font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -55,7 +55,7 @@
   #canvas-wrap {
     position: relative; flex: 1 1 auto; min-height: 0;
     display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at 50% -10%, #17263d 0%, #0c1420 65%);
+    background: radial-gradient(ellipse at 50% 0%, #3a2c10 0%, #12100a 65%);
     touch-action: none;
     overflow: hidden;
   }
@@ -68,7 +68,7 @@
   #toast {
     position: absolute; left: 50%; top: 14px;
     transform: translate(-50%, -140%);
-    background: #24344a; border: 1px solid #3c5573;
+    background: #362a10; border: 1px solid #6a5020;
     color: #fff; font-size: 13px; font-weight: 700;
     padding: 8px 16px; border-radius: 10px;
     pointer-events: none; opacity: 0;
@@ -86,7 +86,7 @@
   }
   #overlay.show { display: flex; }
   #overlay-card {
-    background: #101c2e; border: 1px solid #2c4360;
+    background: #201808; border: 1px solid #4a3010;
     border-radius: 16px; padding: 26px 28px;
     max-width: 340px; width: calc(100% - 48px);
     text-align: center;

@@ -38,6 +38,19 @@
     flex:0 0 56px; height:56px; width:56px; border-radius:14px;
     display:grid; place-items:center; font-size:30px; background:var(--card2);
   }
+  /* 게임별 테마 색상 */
+  .card-tornado{border-left:3px solid #f0d040}
+  .card-doorlock{border-left:3px solid #00e676;background:#030c06;color:#c8ffd4}
+  .card-light{border-left:3px solid #d084fc}
+  .card-bridge{border-left:3px solid #f4c95d;background:#1a1408}
+  .card-vortex{border-left:3px solid #00bcd4;background:#020e18;color:#b8eeff}
+  .card-caffeine{border-left:3px solid #ffb703;background:#120a03;color:#f5e8d0}
+  .card-tornado .emoji{background:#152030}
+  .card-doorlock .emoji{background:#071409}
+  .card-light .emoji{background:#1a0826}
+  .card-bridge .emoji{background:#2a1e08}
+  .card-vortex .emoji{background:#061a28}
+  .card-caffeine .emoji{background:#1e1008}
   .meta{flex:1 1 auto; min-width:0}
   .title-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:3px}
   .gname{font-size:1.08rem; font-weight:700}
@@ -62,7 +75,7 @@
   </div>
 
   <div class="grid">
-    <a class="card" href="proto_tornado.html">
+    <a class="card card-tornado" href="proto_tornado.html">
       <div class="emoji">🌪️</div>
       <div class="meta">
         <div class="title-row"><span class="gname">토네이도 키우기</span><span class="tag">다이나믹토네이도</span></div>
@@ -71,7 +84,7 @@
       <span class="go">플레이</span>
     </a>
 
-    <a class="card" href="proto_doorlock.html">
+    <a class="card card-doorlock" href="proto_doorlock.html">
       <div class="emoji">🧩</div>
       <div class="meta">
         <div class="title-row"><span class="gname">도어록 추리</span><span class="tag">Yy전시실</span></div>
@@ -80,7 +93,7 @@
       <span class="go">플레이</span>
     </a>
 
-    <a class="card" href="proto_light.html">
+    <a class="card card-light" href="proto_light.html">
       <div class="emoji">💡</div>
       <div class="meta">
         <div class="title-row"><span class="gname">빛 퍼즐</span><span class="tag">B전시실</span></div>
@@ -89,7 +102,7 @@
       <span class="go">플레이</span>
     </a>
 
-    <a class="card" href="proto_bridge.html">
+    <a class="card card-bridge" href="proto_bridge.html">
       <div class="emoji">🌉</div>
       <div class="meta">
         <div class="title-row"><span class="gname">다리 건설</span><span class="tag">G전시실</span></div>
@@ -98,7 +111,7 @@
       <span class="go">플레이</span>
     </a>
 
-    <a class="card" href="proto_vortex.html">
+    <a class="card card-vortex" href="proto_vortex.html">
       <div class="emoji">🎯</div>
       <div class="meta">
         <div class="title-row"><span class="gname">와류 대포</span><span class="tag">G전시실</span></div>
@@ -107,7 +120,7 @@
       <span class="go">플레이</span>
     </a>
 
-    <a class="card" href="proto_caffeine.html">
+    <a class="card card-caffeine" href="proto_caffeine.html">
       <div class="emoji">☕</div>
       <div class="meta">
         <div class="title-row"><span class="gname">카페인 분석</span><span class="tag">2교육실·화학</span></div>

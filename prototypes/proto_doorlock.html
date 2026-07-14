@@ -6,11 +6,11 @@
 <title>도어록 추리 — 프로토타입</title>
 <style>
   :root{
-    --bg:#15171c; --panel:#1f232b; --panel2:#262b34; --line:#343b47;
-    --ink:#eef1f6; --muted:#8b93a3;
-    --green:#3ddc84; --yellow:#f4c542; --black:#4a5261;
-    --red:#ff5f5f; --accent:#4a90e2;
-    --sh-circle:#ff6b6b; --sh-square:#4a90e2; --sh-triangle:#f4c542; --sh-star:#9b6bff;
+    --bg:#030c06; --panel:#071409; --panel2:#0d1f0f; --line:#1a3a1e;
+    --ink:#c8ffd4; --muted:#5aab6a;
+    --green:#00e676; --yellow:#ccff00; --black:#1a3322;
+    --red:#ff4466; --accent:#00c853;
+    --sh-circle:#ff4466; --sh-square:#00c853; --sh-triangle:#ccff00; --sh-star:#44aaff;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;word-break:keep-all;overflow-wrap:break-word}
@@ -27,7 +27,7 @@
 
   /* 헤더 */
   header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-  .title-box h1{font-size:19px;font-weight:800;letter-spacing:-0.3px}
+  .title-box h1{font-size:19px;font-weight:800;letter-spacing:-0.3px;color:var(--green);text-shadow:0 0 14px rgba(0,230,118,.5);font-family:"SF Mono",Consolas,Menlo,monospace}
   .title-box p{font-size:12px;color:var(--muted);margin-top:3px}
   .header-btns{display:flex;gap:6px;flex-shrink:0}
   .icon-btn,.restart-btn{background:var(--panel2);border:1px solid var(--line);color:var(--muted);
@@ -60,7 +60,7 @@
   .display{display:flex;gap:8px;justify-content:center}
   .digit-box{
     flex:1;max-width:56px;aspect-ratio:1/1.15;border-radius:10px;
-    background:#0c0e12;border:1px solid var(--line);
+    background:#040d06;border:1px solid var(--line);font-family:"SF Mono",Consolas,Menlo,monospace;
     display:flex;align-items:center;justify-content:center;
     font-family:"SF Mono",Consolas,Menlo,monospace;font-size:26px;font-weight:700;color:var(--accent);
     box-shadow:inset 0 0 8px rgba(0,0,0,.6);

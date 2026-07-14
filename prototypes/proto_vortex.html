@@ -6,9 +6,9 @@
 <title>와류 대포 — 프로토타입</title>
 <style>
   :root{
-    --bg:#12151b; --panel:#1f232b; --panel2:#262b34; --line:#343b47;
-    --ink:#eef1f6; --muted:#8b93a3;
-    --green:#3ddc84; --yellow:#f4c542; --red:#ff5f5f; --accent:#4a90e2;
+    --bg:#020e18; --panel:#061a28; --panel2:#0a2438; --line:#0f3a52;
+    --ink:#b8eeff; --muted:#4a8aaa;
+    --green:#00e5a0; --yellow:#ffd54f; --red:#ff5252; --accent:#00bcd4;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;word-break:keep-all;overflow-wrap:break-word}
@@ -24,7 +24,7 @@
   .wrap{width:100%;max-width:920px;height:100%;display:flex;flex-direction:column;padding:12px 12px 14px;gap:8px}
 
   header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-  .title-box h1{font-size:18px;font-weight:800;letter-spacing:-0.3px}
+  .title-box h1{font-size:18px;font-weight:800;letter-spacing:-0.3px;color:var(--accent);text-shadow:0 0 12px rgba(0,188,212,.4)}
   .title-box p{font-size:11.5px;color:var(--muted);margin-top:3px}
   .restart-btn{flex-shrink:0;background:var(--panel2);border:1px solid var(--line);color:var(--muted);
     border-radius:10px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
@@ -41,7 +41,7 @@
   .score-val{font-size:17px;font-weight:800;color:var(--yellow);letter-spacing:-0.3px}
 
   .stage{position:relative;flex:1;min-height:260px;border-radius:14px;overflow:hidden;
-    border:1px solid var(--line);background:#0d1620}
+    border:1px solid var(--line);background:radial-gradient(ellipse at 50% 0%,#083050 0%,#020e18 70%)}
   canvas{display:block;width:100%;height:100%;touch-action:none}
 
   .toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
