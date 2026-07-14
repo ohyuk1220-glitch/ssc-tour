@@ -208,21 +208,23 @@ const FLOORS=[
    {name:"수상한 상자", room:"B1 주차장", kind:"soon", icon:"📦", x:0.10,y:0.62, color:"#8a7a5a"},
    {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.48,y:0.42, color:"#9aa"},
  ]},
- {id:"1F", name:"1층", bg:"bg/f1_town.png", tint:"#4caf50", start:[0.55,0.62],
-   obstacles:[[0.24,0.20,0.31,0.33],[0.58,0.13,0.65,0.27],[0.42,0.60,0.49,0.75],[0.60,0.27,0.82,0.42],[0.71,0.53,0.87,0.72]], walkable:[0.04,0.12,0.98,0.94], spots:[
-   {name:"G전시실 입구 · 공존", kind:"door", room:"room_G", icon:"🌿", x:0.14,y:0.28, color:"#4caf50"},
-   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.47,y:0.34, color:"#9aa"},
-   {name:"↑ ½층 에스컬레이터", kind:"stair", to:"HALF", icon:"🪜", x:0.37,y:0.20, color:"#b0a99a"},
-   {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.22,y:0.38, color:"#b0a99a"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","1F","HALF"], icon:"🛗", x:0.15,y:0.50, color:"#9aa"},
-   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.70,y:0.35, color:"#4a90e2",
+ {id:"1F", name:"1층 로비", bg:"bg/f1_town.png", tint:"#4caf50", start:[0.45,0.62],
+   obstacles:[[0.60,0.37,0.82,0.53],[0.74,0.62,0.88,0.80],[0.62,0.10,0.74,0.20],[0.48,0.20,0.58,0.29]], walkable:[0.04,0.12,0.98,0.94], spots:[
+   {name:"정문으로 나가기", kind:"gate", to:"OUTSIDE", icon:"🚪", label:"정문", x:0.45,y:0.90, color:"#9aa"},
+   {name:"G전시실 입구 · 공존", kind:"door", room:"room_G", icon:"🌿", x:0.19,y:0.26, color:"#4caf50"},
+   {name:"↑ ½층 에스컬레이터", kind:"stair", to:"HALF", icon:"🪜", x:0.33,y:0.26, color:"#b0a99a"},
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.44,y:0.29, color:"#9aa"},
+   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","1F","HALF"], icon:"🛗", x:0.05,y:0.30, color:"#9aa"},
+   {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.13,y:0.55, color:"#b0a99a"},
+   {name:"계산기 사물함", kind:"info", icon:"🧮", x:0.52,y:0.31, color:"#78909c",
+    info:"숫자 키패드 모양의 물품보관함이에요. 과학은 세고 재는 것에서 시작하죠."},
+   {name:"원소 주기율표 사물함", kind:"info", icon:"🧪", x:0.66,y:0.27, color:"#7cb342",
+    info:"118개 원소가 규칙대로 놓인 주기율표 모양 보관함이에요. 내 원소 칸을 찾아보세요."},
+   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.70,y:0.47, color:"#4a90e2",
     info:"안내·매표 데스크예요. 옆 메인 엘리베이터로 지하1층·2층·π층을 오가요. (½·√2·3층은 화물 엘리베이터나 계단으로)"},
-   {name:"갈릴레오의 책", kind:"info", icon:"📖", x:0.78,y:0.60, color:"#8d6e63",
+   {name:"갈릴레오의 책", kind:"info", icon:"📖", x:0.80,y:0.72, color:"#8d6e63",
     info:"'색다르게 갈릴레오 읽기' — 갈릴레오의 책 《대화》를 거대한 나무 조형으로 만든 포토존이에요."},
-   {name:"북카페", kind:"info", icon:"☕", x:0.94,y:0.33, color:"#8d6e63",
-    info:"과학책을 보며 쉬어가는 공간. 음료도 마실 수 있어요."},
-   {name:"별관 · 메이커 스튜디오", kind:"info", icon:"🔧", x:0.98,y:0.46, color:"#ef8c3b",
-    info:"직접 만들고 실험하는 창작 공간. 메이커 강좌가 열려요."},
+   {name:"북카페 · 과학책방", kind:"door", room:"room_cafe", icon:"☕", x:0.93,y:0.28, color:"#8d6e63"},
  ]},
  {id:"HALF", name:"½층", bg:"bg/f_half_town.png", tint:"#f4c430", start:[0.47,0.66], spots:[
    {name:"Y전시실 입구 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.24,y:0.40, color:"#f4c430"},
@@ -263,6 +265,10 @@ const FLOORS=[
    {name:"태양광 발전소", room:"옥상", kind:"soon", icon:"☀️", x:0.30,y:0.38, color:"#f6b93b"},
    {name:"↕ 3층 계단", kind:"stair", to:"3F", icon:"🪜", x:0.56,y:0.30, color:"#b0a99a"},
  ]},
+ {id:"OUTSIDE", name:"과학관 앞마당", bg:"bg/outside.png", tint:"#6b7a5a", start:[0.45,0.84],
+   obstacles:[[0.0,0.0,1.0,0.48]], walkable:[0.05,0.50,0.95,0.96], spots:[
+   {name:"과학관 입장", kind:"gate", to:"1F", icon:"🚪", label:"입장", x:0.40,y:0.54, color:"#4a90e2"},
+ ]},
 ];
 
 /* ══════════ 전시실 실내 씬 (2계층: 오버월드 층 ↔ 실내 방) ══════════
@@ -284,6 +290,16 @@ const ROOMS={
     {name:"분리수거 챌린지", kind:"game", file:"g.html", best:"recycle_best", label:"분리수거 챌린지",
      icon:"♻️", room:"G전시실", x:0.50,y:0.68, color:"#4caf50"},
     {name:"나가기", kind:"exit", icon:"🚪", x:0.50,y:0.84, color:"#b0a99a"},
+  ]},
+  room_cafe:{ name:"북카페 · 과학책방", bg:"bg/room_cafe.png", tint:"#8d6e63", floorName:"1층", start:[0.48,0.78],
+    obstacles:[[0.03,0.06,0.97,0.27],[0.03,0.27,0.14,0.62],[0.70,0.27,0.97,0.62],[0.42,0.40,0.55,0.62]], walkable:[0.05,0.15,0.95,0.90], spots:[
+    {name:"과학책 서가", kind:"exhibit", icon:"📚", x:0.45,y:0.18, color:"#6d4c41",
+     info:"천문학·물리·생물… 과학책이 벽 가득해요. 궁금한 주제를 골라 읽어보세요."},
+    {name:"천체망원경 코너", kind:"exhibit", icon:"🔭", x:0.10,y:0.32, color:"#4a90e2",
+     info:"옛 천문학자가 밤하늘을 관측하던 망원경. 갈릴레오도 이런 걸로 목성의 위성을 봤죠."},
+    {name:"커피바", kind:"info", icon:"☕", x:0.82,y:0.32, color:"#8d6e63",
+     info:"과학책을 읽으며 커피 한 잔. 편히 쉬어가는 공간이에요."},
+    {name:"나가기", kind:"exit", icon:"🚪", x:0.48,y:0.86, color:"#b0a99a"},
   ]},
   room_quake:{ name:"지진 체험관", bg:"bg/room_quake_hq.png", tint:"#8a7a6a", floorName:"1층", start:[0.5,0.82],
     obstacles:[[0.06,0.28,0.37,0.83],[0.57,0.20,0.93,0.73]], walkable:[0.05,0.15,0.95,0.93], spots:[
@@ -405,7 +421,7 @@ const GUIDE_NPCS=[
   {scene:"room_earth", name:"S.C", x:0.42,y:0.87, lines:[
     "여긴 지구과학 실험실이에요. 편광현미경으로 암석 속 결정을 들여다볼 수 있어요.",
     "땅이 켜켜이 쌓아온 시간, 지층과 화석으로 지구의 역사를 읽어요."]},
-  {scene:"1F", name:"메인데스크 안내원", x:0.70,y:0.27, lines:[
+  {scene:"1F", name:"메인데스크 안내원", x:0.70,y:0.42, lines:[
     "어서오세요! 서울시립과학관은 무료입장이에요.",
     "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요."]},
 ];
@@ -473,11 +489,11 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607141734";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
-let floorIdx=+(safeGet("ufo_floor")||1);   // 시작 1층
+const VER="202607141817";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
-if(!Number.isInteger(floorIdx)||floorIdx<0||floorIdx>=FLOORS.length)floorIdx=1;
+if(!Number.isInteger(floorIdx)||floorIdx<0||floorIdx>=FLOORS.length)floorIdx=FLOORS.findIndex(f=>f.id==="OUTSIDE");   // 첫 방문=과학관 앞(외부)
 const player={px:0.5,py:0.5,vx:0,vy:0,dir:"down"};
 let camX=0.5, camY=0.5;   // 카메라(부드럽게 뒤따라옴 = 공간감)
 let shake=0, shX=0, shY=0;   // 화면 흔들림(juice)
@@ -810,6 +826,7 @@ function updateAbtn(){
     a.classList.add("on");
     if(nearSpot.kind==="elevator"){ic.textContent="🛗";lb.textContent="층 이동";}
     else if(nearSpot.kind==="stair"){ic.textContent="🪜";lb.textContent="계단";}
+    else if(nearSpot.kind==="gate"){ic.textContent=nearSpot.icon||"🚪";lb.textContent=nearSpot.label||"이동";}
     else if(nearSpot.kind==="game"){ic.textContent="🎮";lb.textContent="플레이";}
     else if(nearSpot.kind==="door"){ic.textContent="🚪";lb.textContent="입장";}
     else if(nearSpot.kind==="exit"){ic.textContent="🚪";lb.textContent="나가기";}
@@ -871,7 +888,7 @@ document.getElementById("abtn").addEventListener("pointerdown",(e)=>{
     startFade(()=>{ safeSet("ufo_floor",floorIdx); location.href=sp.file; });
   }else if(sp.kind==="elevator"){
     sfx(520,0.09,"triangle"); openElevator(sp);
-  }else if(sp.kind==="stair"){
+  }else if(sp.kind==="stair"||sp.kind==="gate"){   // gate=외부↔로비(층 전환 재활용)
     sfx(600,0.10,"triangle"); const ti=FLOORS.findIndex(f=>f.id===sp.to);
     if(ti>=0)startFade(()=>enterFloor(ti));
   }else if(sp.kind==="door"){
