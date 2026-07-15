@@ -35,7 +35,7 @@ const html=readFileSync(join(rootDir,"h.html"),"utf8");
 const exhibits=[...html.matchAll(/\{name:"([^"]+)", kind:"exhibit", qid:"([a-z-]+)"/g)]
   .map(m=>({name:m[1],qid:m[2]}));
 const unique=new Set(exhibits.map(e=>e.qid));
-if(exhibits.length!==24||unique.size!==24)throw new Error("h.html에서 고유한 전시물 QR 24개를 찾지 못했습니다.");
+if(exhibits.length!==25||unique.size!==25)throw new Error("h.html에서 고유한 전시물 QR 25개를 찾지 못했습니다.");
 if(!existsSync(secretsPath)){
   throw new Error("tools/qr_secrets.json이 없습니다. 먼저 node tools/gen_qr_tokens.mjs를 실행해 토큰을 발급하세요.");
 }

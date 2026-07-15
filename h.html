@@ -233,35 +233,31 @@ const FLOORS=[
    {name:"수상한 상자", room:"B1 주차장", kind:"soon", icon:"📦", x:0.10,y:0.62, color:"#8a7a5a"},
    {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.48,y:0.42, color:"#9aa"},
  ]},
- {id:"1F", name:"1층 로비", bg:"bg/f1_town.png", tint:"#4caf50", start:[0.45,0.62],
-   obstacles:[[0.60,0.37,0.82,0.53],[0.74,0.62,0.88,0.80],[0.62,0.10,0.74,0.20],[0.48,0.20,0.58,0.29]], walkable:[0.04,0.12,0.98,0.94], spots:[
-   {name:"정문으로 나가기", kind:"gate", to:"OUTSIDE", icon:"🚪", label:"정문", x:0.45,y:0.90, color:"#9aa"},
-   {name:"G전시실 입구 · 공존", kind:"door", room:"room_G", icon:"🌿", x:0.19,y:0.26, color:"#4caf50"},
-   {name:"↑ ½층 에스컬레이터", kind:"stair", to:"HALF", icon:"🪜", x:0.33,y:0.26, color:"#b0a99a"},
-   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.44,y:0.29, color:"#9aa"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","1F","HALF"], icon:"🛗", x:0.05,y:0.30, color:"#9aa"},
-   {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.13,y:0.55, color:"#b0a99a"},
-   {name:"계산기 사물함", kind:"info", icon:"🧮", x:0.52,y:0.31, color:"#78909c",
-    info:"숫자 키패드 모양의 물품보관함이에요. 과학은 세고 재는 것에서 시작하죠."},
-   {name:"원소 주기율표 사물함", kind:"info", icon:"🧪", x:0.66,y:0.27, color:"#7cb342",
-    info:"118개 원소가 규칙대로 놓인 주기율표 모양 보관함이에요. 내 원소 칸을 찾아보세요."},
-   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.70,y:0.47, color:"#4a90e2",
-    info:"안내·매표 데스크예요. 옆 메인 엘리베이터로 지하1층·2층·π층을 오가요. (½·√2·3층은 화물 엘리베이터나 계단으로)"},
-   {name:"갈릴레오의 책", kind:"info", icon:"📖", x:0.80,y:0.72, color:"#8d6e63",
-    info:"'색다르게 갈릴레오 읽기' — 갈릴레오의 책 《대화》를 거대한 나무 조형으로 만든 포토존이에요."},
-   {name:"북카페 · 과학책방", kind:"door", room:"room_cafe", icon:"☕", x:0.93,y:0.28, color:"#8d6e63"},
+ {id:"1F", name:"1층 로비 · 중앙", bg:"bg/lobby_center.png", tint:"#4caf50", start:[0.42,0.72],
+   obstacles:[[0.00,0.00,1.00,0.16],[0.06,0.40,0.23,0.66],[0.27,0.26,0.36,0.58],[0.43,0.28,0.59,0.52],[0.66,0.35,0.84,0.64],[0.44,0.56,0.58,0.67],[0.13,0.67,0.27,0.84],[0.70,0.65,0.85,0.82],[0.32,0.77,0.70,1.00]], walkable:[0.03,0.18,0.97,0.94], spots:[
+   {name:"← 서쪽 로비", kind:"gate", to:"LOBBY_W", icon:"⬅️", label:"서쪽", x:0.03,y:0.55, color:"#4caf50"},
+   {name:"동쪽 로비 →", kind:"gate", to:"LOBBY_E", icon:"➡️", label:"동쪽", x:0.97,y:0.55, color:"#4a90e2"},
+   {name:"정문으로 나가기", kind:"gate", to:"OUTSIDE", icon:"🚪", label:"정문", x:0.49,y:0.88, color:"#9aa"},
+   {name:"계산기 사물함", kind:"info", icon:"🧮", x:0.15,y:0.50, color:"#78909c",
+    info:"로커 문이 계산기 숫자키 모양으로 꾸며진 물품보관함이에요."},
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.31,y:0.45, color:"#9aa"},
+   {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.53,y:0.42, color:"#b0a99a"},
+   {name:"뒤틀림-토러스", kind:"exhibit", qid:"e-torus", khash:"a2fcc510479e69a0e9a90158221d500946ed933b7c0e9d3993be42665d7b7a0b", icon:"✨", x:0.55,y:0.30, color:"#f6b93b",
+    info:"위상수학의 기본 개념으로 우주 공간의 모습을 형상화한 작품이에요. 안과 밖이 엇갈린 그물망은 뫼비우스의 띠처럼 상호순환하고, 얇은 구리선의 연결은 피보나치 수열을 재해석한 토러스 구조랍니다. 구리선·기판과 LED 전구 5,000개 이상으로 만든 15,600 × 9,600 × 4,900mm 크기의 작품으로, 김주현과 Our Labour가 2016년에 제작했어요. 주변 꽃잎은 대개 3·5·8장이고 솔방울 나선은 시계방향 8줄·반시계방향 13줄인 것처럼, 자연에서도 피보나치 수를 찾아볼 수 있어요."},
+   {name:"휴게 쇼파", kind:"info", icon:"🛋️", x:0.50,y:0.62, color:"#607d8b",
+    info:"넓은 로비 쇼파예요. 잠시 앉아 다음 탐방 코스를 정해보세요."},
  ]},
  {id:"HALF", name:"½층", bg:"bg/f_half_town.png", tint:"#f4c430", start:[0.47,0.66], spots:[
    {name:"Y전시실 입구 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.24,y:0.40, color:"#f4c430"},
    {name:"사이언스홀 입구", room:"½층", kind:"soon", icon:"🎪", x:0.62,y:0.32, color:"#8bbf6b"},
    {name:"다이나믹 토네이도", room:"½층 · 아시아 최대", kind:"soon", icon:"🌪️", x:0.45,y:0.50, color:"#7ec8e3"},
    {name:"제4교육장 입구 · 물리", room:"제4교육장", kind:"soon", icon:"🧲", x:0.85,y:0.54, color:"#b06ab3"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","1F","HALF"], icon:"🛗", x:0.14,y:0.55, color:"#9aa"},
-   {name:"↑ 1층 계단", kind:"stair", to:"1F", icon:"🪜", x:0.47,y:0.80, color:"#b0a99a"},
+   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.14,y:0.55, color:"#9aa"},
+   {name:"↓ 서쪽 로비", kind:"stair", to:"LOBBY_W", icon:"🪜", x:0.47,y:0.80, color:"#b0a99a"},
  ]},
  {id:"SQRT2", name:"√2층", bg:"bg/f_sqrt2_town.png", tint:"#ef8c3b", start:[0.47,0.62], spots:[
    {name:"O전시실 입구 · 생존", kind:"door", room:"room_O", icon:"🧬", x:0.47,y:0.36, color:"#ef8c3b"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","1F","HALF"], icon:"🛗", x:0.16,y:0.56, color:"#9aa"},
+   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.16,y:0.56, color:"#9aa"},
    {name:"↑ 2층 계단", kind:"stair", to:"2F", icon:"🪜", x:0.40,y:0.80, color:"#b0a99a"},
    {name:"↓ 1층 계단", kind:"stair", to:"1F", icon:"🪜", x:0.60,y:0.80, color:"#b0a99a"},
  ]},
@@ -270,7 +266,7 @@ const FLOORS=[
    {name:"Yy전시실 입구 · 공간", room:"Yy전시실", kind:"soon", icon:"🧩", x:0.56,y:0.34, color:"#f4c430"},
    {name:"천문대 입구 · 태양관측", kind:"door", room:"room_astro", icon:"🔭", x:0.80,y:0.40, color:"#2e3a6b"},
    {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.40,y:0.62, color:"#9aa"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","1F","HALF"], icon:"🛗", x:0.55,y:0.62, color:"#9aa"},
+   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.55,y:0.62, color:"#9aa"},
    {name:"↓ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.13,y:0.70, color:"#b0a99a"},
  ]},
  {id:"PI", name:"π층", bg:"bg/f_pi_town.png", tint:"#7cb342", start:[0.47,0.66], spots:[
@@ -282,7 +278,7 @@ const FLOORS=[
  ]},
  {id:"3F", name:"3층", bg:"bg/f_3f_town.png", tint:"#90a4ae", start:[0.5,0.60], spots:[
    {name:"X전시실 입구 · 기획전시", room:"X전시실", kind:"soon", icon:"🎨", x:0.50,y:0.40, color:"#90a4ae"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","1F","HALF"], icon:"🛗", x:0.82,y:0.52, color:"#9aa"},
+   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.82,y:0.52, color:"#9aa"},
    {name:"↓ π층 계단", kind:"stair", to:"PI", icon:"🪜", x:0.47,y:0.82, color:"#b0a99a"},
    {name:"↑ 옥상 계단", kind:"stair", to:"R", icon:"🪜", x:0.34,y:0.70, color:"#b0a99a"},
  ]},
@@ -293,6 +289,31 @@ const FLOORS=[
  {id:"OUTSIDE", name:"과학관 앞마당", bg:"bg/outside.png", tint:"#6b7a5a", start:[0.45,0.84],
    obstacles:[[0.0,0.0,1.0,0.48]], walkable:[0.05,0.50,0.95,0.96], spots:[
    {name:"과학관 입장", kind:"gate", to:"1F", icon:"🚪", label:"입장", x:0.40,y:0.54, color:"#4a90e2"},
+ ]},
+ // start를 0.80(우측 끝)에 두면 폰 세로 화면에선 텅 빈 바닥만 보이고 주인공인 주기율표 사물함이 화면 밖이다 → 0.60으로 당김
+ {id:"LOBBY_W", name:"1층 로비 · 서쪽", bg:"bg/lobby_west.png", tint:"#4caf50", start:[0.60,0.62],
+   obstacles:[[0.00,0.00,0.12,0.48],[0.12,0.25,0.38,0.48],[0.36,0.32,0.59,0.55],[0.18,0.40,0.34,0.83],[0.00,0.60,0.12,0.96]], walkable:[0.03,0.10,0.97,0.94], spots:[
+   {name:"중앙 로비 →", kind:"gate", to:"1F", icon:"➡️", label:"중앙", x:0.92,y:0.62, color:"#4a90e2"},
+   {name:"G전시실 입구 · 공존", kind:"door", room:"room_G", icon:"🌿", x:0.47,y:0.42, color:"#4caf50"},
+   {name:"원소 주기율표 사물함", kind:"info", icon:"🧪", x:0.26,y:0.60, color:"#7cb342",
+    info:"G전시실 입구 옆 사물함이에요. 로커 하나하나가 He·Ne·F·Cl·Ar·Kr·I·Xe·At·Og·Ts 같은 원소 칸이고, 디지털 잠금장치로 여닫아요."},
+   {name:"메이커 스튜디오 문", kind:"info", icon:"🚪", x:0.07,y:0.78, color:"#8d6e63",
+    info:"메이커 스튜디오로 이어지는 문이에요. 운영 프로그램은 현장 안내를 확인해주세요."},
+   {name:"↑ ½층 슬로프", kind:"stair", to:"HALF", icon:"♿", x:0.20,y:0.20, color:"#b0a99a"},
+   {name:"↑ ½층 계단", kind:"stair", to:"HALF", icon:"🪜", x:0.50,y:0.12, color:"#b0a99a"},
+ ]},
+ {id:"LOBBY_E", name:"1층 로비 · 동쪽", bg:"bg/lobby_east.png", tint:"#4a90e2", start:[0.10,0.62],
+   obstacles:[[0.00,0.00,1.00,0.14],[0.10,0.33,0.39,0.58],[0.42,0.18,0.64,0.44],[0.70,0.18,0.82,0.44],[0.86,0.12,1.00,0.63],[0.52,0.55,0.68,0.86]], walkable:[0.03,0.16,0.97,0.94], spots:[
+   {name:"← 중앙 로비", kind:"gate", to:"1F", icon:"⬅️", label:"중앙", x:0.03,y:0.62, color:"#4caf50"},
+   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.22,y:0.47, color:"#4a90e2",
+    info:"안내·매표를 맡는 메인데스크예요. 이곳의 안내원은 과학 이야기를 알기 쉽게 전하는 S.C(과학커뮤니케이터)랍니다."},
+   {name:"북카페 · 과학책방", kind:"door", room:"room_cafe", icon:"☕", x:0.52,y:0.33, color:"#8d6e63"},
+   {name:"갈릴레오의 책", kind:"info", icon:"📖", x:0.59,y:0.72, color:"#8d6e63",
+    info:"갈릴레오의 저서 『DIALOGO』(1632) 표지를 재현한 나무 조형물과 Escapement(탈진기) 시계가 함께 있어요. 기념사진을 남기기 좋은 포토존이에요."},
+   {name:"화장실", kind:"info", icon:"🚻", x:0.76,y:0.33, color:"#78909c",
+    info:"남녀 화장실이 나란히 있어요. 이용 안내 표지를 확인해주세요."},
+   {name:"과학관 후문", kind:"info", icon:"🚪", x:0.93,y:0.35, color:"#6b7a5a",
+    info:"과학관 동쪽 후문이에요. 현재 게임에서는 바깥으로 이동하지 않아요."},
  ]},
 ];
 
@@ -449,15 +470,15 @@ const GUIDE_NPCS=[
   {scene:"room_earth", name:"S.C", x:0.42,y:0.87, lines:[
     "여긴 지구과학 실험실이에요. 편광현미경으로 암석 속 결정을 들여다볼 수 있어요.",
     "땅이 켜켜이 쌓아온 시간, 지층과 화석으로 지구의 역사를 읽어요."]},
-  {scene:"1F", name:"메인데스크 안내원", x:0.70,y:0.42, lines:[
+  {scene:"LOBBY_E", name:"S.C", x:0.22,y:0.60, lines:[
     "어서오세요! 서울시립과학관은 무료입장이에요.",
     "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요."]},
 ];
 const SECURITY_NPCS=[
   {scene:"B1", name:"보안", waypoints:[[0.15,0.75],[0.85,0.75],[0.85,0.20]], lines:[
     "지하 주차장 순찰 중입니다. 위쪽 엘리베이터로 안전하게 이동하세요!"]},
-  {scene:"1F", name:"보안", waypoints:[[0.20,0.70],[0.75,0.70],[0.50,0.45]], lines:[
-    "1층 로비를 순찰하고 있어요. 궁금한 건 메인데스크로!"]},
+  {scene:"1F", name:"보안", waypoints:[[0.36,0.66],[0.63,0.68],[0.62,0.55]], lines:[
+    "1층 중앙 로비를 순찰하고 있어요. 안내는 동쪽 로비 메인데스크의 S.C에게 물어보세요!"]},
   {scene:"HALF", name:"보안", waypoints:[[0.20,0.65],[0.75,0.60],[0.45,0.45]], lines:[
     "½층 순찰 중! 다이나믹 토네이도 라이브쇼 시간 놓치지 마세요."]},
   {scene:"SQRT2", name:"보안", waypoints:[[0.20,0.65],[0.70,0.60]], lines:[
@@ -517,7 +538,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607151016";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607151207";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
@@ -604,14 +625,19 @@ function enterLinkedRoom(roomId){
   if(own>=0){ floorIdx=own; safeSet("ufo_floor",own); }
   enterRoom(roomId);
 }
+function enterLinkedScene(sceneId){
+  const own=FLOORS.findIndex(f=>f.id===sceneId);
+  if(own>=0){ enterFloor(own,true); return; }               // 로비 같은 층 씬 전시물 QR
+  enterLinkedRoom(sceneId);                                 // 기존 전시실 QR·?room= 딥링크
+}
 function boot(){
   document.getElementById("boot").style.display="none";
   enterFloor(floorIdx,true);
   const scanQid=_q.has("scan")?_q.get("scan"):null;
   const scanKey=_q.has("k")?_q.get("k"):null;
   const scanEx=scanQid==null?null:exhibitByQid(scanQid);
-  const roomId=scanEx?scanEx.roomId:(_q.has("room")&&ROOMS[_q.get("room")]?_q.get("room"):null);
-  if(roomId)enterLinkedRoom(roomId);                       // 유효 QR이 있으면 해당 전시실이 기존 room 딥링크보다 우선
+  const sceneId=scanEx?scanEx.roomId:(_q.has("room")&&ROOMS[_q.get("room")]?_q.get("room"):null);
+  if(sceneId)enterLinkedScene(sceneId);                    // 유효 QR이 있으면 해당 씬이 기존 room 딥링크보다 우선
   loop();
   if(_q.has("scan")){
     handleScanParam(scanQid,scanKey,scanEx).catch(e=>{console.warn("QR 인증 처리 실패:",e);toast("QR 인증을 처리할 수 없어요");});
@@ -649,13 +675,32 @@ function enterRoom(roomId, fromStack){
   camX=player.px; camY=player.py;
   nearSpot=null; nearNPC=null; updateFloorTag();
 }
+/* 전시실에서 나올 때 문 앞 좌표가 장애물 안이면 캐릭터가 영구히 갇힌다(모든 축 이동이 hitObs에 거부됨).
+   → 목표 지점이 막혀 있으면 주변을 나선형으로 훑어 walkable하고 장애물 아닌 첫 지점을 찾는다.
+   배경·장애물이 바뀌어도 안 터지게 좌표 하드코딩 대신 탐색으로 처리. */
+function safeSpawn(f,x,y){
+  const obs=f.obstacles, wk=f.walkable;
+  const okAt=(px,py)=>{
+    if(hitObs(obs,px,py)) return false;
+    if(wk && (px<wk[0]||px>wk[2]||py<wk[1]||py>wk[3])) return false;
+    return px>=0.02&&px<=0.98&&py>=0.02&&py<=0.98;
+  };
+  if(okAt(x,y)) return [x,y];
+  for(let r=0.03;r<=0.45;r+=0.03){                     // 반경을 넓혀가며 8방향 탐색
+    for(let a=0;a<16;a++){
+      const t=a*Math.PI/8, px=x+Math.cos(t)*r, py=y+Math.sin(t)*r*0.7;   // 아이소 화면이라 세로는 눌러서
+      if(okAt(px,py)) return [px,py];
+    }
+  }
+  const st=f.start||[0.5,0.5]; return [st[0],st[1]];   // 최후 폴백: 씬 시작 지점
+}
 function exitRoom(){
   if(roomStack.length){ enterRoom(roomStack.pop(), true); return; }   // 이전 방(예: 지진→G전시실)으로 복귀
   const back=inRoom; inRoom=null;
   const f=curScene();
   curImg=(f._ok?images[f.id]:null);
   const d=f.spots.find(s=>s.kind==="door"&&s.room===back);   // 들어왔던 문 앞으로 복귀
-  if(d){ player.px=d.x; player.py=Math.min(0.9,d.y+0.08); }
+  if(d){ const sp=safeSpawn(f,d.x,Math.min(0.9,d.y+0.08)); player.px=sp[0]; player.py=sp[1]; }
   else { const st=f.start||[0.5,0.5]; player.px=st[0]; player.py=st[1]; }
   player.vx=player.vy=0; camX=player.px; camY=player.py; nearSpot=null; nearNPC=null; updateFloorTag();
 }
@@ -994,11 +1039,14 @@ function got(s){ return isDone(s.key); }
 function gotCount(){ return STAMPS.filter(got).length; }
 
 /* ══════════ 도감·점수 (수집 가시화 = 박물관 게임 1순위) ══════════ */
-const ALL_EXHIBITS=[], EXHIBIT_BY_QID={}; Object.entries(ROOMS).forEach(([roomId,r])=>r.spots.forEach(s=>{
+const ALL_EXHIBITS=[], EXHIBIT_BY_QID={};
+function _pushExhibits(sceneId,scene){ scene.spots.forEach(s=>{
   if(s.kind==="exhibit"){
-    const e={roomId,room:r.name,name:s.name,icon:s.icon,info:s.info,qid:s.qid,khash:s.khash}; ALL_EXHIBITS.push(e);
+    const e={roomId:sceneId,room:scene.name,name:s.name,icon:s.icon,info:s.info,qid:s.qid,khash:s.khash}; ALL_EXHIBITS.push(e);
     if(s.qid&&!EXHIBIT_BY_QID[s.qid])EXHIBIT_BY_QID[s.qid]=e;
-  }}));
+  }}); }
+FLOORS.forEach(f=>_pushExhibits(f.id,f));
+Object.entries(ROOMS).forEach(([roomId,r])=>_pushExhibits(roomId,r));
 const EXHIBIT_TOTAL=ALL_EXHIBITS.length;
 function checkExhibitQids(){
   const missing=ALL_EXHIBITS.filter(e=>!e.qid).map(e=>e.name);
@@ -1007,7 +1055,7 @@ function checkExhibitQids(){
   const invalidHash=ALL_EXHIBITS.filter(e=>e.khash&&!/^[0-9a-f]{64}$/i.test(e.khash)).map(e=>e.qid);
   const count={}; ALL_EXHIBITS.forEach(e=>{if(e.qid)count[e.qid]=(count[e.qid]||0)+1;});
   const duplicate=Object.keys(count).filter(qid=>count[qid]>1);
-  if(EXHIBIT_TOTAL!==24)console.warn("전시물 수가 24개가 아닙니다:",EXHIBIT_TOTAL);
+  if(EXHIBIT_TOTAL!==25)console.warn("전시물 수가 25개가 아닙니다:",EXHIBIT_TOTAL);
   if(missing.length)console.warn("qid 누락 전시물:",missing);
   if(missingHash.length)console.warn("khash 누락 전시물:",missingHash);
   if(invalid.length)console.warn("qid 형식 오류(소문자·하이픈만 허용):",invalid);
@@ -1142,20 +1190,23 @@ document.getElementById("mapBtn").onclick=()=>{
     '<div style="height:16px;background:#dcebdc;border-radius:9px;overflow:hidden;border:1.5px solid #a9cdaa">'+
     '<div style="height:100%;width:'+scanPct+'%;background:linear-gradient(90deg,#4caf50,#287a2e);transition:width .4s"></div></div>'+
     '<div style="text-align:right;font-size:12px;font-weight:700;color:#287a2e;margin-top:3px">'+scanPct+'% 현장 완주</div></div>';
-  // 방(전시실)별: 미니게임 + 전시물 관람 여부
+  // 씬별: 미니게임 + 전시물 관람 여부
   const s=seenMap(), scans=scanMap();
-  Object.values(ROOMS).forEach(r=>{
+  const appendCatalogScene=(scene,title)=>{
     const row=document.createElement("div"); row.className="map-floor";
     let chips="";
-    r.spots.forEach(sp=>{
+    scene.spots.forEach(sp=>{
       if(sp.kind==="game"){ const d=isDone(sp.best);
         chips+='<span class="room-chip '+(d?"done":"")+'">'+sp.icon+" "+sp.label+(d?" ⭐":" ▶")+"</span>"; }
       else if(sp.kind==="exhibit"){ const v=!!s[sp.name], scanned=!!scans[sp.qid];
         chips+='<span class="room-chip '+(scanned?"scanned":(v?"done":"soon"))+'">'+sp.icon+" "+sp.name+(scanned?" 📍":(v?" ✓":""))+"</span>"; }
     });
-    row.innerHTML='<h3>'+r.floorName+' · '+r.name+'</h3><div class="rooms">'+chips+'</div>';
+    if(!chips)return;
+    row.innerHTML='<h3>'+title+'</h3><div class="rooms">'+chips+'</div>';
     body.appendChild(row);
-  });
+  };
+  FLOORS.forEach(f=>appendCatalogScene(f,f.name));
+  Object.values(ROOMS).forEach(r=>appendCatalogScene(r,r.floorName+' · '+r.name));
   document.getElementById("map").classList.add("show");
 };
 

@@ -12,6 +12,7 @@ const hashesPath=join(toolsDir,"qr_hashes.json");
 const force=process.argv.slice(2).includes("--force");
 const unknownArgs=process.argv.slice(2).filter(arg=>arg!=="--force");
 const base32="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+const exhibitCount=25;
 
 if(unknownArgs.length)throw new Error("알 수 없는 옵션: "+unknownArgs.join(" "));
 
@@ -19,7 +20,7 @@ function readExhibitQids(){
   const html=readFileSync(join(rootDir,"h.html"),"utf8");
   const qids=[...html.matchAll(/\{name:"[^"]+", kind:"exhibit", qid:"([a-z-]+)"/g)].map(m=>m[1]);
   const unique=new Set(qids);
-  if(qids.length!==24||unique.size!==24)throw new Error("h.html에서 고유한 전시물 qid 24개를 찾지 못했습니다.");
+  if(qids.length!==exhibitCount||unique.size!==exhibitCount)throw new Error("h.html에서 고유한 전시물 qid "+exhibitCount+"개를 찾지 못했습니다.");
   return qids;
 }
 function makeToken(){
@@ -31,13 +32,13 @@ function makeToken(){
 function validateSecrets(value,qids){
   if(!value||typeof value!=="object"||Array.isArray(value))throw new Error("qr_secrets.json 형식이 올바르지 않습니다.");
   const expected=new Set(qids), keys=Object.keys(value);
-  if(keys.length!==qids.length||keys.some(qid=>!expected.has(qid)))throw new Error("qr_secrets.json의 qid가 h.html 전시물 24개와 일치하지 않습니다.");
-  for(const qid of qids){
+  if(keys.some(qid=>!expected.has(qid)))throw new Error("qr_secrets.json에 h.html에 없는 qid가 있습니다.");
+  for(const qid of keys){
     if(typeof value[qid]!=="string"||!new RegExp("^["+base32+"]{10}$").test(value[qid])){
       throw new Error(qid+" 토큰은 base32(A-Z2-7) 10자여야 합니다.");
     }
   }
-  if(new Set(Object.values(value)).size!==qids.length)throw new Error("qr_secrets.json에 중복 토큰이 있습니다.");
+  if(new Set(Object.values(value)).size!==keys.length)throw new Error("qr_secrets.json에 중복 토큰이 있습니다.");
   return value;
 }
 
@@ -45,7 +46,19 @@ const qids=readExhibitQids();
 let secrets;
 if(existsSync(secretsPath)&&!force){
   secrets=validateSecrets(JSON.parse(readFileSync(secretsPath,"utf8")),qids);
-  console.log("기존 qr_secrets.json을 유지합니다. 재발급하려면 --force를 명시하세요.");
+  const used=new Set(Object.values(secrets)); let added=0;
+  for(const qid of qids){
+    if(Object.hasOwn(secrets,qid))continue;
+    let token;
+    do token=makeToken(); while(used.has(token));
+    used.add(token); secrets[qid]=token; added++;
+  }
+  if(added){
+    writeFileSync(secretsPath,JSON.stringify(secrets,null,2)+"\n",{mode:0o600});
+    console.log("기존 QR 토큰을 유지하고 새 전시물 토큰 "+added+"개를 추가했습니다: "+secretsPath);
+  }else{
+    console.log("기존 qr_secrets.json을 유지합니다. 재발급하려면 --force를 명시하세요.");
+  }
 }else{
   const used=new Set(); secrets={};
   for(const qid of qids){
