@@ -1,0 +1,3 @@
+tools/qr_secrets.json
+tools/qr_out/
+tools/.qr_tmp-*/

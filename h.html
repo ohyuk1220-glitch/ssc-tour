@@ -46,6 +46,9 @@
     box-shadow:0 3px 0 rgba(0,0,0,.25);font-weight:800}
   .badge .n{font-family:var(--font-num);font-size:19px;color:var(--o)}
   .badge .t{font-family:var(--font-num);font-size:19px;color:#b8ad97}
+  .level-badge{padding-left:9px;padding-right:9px}
+  .level-badge .n{color:#287a2e}
+  .level-name{font-size:12px;color:#6e6657;white-space:nowrap}
   .topbtns{display:flex;gap:8px}
   .iconbtn{pointer-events:auto;width:42px;height:42px;border-radius:12px;border:2px solid var(--ink);
     background:var(--panel);font-size:20px;display:flex;align-items:center;justify-content:center;
@@ -100,6 +103,7 @@
   .room-chip{font-size:12px;font-weight:700;padding:5px 10px;border-radius:9px;
     border:1.5px solid var(--line);background:#fff;display:flex;align-items:center;gap:5px}
   .room-chip.done{background:#fff7e6;border-color:var(--gold);color:#8a6d00}
+  .room-chip.scanned{background:#eefbf0;border-color:#4caf50;color:#287a2e}
   .room-chip.soon{opacity:.5}
   /* 수료증 */
   #cert .sheet{text-align:center;background:linear-gradient(160deg,#fffdf7,#fff4dd)}
@@ -116,6 +120,16 @@
   .cheer-icon{font-size:66px;margin:4px 0}
   .cheer-h{font-size:22px;font-weight:800;color:var(--o)}
   .cheer-room{font-size:13px;color:#8a8069;margin-top:4px}
+  #scanCheer .sheet{text-align:center;background:linear-gradient(155deg,#fffdf7,#e9ffe9);
+    border-color:#287a2e;box-shadow:0 12px 0 rgba(0,0,0,.28),0 0 36px rgba(76,175,80,.45);
+    animation:scanPop .5s cubic-bezier(.12,1.35,.35,1)}
+  @keyframes scanPop{from{transform:scale(.55) rotate(-3deg);opacity:0}to{transform:scale(1);opacity:1}}
+  .scan-icon{font-size:82px;line-height:1.1;margin:2px 0 6px;animation:scanGlow 1s ease-in-out infinite alternate}
+  @keyframes scanGlow{from{filter:drop-shadow(0 0 2px #f6b93b);transform:scale(1)}to{filter:drop-shadow(0 0 14px #4caf50);transform:scale(1.08)}}
+  .scan-title{font-size:25px;font-weight:800;color:#287a2e}
+  .scan-name{font-size:18px;font-weight:800;margin:8px 0 4px}
+  .scan-msg{font-size:15px;color:#5a5344}
+  .scan-points{font-family:var(--font-num);font-size:26px;font-weight:800;color:#e58e26;margin-top:10px}
 
   /* 로딩 */
   #boot{position:fixed;inset:0;z-index:150;background:#12100c;color:#fff;
@@ -131,9 +145,10 @@
 <div id="rotate"><div class="ph">📱</div><p><b>휴대폰을 가로로 돌려주세요</b><br>과학관 탐방은 가로 화면에서 즐길 수 있어요</p></div>
 
 <div class="hud" id="hud-top">
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
     <div class="badge" id="badge">🎫 <span class="n" id="sc">0</span><span class="t">/7</span></div>
     <div class="badge">⭐ <span class="n" id="scoreVal">0</span><span class="t">점</span></div>
+    <div class="badge level-badge"><span class="n" id="levelVal">Lv1</span><span class="level-name" id="levelName">방문객</span></div>
   </div>
   <div class="topbtns">
     <div class="iconbtn" id="soundBtn">🔊</div>
@@ -173,6 +188,16 @@
   <div class="cheer-h">스탬프 획득!</div>
   <div class="cheer-room" id="cheerRoom"></div>
   <button class="btn-primary" id="cheerNext">좋아요!</button>
+</div></div>
+
+<!-- 현장 QR 인증 -->
+<div class="modal" id="scanCheer"><div class="sheet">
+  <div class="scan-icon" id="scanIcon">📍</div>
+  <div class="scan-title">현장 인증 완료!</div>
+  <div class="scan-name" id="scanName"></div>
+  <div class="scan-msg">현장에서 직접 확인하셨네요!</div>
+  <div class="scan-points" id="scanPoints"></div>
+  <button class="btn-primary" data-close>인증 완료</button>
 </div></div>
 
 <!-- 전시물 관람 -->
@@ -276,15 +301,15 @@ const FLOORS=[
 const ROOMS={
   room_G:{ name:"G전시실 · 공존", bg:"bg/room_G_hq.png", tint:"#4caf50", floorName:"1층", start:[0.5,0.80],
     obstacles:[[0.15,0.15,0.42,0.42],[0.20,0.50,0.46,0.72],[0.62,0.13,0.95,0.42],[0.80,0.50,0.97,0.68]], walkable:[0.05,0.13,0.95,0.90], spots:[
-    {name:"티움 실험실", kind:"exhibit", icon:"🔬", x:0.25,y:0.30, color:"#4caf50",
+    {name:"티움 실험실", kind:"exhibit", qid:"g-tium", khash:"0ad257dbf3d82b40481565b95ef29160b3fb641a9a0018e473cbb3bd806618fe", icon:"🔬", x:0.25,y:0.30, color:"#4caf50",
      info:"티움(Tium)은 생태를 관찰하고 실험하는 코너예요. 유리 부스 안에서 자연을 들여다봐요."},
-    {name:"원소 사물함", kind:"exhibit", icon:"🧪", x:0.08,y:0.52, color:"#7cb342",
+    {name:"원소 사물함", kind:"exhibit", qid:"g-locker", khash:"58140975eb7a2ffff9f057e487182e556e58ee7a3a895713dd63fdddec0e39bc", icon:"🧪", x:0.08,y:0.52, color:"#7cb342",
      info:"주기율표 모양의 사물함이에요. 헬륨(He)·네온(Ne)·크립톤(Kr)… 원소 기호로 내 칸을 찾아요."},
-    {name:"지질 단면", kind:"exhibit", icon:"🪨", x:0.31,y:0.60, color:"#8d6e63",
+    {name:"지질 단면", kind:"exhibit", qid:"g-strata", khash:"ecf99b046306d8f94d4080873d8cd3722e6c3a9c35ea3436cd53de5a2b25e20f", icon:"🪨", x:0.31,y:0.60, color:"#8d6e63",
      info:"땅을 세로로 자른 모습. 층층이 쌓인 지층 속 화석이 지구의 역사를 기록해요."},
-    {name:"인류세 철망", kind:"exhibit", icon:"🗑️", x:0.76,y:0.27, color:"#9e9e9e",
+    {name:"인류세 철망", kind:"exhibit", qid:"g-mesh", khash:"cffe00b8581dc845db467b6040c9276bd14c3532160461ec3000f2d28f00e2e1", icon:"🗑️", x:0.76,y:0.27, color:"#9e9e9e",
      info:"철망 안에 눌러 담은 플라스틱 쓰레기. '인류세' — 인간이 만든 새 지질시대의 상징이에요."},
-    {name:"미세플라스틱 현미경", kind:"exhibit", icon:"🔎", x:0.88,y:0.57, color:"#4a90e2",
+    {name:"미세플라스틱 현미경", kind:"exhibit", qid:"g-micro", khash:"9d5a848823c96aa05a1ec0fea78de4a1cefcf9d3286e38ba22902c448fb8e825", icon:"🔎", x:0.88,y:0.57, color:"#4a90e2",
      info:"눈에 안 보이는 작은 플라스틱 조각을 현미경으로 관찰해요. 우리 밥상까지 돌아온답니다."},
     {name:"지진 체험관", kind:"door", room:"room_quake", icon:"🌋", x:0.50,y:0.31, color:"#8a7a6a"},
     {name:"분리수거 챌린지", kind:"game", file:"g.html", best:"recycle_best", label:"분리수거 챌린지",
@@ -293,9 +318,9 @@ const ROOMS={
   ]},
   room_cafe:{ name:"북카페 · 과학책방", bg:"bg/room_cafe.png", tint:"#8d6e63", floorName:"1층", start:[0.48,0.78],
     obstacles:[[0.03,0.06,0.97,0.27],[0.03,0.27,0.14,0.62],[0.70,0.27,0.97,0.62],[0.42,0.40,0.55,0.62]], walkable:[0.05,0.15,0.95,0.90], spots:[
-    {name:"과학책 서가", kind:"exhibit", icon:"📚", x:0.45,y:0.18, color:"#6d4c41",
+    {name:"과학책 서가", kind:"exhibit", qid:"cafe-books", khash:"6836c6832434ae2d3164d28c10ed5fd18ac9de8d035bf1d7ca090a17e415f235", icon:"📚", x:0.45,y:0.18, color:"#6d4c41",
      info:"천문학·물리·생물… 과학책이 벽 가득해요. 궁금한 주제를 골라 읽어보세요."},
-    {name:"천체망원경 코너", kind:"exhibit", icon:"🔭", x:0.10,y:0.32, color:"#4a90e2",
+    {name:"천체망원경 코너", kind:"exhibit", qid:"cafe-scope", khash:"81eb09ffc01c613091a848739fa5642225df373a80a0cb5a3c9b3e7c1c709ba9", icon:"🔭", x:0.10,y:0.32, color:"#4a90e2",
      info:"옛 천문학자가 밤하늘을 관측하던 망원경. 갈릴레오도 이런 걸로 목성의 위성을 봤죠."},
     {name:"커피바", kind:"info", icon:"☕", x:0.82,y:0.32, color:"#8d6e63",
      info:"과학책을 읽으며 커피 한 잔. 편히 쉬어가는 공간이에요."},
@@ -303,11 +328,11 @@ const ROOMS={
   ]},
   room_quake:{ name:"지진 체험관", bg:"bg/room_quake_hq.png", tint:"#8a7a6a", floorName:"1층", start:[0.5,0.82],
     obstacles:[[0.06,0.28,0.37,0.83],[0.57,0.20,0.93,0.73]], walkable:[0.05,0.15,0.95,0.93], spots:[
-    {name:"지진파 모니터", kind:"exhibit", icon:"📈", x:0.48,y:0.20, color:"#4a90e2",
+    {name:"지진파 모니터", kind:"exhibit", qid:"q-monitor", khash:"d528ffc17f877468733e64de73e174a188231471a79f77e5d22ac092e161b6da", icon:"📈", x:0.48,y:0.20, color:"#4a90e2",
      info:"땅의 흔들림을 기록하는 화면이에요. 지진의 세기(규모)를 파형으로 보여줘요."},
-    {name:"지진 시뮬레이터", kind:"exhibit", icon:"🏗️", x:0.74,y:0.44, color:"#e05a4a",
+    {name:"지진 시뮬레이터", kind:"exhibit", qid:"q-simulator", khash:"574def7a84c8b484a7e4c47d9bfd22db6a83e23351b98ebcb7a2d78eedc5a745", icon:"🏗️", x:0.74,y:0.44, color:"#e05a4a",
      info:"흔들림을 직접 체험하는 장치. 흔들리면 책상 아래로! 멈추면 계단으로 대피해요(엘베 위험)."},
-    {name:"용암 균열존", kind:"exhibit", icon:"🌋", x:0.20,y:0.54, color:"#c0563a",
+    {name:"용암 균열존", kind:"exhibit", qid:"q-lava", khash:"33ee01c562454a91ebbe5728aee08df60a98bdd7fc83a4975d2a5d64c6f4bba4", icon:"🌋", x:0.20,y:0.54, color:"#c0563a",
      info:"땅속 마그마가 지표로 올라오는 모습. 지진과 화산은 판이 움직여 생겨요."},
     {name:"지진 대피 훈련", kind:"game", file:"q.html", best:"quake_best", label:"지진 대피 훈련",
      icon:"🚨", room:"지진 체험관", x:0.46,y:0.62, color:"#8a7a6a"},
@@ -315,11 +340,11 @@ const ROOMS={
   ]},
   room_O:{ name:"O전시실 · 생존", bg:"bg/room_O_hq.png", tint:"#ef8c3b", floorName:"√2층", start:[0.5,0.82],
     obstacles:[[0.10,0.28,0.33,0.72],[0.59,0.27,0.79,0.62],[0.63,0.60,0.97,0.83]], walkable:[0.05,0.15,0.95,0.93], spots:[
-    {name:"DNA 이중나선", kind:"exhibit", icon:"🧬", x:0.21,y:0.48, color:"#ef8c3b",
+    {name:"DNA 이중나선", kind:"exhibit", qid:"o-dna", khash:"6285402ecfa68bd959b539b6b33f4ee0216810e14d503d62b24874e8ab93df13", icon:"🧬", x:0.21,y:0.48, color:"#ef8c3b",
      info:"우리 몸의 설계도예요. 두 가닥이 꼬인 사다리(이중나선) 모양이죠."},
-    {name:"주기율표", kind:"exhibit", icon:"🔲", x:0.45,y:0.16, color:"#e0a040",
+    {name:"주기율표", kind:"exhibit", qid:"o-periodic", khash:"986f557c8ce42208cf34f7fe79c9ba876eaa3892487ab4e0e98b65a6e220103e", icon:"🔲", x:0.45,y:0.16, color:"#e0a040",
      info:"세상 모든 물질을 이루는 원소들의 지도. 118개 원소가 규칙대로 놓여요."},
-    {name:"인체 모형", kind:"exhibit", icon:"🫀", x:0.69,y:0.42, color:"#e05a4a",
+    {name:"인체 모형", kind:"exhibit", qid:"o-body", khash:"c3ca8e0903e048865a2e7bd97aee6f6c9974ffdf39d98af0c3eb310c04961015", icon:"🫀", x:0.69,y:0.42, color:"#e05a4a",
      info:"몸속 장기들을 볼 수 있어요. 심장·폐·위·장이 각자 하는 일이 달라요."},
     {name:"DNA 짝 맞추기", kind:"game", file:"d.html", best:"dna_best", label:"DNA 짝 맞추기",
      icon:"🧬", room:"O전시실", x:0.43,y:0.62, color:"#ef8c3b"},
@@ -327,11 +352,11 @@ const ROOMS={
   ]},
   room_B:{ name:"B전시실 · 연결", bg:"bg/room_B_hq.png", tint:"#4a90e2", floorName:"2층", start:[0.5,0.82],
     obstacles:[[0.08,0.28,0.36,0.76],[0.37,0.18,0.66,0.53],[0.65,0.30,0.94,0.73]], walkable:[0.05,0.14,0.95,0.93], spots:[
-    {name:"로켓", kind:"exhibit", icon:"🚀", x:0.21,y:0.46, color:"#c9c2b0",
+    {name:"로켓", kind:"exhibit", qid:"b-rocket", khash:"be570fa8d4b2794dd60b4dc427a5dca74d21a931d8ba531d2d5a2d2dc40d30c0", icon:"🚀", x:0.21,y:0.46, color:"#c9c2b0",
      info:"우주로 나가는 발사체예요. 엄청난 힘으로 지구 중력을 벗어나요."},
-    {name:"태양계", kind:"exhibit", icon:"🪐", x:0.50,y:0.34, color:"#4a90e2",
+    {name:"태양계", kind:"exhibit", qid:"b-solar", khash:"cbd0965e029d7e5beb3a8a64c6a17f694959798ac15f3b15432afb210159bdcc", icon:"🪐", x:0.50,y:0.34, color:"#4a90e2",
      info:"태양과 8개 행성. 지구는 태양에서 세 번째 행성이에요."},
-    {name:"뇌 모형", kind:"exhibit", icon:"🧠", x:0.78,y:0.45, color:"#e07ab0",
+    {name:"뇌 모형", kind:"exhibit", qid:"b-brain", khash:"358fe7a10fdf32e0bf0577145e07360399da814ae435e0c338eedaf33466afd8", icon:"🧠", x:0.78,y:0.45, color:"#e07ab0",
      info:"생각·기억·감각을 담당하는 우리 몸의 사령탑이에요."},
     {name:"우주 합체 실험실", kind:"game", file:"m.html", best:"cosmo_best", label:"우주 합체 실험실",
      icon:"🪐", room:"B전시실", x:0.50,y:0.64, color:"#4a90e2"},
@@ -339,11 +364,11 @@ const ROOMS={
   ]},
   room_astro:{ name:"천문대 · 태양관측", bg:"bg/room_astro_hq.png", tint:"#2e3a6b", floorName:"2층", start:[0.5,0.82],
     obstacles:[[0.05,0.32,0.33,0.77],[0.37,0.18,0.60,0.63],[0.70,0.42,0.91,0.67]], walkable:[0.05,0.16,0.95,0.93], spots:[
-    {name:"돔 관측소", kind:"exhibit", icon:"🔭", x:0.18,y:0.55, color:"#9aa",
+    {name:"돔 관측소", kind:"exhibit", qid:"a-dome", khash:"08cd75b467b0bf2a53067b40310ffca9c1b5f403968729d0d52770dd2c79d423", icon:"🔭", x:0.18,y:0.55, color:"#9aa",
      info:"지붕이 열리는 관측소. 큰 망원경으로 밤하늘을 자세히 봐요."},
-    {name:"천체 망원경", kind:"exhibit", icon:"✨", x:0.48,y:0.40, color:"#2e3a6b",
+    {name:"천체 망원경", kind:"exhibit", qid:"a-telescope", khash:"ea4ba1c87f75ebe8412957eab64059ddab6f0380504877420079242d660ad07a", icon:"✨", x:0.48,y:0.40, color:"#2e3a6b",
      info:"옛사람들이 별을 이어 만든 별자리를 관측해요. 계절마다 보이는 별자리가 달라요."},
-    {name:"태양 관측 장비", kind:"exhibit", icon:"☀️", x:0.80,y:0.50, color:"#f6b93b",
+    {name:"태양 관측 장비", kind:"exhibit", qid:"a-sun", khash:"e076eb367fdb060f65681abadded6cc8490d9f03776e5ca772e711a56dd77710", icon:"☀️", x:0.80,y:0.50, color:"#f6b93b",
      info:"특수 필터로 태양의 흑점을 안전하게 관찰해요. 맨눈으로 보면 안 돼요!"},
     {name:"별자리 관측", kind:"game", file:"s.html", best:"astro_best", label:"별자리 관측",
      icon:"🔭", room:"천문대 BOOT", x:0.50,y:0.70, color:"#2e3a6b"},
@@ -351,9 +376,9 @@ const ROOMS={
   ]},
   room_chem:{ name:"2교육실 · 화학", bg:"bg/room_chem_hq.png", tint:"#9c6ade", floorName:"π층", start:[0.5,0.83],
     obstacles:[[0.18,0.42,0.45,0.70],[0.54,0.42,0.81,0.70],[0.83,0.42,0.97,0.62]], walkable:[0.05,0.15,0.95,0.93], spots:[
-    {name:"실험 도구", kind:"exhibit", icon:"⚗️", x:0.28,y:0.55, color:"#9c6ade",
+    {name:"실험 도구", kind:"exhibit", qid:"c-tools", khash:"1233c8ae7c33d498fef3833c2cc8a840380d51a829c2090b2f1667b1fe49d2e9", icon:"⚗️", x:0.28,y:0.55, color:"#9c6ade",
      info:"플라스크·비커로 물질이 섞이고 변하는 걸 관찰해요."},
-    {name:"분자 모형", kind:"exhibit", icon:"🔴", x:0.89,y:0.48, color:"#7c4ade",
+    {name:"분자 모형", kind:"exhibit", qid:"c-molecule", khash:"8e0632b72a0a8c0cecddf416702037465975b27361342bbf3b2068d32eb8c633", icon:"🔴", x:0.89,y:0.48, color:"#7c4ade",
      info:"작은 원자들이 모여 물질이 되는 방식을 공·막대로 보여줘요."},
     {name:"화학 실험실", kind:"game", file:"c.html", best:"chem_best", label:"화학 실험실",
      icon:"⚗️", room:"2교육실", x:0.48,y:0.79, color:"#9c6ade"},
@@ -361,11 +386,11 @@ const ROOMS={
   ]},
   room_earth:{ name:"3교육실 · 지구과학", bg:"bg/room_earth_hq.png", tint:"#8d6e63", floorName:"π층", start:[0.42,0.83],
     obstacles:[[0.05,0.42,0.24,0.80],[0.16,0.28,0.29,0.48],[0.65,0.26,0.95,0.58],[0.55,0.58,0.97,0.84]], walkable:[0.05,0.14,0.95,0.93], spots:[
-    {name:"지층 단면", kind:"exhibit", icon:"🪨", x:0.45,y:0.15, color:"#8d6e63",
+    {name:"지층 단면", kind:"exhibit", qid:"e-strata", khash:"59ce42bcb6b3c6313808cc0549d8f24dc6374d98a3ea1448c2d729961f3c771e", icon:"🪨", x:0.45,y:0.15, color:"#8d6e63",
      info:"땅이 켜켜이 쌓인 것. 화석과 용암 흔적으로 지구의 역사를 읽어요."},
-    {name:"지구본", kind:"exhibit", icon:"🌍", x:0.22,y:0.34, color:"#4a90e2",
+    {name:"지구본", kind:"exhibit", qid:"e-globe", khash:"86f28c1e9a8d50f91702bd6a60b50fc5f3dc849639e5f172df5410046038fb33", icon:"🌍", x:0.22,y:0.34, color:"#4a90e2",
      info:"우리가 사는 지구를 작게 만든 모형. 대륙과 바다가 다 있어요."},
-    {name:"화산 모형", kind:"exhibit", icon:"🌋", x:0.79,y:0.40, color:"#c0563a",
+    {name:"화산 모형", kind:"exhibit", qid:"e-volcano", khash:"7a9843999d820adb875e8323201aac1a803a02d0918eac9c75ee67275ad5a4e3", icon:"🌋", x:0.79,y:0.40, color:"#c0563a",
      info:"땅속 마그마가 분출하면 화산, 식어 굳으면 암석이 돼요."},
     {name:"지구과학 실험실", kind:"game", file:"t.html", best:"earth_best", label:"지구과학 실험실",
      icon:"🌍", room:"3교육실", x:0.42,y:0.62, color:"#8d6e63"},
@@ -390,7 +415,10 @@ const STAMP_TOTAL=STAMPS.length;
 
 /* ══════════ localStorage 안전 래퍼 (차단/프라이빗 모드 대비) ══════════ */
 function safeGet(k){ try{return localStorage.getItem(k);}catch(e){return null;} }
-function safeSet(k,v){ try{localStorage.setItem(k,v);}catch(e){/* 무시: 저장 실패해도 진행 */} }
+function safeSet(k,v){
+  try{ const stored=String(v); localStorage.setItem(k,stored); return localStorage.getItem(k)===stored; }
+  catch(e){ return false; }
+}
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 // 장애물(전시물·벽) 충돌: 점(px,py)이 어떤 obstacle rect 안이면 true
 function hitObs(obs,px,py){ if(!obs)return false; for(let i=0;i<obs.length;i++){const o=obs[i];
@@ -489,7 +517,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607141817";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607151016";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
@@ -562,16 +590,33 @@ function preload(){
   { const im=new Image(); pending++; im.onload=done; im.onerror=done; im.src="character/desk.png?v="+VER; DESKIMG=im; }
   function done(){pending--; if(pending<=0)boot();}
 }
+function roomLeadsTo(startId,targetId,seen){
+  if(startId===targetId)return true;
+  if(seen.has(startId)||!ROOMS[startId])return false;
+  seen.add(startId);
+  return ROOMS[startId].spots.some(s=>s.kind==="door"&&ROOMS[s.room]&&roomLeadsTo(s.room,targetId,seen));
+}
+function roomFloorIndex(roomId){
+  return FLOORS.findIndex(f=>f.spots.some(s=>s.kind==="door"&&ROOMS[s.room]&&roomLeadsTo(s.room,roomId,new Set())));
+}
+function enterLinkedRoom(roomId){
+  const own=roomFloorIndex(roomId);                         // ?room= 및 QR 모두 같은 층 소유권 동기화
+  if(own>=0){ floorIdx=own; safeSet("ufo_floor",own); }
+  enterRoom(roomId);
+}
 function boot(){
   document.getElementById("boot").style.display="none";
   enterFloor(floorIdx,true);
-  if(_q.has("room")&&ROOMS[_q.get("room")]){                            // ?room=room_G 딥링크/테스트
-    const _rid=_q.get("room");
-    const _own=FLOORS.findIndex(f=>f.spots.some(s=>s.kind==="door"&&s.room===_rid));  // 방 소유 층 동기화
-    if(_own>=0){ floorIdx=_own; safeSet("ufo_floor",_own); }
-    enterRoom(_rid);
-  }
+  const scanQid=_q.has("scan")?_q.get("scan"):null;
+  const scanKey=_q.has("k")?_q.get("k"):null;
+  const scanEx=scanQid==null?null:exhibitByQid(scanQid);
+  const roomId=scanEx?scanEx.roomId:(_q.has("room")&&ROOMS[_q.get("room")]?_q.get("room"):null);
+  if(roomId)enterLinkedRoom(roomId);                       // 유효 QR이 있으면 해당 전시실이 기존 room 딥링크보다 우선
   loop();
+  if(_q.has("scan")){
+    handleScanParam(scanQid,scanKey,scanEx).catch(e=>{console.warn("QR 인증 처리 실패:",e);toast("QR 인증을 처리할 수 없어요");});
+    removeScanParam();
+  }
 }
 
 /* ── 캔버스 리사이즈 ── */
@@ -949,26 +994,110 @@ function got(s){ return isDone(s.key); }
 function gotCount(){ return STAMPS.filter(got).length; }
 
 /* ══════════ 도감·점수 (수집 가시화 = 박물관 게임 1순위) ══════════ */
-const ALL_EXHIBITS=[]; Object.values(ROOMS).forEach(r=>r.spots.forEach(s=>{
-  if(s.kind==="exhibit")ALL_EXHIBITS.push({room:r.name,name:s.name,icon:s.icon,info:s.info});}));
+const ALL_EXHIBITS=[], EXHIBIT_BY_QID={}; Object.entries(ROOMS).forEach(([roomId,r])=>r.spots.forEach(s=>{
+  if(s.kind==="exhibit"){
+    const e={roomId,room:r.name,name:s.name,icon:s.icon,info:s.info,qid:s.qid,khash:s.khash}; ALL_EXHIBITS.push(e);
+    if(s.qid&&!EXHIBIT_BY_QID[s.qid])EXHIBIT_BY_QID[s.qid]=e;
+  }}));
 const EXHIBIT_TOTAL=ALL_EXHIBITS.length;
+function checkExhibitQids(){
+  const missing=ALL_EXHIBITS.filter(e=>!e.qid).map(e=>e.name);
+  const missingHash=ALL_EXHIBITS.filter(e=>!e.khash).map(e=>e.qid||e.name);
+  const invalid=ALL_EXHIBITS.filter(e=>e.qid&&!/^[a-z-]+$/.test(e.qid)).map(e=>e.qid);
+  const invalidHash=ALL_EXHIBITS.filter(e=>e.khash&&!/^[0-9a-f]{64}$/i.test(e.khash)).map(e=>e.qid);
+  const count={}; ALL_EXHIBITS.forEach(e=>{if(e.qid)count[e.qid]=(count[e.qid]||0)+1;});
+  const duplicate=Object.keys(count).filter(qid=>count[qid]>1);
+  if(EXHIBIT_TOTAL!==24)console.warn("전시물 수가 24개가 아닙니다:",EXHIBIT_TOTAL);
+  if(missing.length)console.warn("qid 누락 전시물:",missing);
+  if(missingHash.length)console.warn("khash 누락 전시물:",missingHash);
+  if(invalid.length)console.warn("qid 형식 오류(소문자·하이픈만 허용):",invalid);
+  if(invalidHash.length)console.warn("khash 형식 오류(SHA-256 hex 필요):",invalidHash);
+  if(duplicate.length)console.warn("qid 중복:",duplicate);
+}
+checkExhibitQids();
 function seenMap(){ try{const o=JSON.parse(safeGet("ssc_seen")||"{}"); return (o&&typeof o==="object"&&!Array.isArray(o))?o:{};}catch(e){return {};} }
 function isSeen(name){ return !!seenMap()[name]; }
 function seenCount(){ const s=seenMap(); return ALL_EXHIBITS.filter(e=>s[e.name]).length; }
-function markSeen(name){ const s=seenMap(); if(!s[name]){ s[name]=1; safeSet("ssc_seen",JSON.stringify(s)); popScore("+5 관람"); } }
-function getScore(){ return gotCount()*10 + seenCount()*5; }   // 스탬프 10점 · 전시물 5점
+// silent=true면 점수 팝업을 띄우지 않는다(현장 QR 인증처럼 자체 팝업이 따로 있는 경우)
+function markSeen(name,silent){ const s=seenMap(); if(!s[name]){ s[name]=1; safeSet("ssc_seen",JSON.stringify(s)); if(silent)updateScore(); else popScore("+5 관람"); } }
+function scanMap(){ try{const o=JSON.parse(safeGet("ssc_scan")||"{}"); return (o&&typeof o==="object"&&!Array.isArray(o))?o:{};}catch(e){return {};} }
+// hasOwn 가드: ?scan=__proto__ · ?scan=constructor 같은 값이 프로토타입 체인에 걸려 오탐되는 것 방지
+function isScanned(qid){ return Object.hasOwn(scanMap(),qid); }
+function scanCount(){ const s=scanMap(); return ALL_EXHIBITS.filter(e=>e.qid&&Object.hasOwn(s,e.qid)).length; }
+function exhibitByQid(qid){ return Object.hasOwn(EXHIBIT_BY_QID,qid)?EXHIBIT_BY_QID[qid]:null; }
+function markScanned(qid){
+  if(isScanned(qid))return "duplicate";
+  const s=scanMap(); s[qid]=new Date().toISOString();
+  if(!safeSet("ssc_scan",JSON.stringify(s)))return "failed";
+  return isScanned(qid)?"saved":"failed";
+}
+function getScore(){ return gotCount()*10 + seenCount()*5 + scanCount()*20; }   // 스탬프 10점 · 전시물 5점 · 현장 인증 20점
+function getLevel(){
+  const scans=scanCount(), score=getScore();
+  if(scans>=8)return {lv:5,name:"과학관 마스터"};
+  if(scans>=3)return {lv:4,name:"현장 인증"};              // Lv4·5는 온라인 점수로 우회 불가
+  if(gotCount()>=3||score>=120)return {lv:3,name:"연구원"};
+  if(score>=50)return {lv:2,name:"탐험가"};
+  return {lv:1,name:"방문객"};
+}
 function updateScore(){
   const el=document.getElementById("sc"); if(el)el.textContent=gotCount();
   const sv=document.getElementById("scoreVal"); if(sv)sv.textContent=getScore();
+  const level=getLevel(), lv=document.getElementById("levelVal"), ln=document.getElementById("levelName");
+  if(lv)lv.textContent="Lv"+level.lv; if(ln)ln.textContent=level.name;
 }
 function getBadges(){
   const b=[];
   if(gotCount()>=STAMP_TOTAL) b.push({icon:"🥇",name:"스탬프 마스터"});
   if(EXHIBIT_TOTAL>0&&seenCount()>=EXHIBIT_TOTAL) b.push({icon:"👀",name:"관람왕"});
+  if(scanCount()>=1) b.push({icon:"📍",name:"첫 현장 인증"});
+  if(EXHIBIT_TOTAL>0&&scanCount()>=EXHIBIT_TOTAL) b.push({icon:"🏛️",name:"현장 완주"});
   if(gotCount()>=3) b.push({icon:"🎮",name:"게이머"});
   if(EXHIBIT_TOTAL>0&&seenCount()>=Math.ceil(EXHIBIT_TOTAL/2)) b.push({icon:"🔎",name:"호기심 탐험가"});
   if(getScore()>=100) b.push({icon:"💯",name:"100점 돌파"});
   return b;
+}
+
+/* ══════════ 현장 QR 인증 ══════════ */
+function removeScanParam(){
+  const url=new URL(location.href); url.searchParams.delete("scan"); url.searchParams.delete("k");
+  history.replaceState(history.state,"",url.pathname+url.search+url.hash);
+}
+async function handleScanParam(qid,key,exhibit){
+  if(!exhibit){ toast("인식할 수 없는 QR이에요"); return; }
+  if(key==null||!key.trim()){ toast("QR을 직접 찍어야 인증돼요"); return; }
+  if(!exhibit.khash){ toast("인증할 수 없는 QR이에요"); return; }
+  const subtle=globalThis.crypto&&globalThis.crypto.subtle;
+  if(!subtle){ toast("안전한 연결에서만 QR 인증할 수 있어요"); return; }
+  const normalized=key.trim().toUpperCase();
+  let actual;
+  try{
+    const bytes=new TextEncoder().encode(qid+":"+normalized);
+    const digest=await subtle.digest("SHA-256",bytes);
+    actual=Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,"0")).join("");
+  }catch(e){
+    console.warn("QR SHA-256 검증 실패:",e);
+    toast("안전한 연결에서만 QR 인증할 수 있어요"); return;
+  }
+  if(actual.toLowerCase()!==exhibit.khash.toLowerCase()){ toast("인증할 수 없는 QR이에요"); return; }
+  // ⚠️ before는 반드시 markScanned 앞에서 찍는다. 뒤에서 찍으면 스캔 +20이 이미 반영돼 델타가 +5로 나온다.
+  const before=getScore();
+  const scanResult=markScanned(qid);
+  if(scanResult==="duplicate"){ toast("이미 인증한 전시물이에요"); return; }
+  if(scanResult!=="saved"){ toast("인증 기록을 저장할 수 없어요. 브라우저 저장 공간을 확인해 주세요"); return; }
+  // 현장에서 실물을 봤으므로 도감도 함께 기록(silent). 게임에서 아직 안 본 전시물이면 관람(+5)이 같이 붙어
+  // 실제 획득은 +25가 된다 → 팝업은 실측 증가분을 그대로 보여준다(표시와 실제가 어긋나면 안 됨).
+  markSeen(exhibit.name,true);
+  const delta=getScore()-before;
+  popScore("+"+delta+" 현장 인증");
+  const cx=bgRect.w?s2x(player.px):W/2, cy=bgRect.h?s2y(player.py):H/2;
+  burst(cx,cy,"#f6b93b",42); burst(cx,cy,"#4caf50",34); burst(cx,cy,"#ef8c3b",24); shake=24;
+  sfxChord([523,659,784,1047,1319],0.18);
+  setTimeout(()=>{burst(W/2,H*0.38,"#f6b93b",36);sfxChord([784,988,1175,1568],0.16);},140);
+  document.getElementById("scanIcon").textContent=exhibit.icon||"📍";
+  document.getElementById("scanName").textContent=exhibit.name;
+  document.getElementById("scanPoints").textContent="+"+delta+"점";
+  document.getElementById("scanCheer").classList.add("show");
 }
 
 /* ══════════ 게임 복귀 축하 ══════════ */
@@ -1000,24 +1129,29 @@ document.getElementById("mapBtn").onclick=()=>{
   if(fadeState)return;
   refreshDone();
   document.querySelector("#map h2").textContent="📖 나의 도감";
-  document.querySelector("#map .sub").textContent="🎫 스탬프 "+gotCount()+"/"+STAMP_TOTAL+"  ·  👀 전시물 "+seenCount()+"/"+EXHIBIT_TOTAL+"  ·  ⭐ "+getScore()+"점";
+  document.querySelector("#map .sub").textContent="🎫 스탬프 "+gotCount()+"/"+STAMP_TOTAL+"  ·  👀 전시물 "+seenCount()+"/"+EXHIBIT_TOTAL+"  ·  📍 현장 인증 "+scanCount()+"/"+EXHIBIT_TOTAL+"  ·  ⭐ "+getScore()+"점";
   const body=document.getElementById("mapBody"); body.innerHTML="";
   // 전체 진행률 바
   const done=gotCount()+seenCount(), total=STAMP_TOTAL+EXHIBIT_TOTAL, pct=total?Math.round(done/total*100):0;
+  const scanPct=EXHIBIT_TOTAL?Math.round(scanCount()/EXHIBIT_TOTAL*100):0;
   body.innerHTML='<div style="margin:2px 0 16px"><div style="height:16px;background:#eadfca;border-radius:9px;overflow:hidden;border:1.5px solid #d8caa8">'+
     '<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#f6b93b,#e58e26);transition:width .4s"></div></div>'+
     '<div style="text-align:right;font-size:12px;font-weight:700;color:'+(pct>=80?"#e58e26":"#8a8069")+';margin-top:3px">'+
-    pct+'% 완성'+(pct>=80&&pct<100?" · 거의 다 왔어요! 🎉":(pct>=100?" · 완주! 🏅":""))+'</div></div>';
+    pct+'% 완성'+(pct>=80&&pct<100?" · 거의 다 왔어요! 🎉":(pct>=100?" · 완주! 🏅":""))+'</div>'+
+    '<div style="font-size:13px;font-weight:800;color:#287a2e;margin:10px 0 4px">📍 현장 인증 '+scanCount()+'/'+EXHIBIT_TOTAL+'</div>'+
+    '<div style="height:16px;background:#dcebdc;border-radius:9px;overflow:hidden;border:1.5px solid #a9cdaa">'+
+    '<div style="height:100%;width:'+scanPct+'%;background:linear-gradient(90deg,#4caf50,#287a2e);transition:width .4s"></div></div>'+
+    '<div style="text-align:right;font-size:12px;font-weight:700;color:#287a2e;margin-top:3px">'+scanPct+'% 현장 완주</div></div>';
   // 방(전시실)별: 미니게임 + 전시물 관람 여부
-  const s=seenMap();
+  const s=seenMap(), scans=scanMap();
   Object.values(ROOMS).forEach(r=>{
     const row=document.createElement("div"); row.className="map-floor";
     let chips="";
     r.spots.forEach(sp=>{
       if(sp.kind==="game"){ const d=isDone(sp.best);
         chips+='<span class="room-chip '+(d?"done":"")+'">'+sp.icon+" "+sp.label+(d?" ⭐":" ▶")+"</span>"; }
-      else if(sp.kind==="exhibit"){ const v=!!s[sp.name];
-        chips+='<span class="room-chip '+(v?"done":"soon")+'">'+sp.icon+" "+sp.name+(v?" ✓":"")+"</span>"; }
+      else if(sp.kind==="exhibit"){ const v=!!s[sp.name], scanned=!!scans[sp.qid];
+        chips+='<span class="room-chip '+(scanned?"scanned":(v?"done":"soon"))+'">'+sp.icon+" "+sp.name+(scanned?" 📍":(v?" ✓":""))+"</span>"; }
     });
     row.innerHTML='<h3>'+r.floorName+' · '+r.name+'</h3><div class="rooms">'+chips+'</div>';
     body.appendChild(row);
