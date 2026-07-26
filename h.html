@@ -234,14 +234,24 @@ const FLOORS=[
    {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.48,y:0.42, color:"#9aa"},
  ]},
  {id:"1F", name:"1층 로비 · 중앙", bg:"bg/lobby_center.png", tint:"#4caf50", start:[0.42,0.72],
-   obstacles:[[0.00,0.00,1.00,0.16],[0.06,0.40,0.23,0.66],[0.27,0.26,0.36,0.58],[0.43,0.28,0.59,0.52],[0.66,0.35,0.84,0.64],[0.44,0.56,0.58,0.67],[0.13,0.67,0.27,0.84],[0.70,0.65,0.85,0.82],[0.32,0.77,0.70,1.00]], walkable:[0.03,0.18,0.97,0.94], spots:[
+   // 계단 재설계(2026-07-26): 구 통짜 장애물[0.43,0.28,0.59,0.52]이 계단 몸통까지 막아
+   // "보이는 계단을 못 오르고, 위 발코니는 공중걷기"가 됐었음 → 계단=대각 통로 3단 개방,
+   // 발코니 띠(0.16~0.28)·계단 좌우 벽·화단은 봉쇄, 꼭대기는 zones 자동 전환(√2층)
+   obstacles:[[0.00,0.00,1.00,0.16],[0.06,0.40,0.23,0.66],[0.27,0.26,0.36,0.58],
+     [0.00,0.16,0.51,0.28],[0.62,0.16,1.00,0.28],          // 발코니 띠 (계단 꼭대기만 개방)
+     [0.43,0.28,0.51,0.36],[0.43,0.36,0.47,0.44],[0.39,0.40,0.44,0.52], // 계단 왼쪽 벽·화단
+     [0.54,0.44,0.60,0.52],[0.62,0.28,0.67,0.36],[0.58,0.36,0.67,0.52], // 계단 오른쪽 화단·벽
+     [0.66,0.35,0.84,0.64],[0.44,0.56,0.58,0.67],[0.13,0.67,0.27,0.84],[0.70,0.65,0.85,0.82],[0.32,0.77,0.70,1.00]],
+   walkable:[0.03,0.18,0.97,0.94],
+   zones:[{to:"SQRT2",rect:[0.51,0.17,0.62,0.28]}],        // 계단 끝까지 오르면 자동 √2층
+   spots:[
    {name:"← 서쪽 로비", kind:"gate", to:"LOBBY_W", icon:"⬅️", label:"서쪽", x:0.03,y:0.55, color:"#4caf50"},
    {name:"동쪽 로비 →", kind:"gate", to:"LOBBY_E", icon:"➡️", label:"동쪽", x:0.97,y:0.55, color:"#4a90e2"},
    {name:"정문으로 나가기", kind:"gate", to:"OUTSIDE", icon:"🚪", label:"정문", x:0.49,y:0.88, color:"#9aa"},
    {name:"계산기 사물함", kind:"info", icon:"🧮", x:0.15,y:0.50, color:"#78909c",
     info:"로커 문이 계산기 숫자키 모양으로 꾸며진 물품보관함이에요."},
    {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.31,y:0.45, color:"#9aa"},
-   {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.53,y:0.42, color:"#b0a99a"},
+   {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.49,y:0.49, color:"#b0a99a"}, // 표지판은 계단 초입에 (걸어 올라가도 되고 A눌러도 됨)
    {name:"뒤틀림-토러스", kind:"exhibit", qid:"e-torus", khash:"a2fcc510479e69a0e9a90158221d500946ed933b7c0e9d3993be42665d7b7a0b", icon:"✨", x:0.55,y:0.30, color:"#f6b93b",
     info:"위상수학의 기본 개념으로 우주 공간의 모습을 형상화한 작품이에요. 안과 밖이 엇갈린 그물망은 뫼비우스의 띠처럼 상호순환하고, 얇은 구리선의 연결은 피보나치 수열을 재해석한 토러스 구조랍니다. 구리선·기판과 LED 전구 5,000개 이상으로 만든 15,600 × 9,600 × 4,900mm 크기의 작품으로, 김주현과 Our Labour가 2016년에 제작했어요. 주변 꽃잎은 대개 3·5·8장이고 솔방울 나선은 시계방향 8줄·반시계방향 13줄인 것처럼, 자연에서도 피보나치 수를 찾아볼 수 있어요."},
    {name:"휴게 쇼파", kind:"info", icon:"🛋️", x:0.50,y:0.62, color:"#607d8b",
@@ -490,12 +500,23 @@ const SECURITY_NPCS=[
   {scene:"3F", name:"보안", waypoints:[[0.30,0.65],[0.70,0.65]], lines:[
     "3층 순찰 중. 지금 기획전시 '지구의 맥박' 놓치지 마세요!"]},
 ];
+// 미화주임님들 — 실제 과학관은 보안=남성, 여성=미화주임 (2026-07-26 마스터 확인, 현장 일치)
+const CLEANING_NPCS=[
+  {scene:"1F", name:"미화주임님", x:0.62,y:0.60, lines:[
+    "로비 바닥을 닦고 있어요. 물기 있는 곳은 살짝 돌아가 주세요!",
+    "이 넓은 로비가 반짝이는 건 매일 아침 부지런히 닦아서예요."]},
+  {scene:"SQRT2", name:"미화주임님", x:0.30,y:0.60, lines:[
+    "√2층 담당이에요. 다 본 안내지는 분리수거함에 부탁해요!"]},
+  {scene:"PI", name:"미화주임님", x:0.60,y:0.65, lines:[
+    "교육실 복도는 실험 끝나면 바로 닦아요. 미끄럼 조심하세요!"]},
+];
 GUIDE_NPCS.forEach(n=>{n.type="guide"; n._lineIdx=0; n.dir="down";});
-SECURITY_NPCS.forEach((n,i)=>{n.type="security"; n._lineIdx=0; n.x=n.waypoints[0][0]; n.y=n.waypoints[0][1]; n._wp=0; n._pause=0; n.dir="down"; n._spr=(i%2?"npc_guardB":"npc_guardA");});
+SECURITY_NPCS.forEach(n=>{n.type="security"; n._lineIdx=0; n.x=n.waypoints[0][0]; n.y=n.waypoints[0][1]; n._wp=0; n._pause=0; n.dir="down"; n._spr="npc_guardA";}); // 보안은 전원 남성 (현장 일치)
+CLEANING_NPCS.forEach(n=>{n.type="cleaning"; n._lineIdx=0; n._pause=0; n.dir="down"; n._spr="npc_clean";});
 function curSceneId(){ return inRoom||FLOORS[floorIdx].id; }
 function sceneNPCs(){
   const id=curSceneId();
-  return GUIDE_NPCS.filter(n=>n.scene===id).concat(SECURITY_NPCS.filter(n=>n.scene===id));
+  return GUIDE_NPCS.filter(n=>n.scene===id).concat(SECURITY_NPCS.filter(n=>n.scene===id)).concat(CLEANING_NPCS.filter(n=>n.scene===id));
 }
 function updateNPCPatrol(npc){
   if(npc._pause>0){ npc._pause--; npc.vx=npc.vy=0; return; }
@@ -521,7 +542,7 @@ function updateNPCPatrol(npc){
   if(Math.abs(vx)>Math.abs(vy)) npc.dir=vx>0?"right":"left"; else if(vy!==0) npc.dir=vy>0?"down":"up";
   npc.x=clamp(npc.x,wa[0],wa[2]); npc.y=clamp(npc.y,wa[1],wa[3]);
 }
-function updateNPCs(){ SECURITY_NPCS.forEach(updateNPCPatrol); }
+function updateNPCs(){ SECURITY_NPCS.forEach(updateNPCPatrol); CLEANING_NPCS.forEach(updateNPCPatrol); }
 let nearNPC=null;
 function updateNearNPC(){
   let best=null,bd=1e9;
@@ -533,7 +554,7 @@ function updateNearNPC(){
 }
 function npcDialogue(npc){
   const line=npc.lines[npc._lineIdx%npc.lines.length]; npc._lineIdx++;
-  document.getElementById("exhibitIcon").textContent=npc.type==="guide"?"🧑‍🏫":"👮";
+  document.getElementById("exhibitIcon").textContent=npc.type==="guide"?"🧑‍🏫":npc.type==="cleaning"?"🧹":"👮";
   const _nEl=document.getElementById("exhibitName");
   if(npc.type==="guide"&&npc.name==="S.C"){
     _nEl.innerHTML='S.C<span style="display:block;font-size:11px;font-weight:600;opacity:.7;margin-top:1px">과학커뮤니케이터</span>';
@@ -545,7 +566,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607261605";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607261626";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
@@ -611,7 +632,7 @@ function preload(){
   });
   ["down","up","left","right"].forEach(d=>{ const im=new Image(); pending++;
     im.onload=done; im.onerror=done; im.src="character/"+d+".png?v="+VER; CHAR[d]=im; });
-  ["npc_G","npc_quake","npc_O","npc_B","npc_astro","npc_chem","npc_earth","npc_guardA","npc_guardB"].forEach(n=>{ const im=new Image(); pending++;
+  ["npc_G","npc_quake","npc_O","npc_B","npc_astro","npc_chem","npc_earth","npc_guardA","npc_clean"].forEach(n=>{ const im=new Image(); pending++;
     im.onload=done; im.onerror=done; im.src="character/"+n+".png?v="+VER; NPCSPR[n]=im; });
   ["down","up","left","right"].forEach(d=>{ const im=new Image(); pending++;
     im.onload=done; im.onerror=done; im.src="character/walk_"+d+".png?v="+VER; CHARWALK[d]=im; });
@@ -847,13 +868,12 @@ function tintedSprite(img,tint){
 function drawNPC(npc){
   const x=s2x(npc.x), y=s2y(npc.y);
   const seed=npc._seed||(npc._seed=Math.random()*10);
-  const moving=npc.type==="security"&&((Math.abs(npc.vx||0)+Math.abs(npc.vy||0))>0.00005);
-  const bob=npc.type==="security"
+  const moving=npc.type!=="guide"&&((Math.abs(npc.vx||0)+Math.abs(npc.vy||0))>0.00005);
+  const bob=npc.type!=="guide"
     ? (moving?Math.abs(Math.sin(t*0.30+seed))*4:0)
     : Math.abs(Math.sin(t*0.03+seed))*1.5;   // 안내 NPC = 잔잔한 숨쉬기 bob
   ctx.beginPath();ctx.ellipse(x,y+16,17,7,0,0,7);ctx.fillStyle="rgba(0,0,0,.28)";ctx.fill();
-  const ownName = npc.type==="guide" ? GUIDE_SPR[npc.scene]
-                : npc.type==="security" ? npc._spr : null;
+  const ownName = npc.type==="guide" ? GUIDE_SPR[npc.scene] : npc._spr;
   const own = ownName ? NPCSPR[ownName] : null;
   if(own && own.complete && own.naturalWidth){
     // 전용 스프라이트(색 틴트·이모지 없음) — 과학커뮤니케이터·보안 공통
@@ -864,17 +884,18 @@ function drawNPC(npc){
     // 폴백: 보안 스프라이트 로드 실패 시에만 캔버스 드로잉
     drawSecurityNPC(x, y, bob);
   }else{
-    // 폴백: 안내 NPC(전용 스프라이트 없을 때) 파란 틴트
+    // 폴백: 전용 스프라이트 로드 실패 시 틴트 + 타입별 아이콘 (안내=파랑🧑‍🏫 / 미화=청록🧹)
+    const tint=npc.type==="cleaning"?"#2a8f8f":"#3a6fd8";
     const spr=CHAR[npc.dir||"down"];
-    const timg=tintedSprite(spr,"#3a6fd8");
+    const timg=tintedSprite(spr,tint);
     if(timg&&timg.width){
       const h=38, w=timg.width*h/timg.height;
       ctx.drawImage(timg, Math.round(x-w/2), Math.round(y+12-h-bob), Math.round(w), Math.round(h));
     }else{
-      ctx.beginPath(); ctx.arc(x,y-10-bob,14,0,7); ctx.fillStyle="#3a6fd8"; ctx.fill();
+      ctx.beginPath(); ctx.arc(x,y-10-bob,14,0,7); ctx.fillStyle=tint; ctx.fill();
     }
     ctx.font="15px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText("🧑‍🏫", x, y-40-bob);
+    ctx.fillText(npc.type==="cleaning"?"🧹":"🧑‍🏫", x, y-40-bob);
   }
   if(npc===nearNPC){
     // 근접 표시: 발밑 링 대신 머리 위 말풍선 (발밑 그림자·타원 겹침 정리, 2026-07-26)
@@ -915,6 +936,19 @@ function update(){
     const wa=sc.walkable;
     if(wa){ player.px=clamp(player.px,wa[0],wa[2]); player.py=clamp(player.py,wa[1],wa[3]); }
     else { player.px=clamp(player.px,0.04,0.96); player.py=clamp(player.py,0.06,0.95); }
+    // 자동 전환 존(zones): 계단 끝까지 걸어 올라가면 버튼 없이 층 전환 ("보이는 대로 동작")
+    // 모달(전시 팝업·지도) 열려 있으면 전환 보류 — 팝업 뒤 층전환 방지 (codex R1)
+    const modalOpen=document.getElementById("exhibit").classList.contains("show")||document.getElementById("map").classList.contains("show");
+    if(!inRoom&&!fadeState&&!modalOpen){
+      const zs=FLOORS[floorIdx].zones;
+      if(zs)for(const z of zs){
+        if(player.px>=z.rect[0]&&player.py>=z.rect[1]&&player.px<=z.rect[2]&&player.py<=z.rect[3]){
+          const ti=FLOORS.findIndex(fl=>fl.id===z.to);
+          if(ti>=0){ sfx(600,0.10,"triangle"); startFade(()=>enterFloor(ti)); }
+          break;
+        }
+      }
+    }
   }
   // 근접 핫스팟 (확대된 맵 기준이라 화면상 100px 이내를 근접으로)
   let best=null,bd=1e9;
@@ -937,7 +971,7 @@ function update(){
 function updateAbtn(){
   const a=document.getElementById("abtn"), lb=document.getElementById("alabel"), ic=a.querySelector(".ai");
   if(nearNPC){
-    a.classList.add("on"); ic.textContent=nearNPC.type==="guide"?"🧑‍🏫":"👮"; lb.textContent="대화";
+    a.classList.add("on"); ic.textContent=nearNPC.type==="guide"?"🧑‍🏫":nearNPC.type==="cleaning"?"🧹":"👮"; lb.textContent="대화";
   }else if(nearSpot){
     a.classList.add("on");
     if(nearSpot.kind==="elevator"){ic.textContent="🛗";lb.textContent="층 이동";}
