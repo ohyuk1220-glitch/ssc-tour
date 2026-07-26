@@ -502,7 +502,14 @@ function updateNPCPatrol(npc){
   const fl=FLOORS.find(f=>f.id===npc.scene);
   const wa=(fl&&fl.walkable)||[0.12,0.4,0.88,0.88];
   // 랜덤 목표점(walkable 안)으로 돌아다님 — 도달하면 잠깐 멈췄다 새 목표
-  if(!npc._tgt){ npc._tgt=[wa[0]+Math.random()*(wa[2]-wa[0]), wa[1]+Math.random()*(wa[3]-wa[1])]; }
+  // 목표는 장애물 밖에서만 채택 (2026-07-26: 장애물 많은 로비에서 제자리걸음하던 문제)
+  if(!npc._tgt){
+    for(let k=0;k<12;k++){
+      const cand=[wa[0]+Math.random()*(wa[2]-wa[0]), wa[1]+Math.random()*(wa[3]-wa[1])];
+      if(!hitObs(fl&&fl.obstacles,cand[0],cand[1])){ npc._tgt=cand; break; }
+    }
+    if(!npc._tgt) return; // 이번 프레임은 대기, 다음 프레임 재시도
+  }
   const dx=npc._tgt[0]-npc.x, dy=npc._tgt[1]-npc.y, d=Math.hypot(dx,dy);
   const SPD=0.0009;
   if(d<0.02){ npc._tgt=null; npc._pause=40+Math.floor(Math.random()*70); npc.vx=npc.vy=0; return; }
@@ -538,7 +545,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607261545";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607261605";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
