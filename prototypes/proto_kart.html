@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>화성 로버 서킷 — 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#1a0e0a; --panel:#2a1710; --panel2:#361f15; --line:#4a2c1c;
+    --ink:#ffe3d0; --muted:#b8836a;
+    --rust:#ff6b3d; --amber:#ffb648; --cyan:#5fd4e8; --green:#3ddc84; --red:#ff5252;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;word-break:keep-all;overflow-wrap:break-word}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    position:fixed;inset:0;height:100dvh;width:100vw;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    user-select:none;-webkit-user-select:none;overflow:hidden;
+    line-height:1.6;
+  }
+  .wrap{width:100%;max-width:460px;height:100%;display:flex;flex-direction:column;padding:12px 14px 14px;gap:8px}
+
+  /* 뒤로가기 — 상시 노출(오버레이보다 z-index 높게 고정, 어떤 화면에서도 절대 가려지지 않게) */
+  .back-btn{
+    position:fixed;top:calc(10px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left));
+    z-index:80;text-decoration:none;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    font-size:12px;font-weight:800;padding:8px 13px;border-radius:20px;display:inline-flex;align-items:center;gap:4px;
+    box-shadow:0 2px 8px rgba(0,0,0,.35);
+  }
+  .back-btn:active{background:var(--line)}
+
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding-left:82px}
+  .title-box h1{font-size:17px;font-weight:800;letter-spacing:-0.3px;color:var(--rust);text-shadow:0 0 12px rgba(255,107,61,.4)}
+  .title-box p{font-size:11px;color:var(--muted);margin-top:3px}
+  .restart-btn{flex-shrink:0;background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+    border-radius:10px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
+  .restart-btn:active{background:var(--line)}
+
+  /* 상태 바 */
+  .stat-row{display:flex;gap:6px}
+  .stat-box{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:7px 6px;text-align:center;min-width:0}
+  .stat-box .lbl{font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap}
+  .stat-box .val{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:1px}
+  .stat-box.timer .val{color:var(--cyan)}
+  .stat-box.lap .val{color:var(--amber)}
+  .stat-box.best .val{font-size:13px;color:var(--rust);margin-top:5px}
+
+  /* 캔버스 스테이지 */
+  .stage{position:relative;flex:1;min-height:0;background:#120906;
+    border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+  .cp-hud{position:absolute;top:8px;left:8px;right:8px;display:flex;align-items:center;gap:8px;
+    background:rgba(20,10,7,.55);border-radius:10px;padding:5px 9px;backdrop-filter:blur(2px);pointer-events:none}
+  .cp-hud .lbl{font-size:10px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .cp-dots{display:flex;gap:4px;flex:1}
+  .cp-dot{width:9px;height:9px;border-radius:50%;background:var(--line);flex-shrink:0}
+  .cp-dot.on{background:var(--amber);box-shadow:0 0 5px rgba(255,182,72,.7)}
+
+  .lap-toast{position:absolute;top:44px;left:50%;transform:translateX(-50%) translateY(-6px);
+    background:rgba(255,182,72,.16);border:1px solid rgba(255,182,72,.5);color:var(--amber);
+    font-size:13px;font-weight:800;padding:6px 14px;border-radius:20px;opacity:0;
+    transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap}
+  .lap-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .steer-hint{position:absolute;bottom:14px;font-size:11px;font-weight:800;color:rgba(255,227,208,.55);
+    background:rgba(20,10,7,.5);padding:6px 10px;border-radius:16px;pointer-events:none;
+    transition:opacity .4s}
+  .steer-hint.left{left:12px}
+  .steer-hint.right{right:12px}
+  .steer-hint.fade{opacity:0}
+  .steer-divider{position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(255,227,208,.08);pointer-events:none}
+
+  .sand-vignette{position:absolute;inset:0;pointer-events:none;opacity:0;
+    box-shadow:inset 0 0 70px 14px rgba(180,110,50,.55);transition:opacity .18s}
+
+  /* 오버레이 */
+  .overlay{position:absolute;inset:0;background:rgba(10,6,4,.9);
+    display:flex;align-items:center;justify-content:center;padding:22px;z-index:20;
+    backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+  .overlay.hidden{display:none}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 20px;
+    max-width:340px;width:100%;text-align:center}
+  .card h2{font-size:20px;font-weight:800;margin-bottom:10px}
+  .card p{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .rule-list{text-align:left;font-size:12.5px;color:var(--ink);margin:14px 0;padding-left:0;list-style:none}
+  .rule-list li{margin-bottom:8px;padding-left:22px;position:relative}
+  .rule-list li::before{content:"•";position:absolute;left:6px;color:var(--rust);font-weight:900}
+  .card .big-btn{margin-top:10px;width:100%;background:var(--rust);border:none;color:#1a0e0a;
+    font-size:14px;font-weight:800;padding:13px 0;border-radius:12px;cursor:pointer}
+  .card .big-btn:active{filter:brightness(.85)}
+  .card .ghost-btn{margin-top:8px;width:100%;background:transparent;border:1px solid var(--line);color:var(--muted);
+    font-size:13px;font-weight:700;padding:11px 0;border-radius:12px;text-decoration:none;display:block}
+  .card .ghost-btn:active{background:var(--panel2)}
+  .result-time{font-size:40px;font-weight:900;margin:8px 0 2px;font-variant-numeric:tabular-nums;color:var(--cyan)}
+  .result-sub{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+  .badge{display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-bottom:8px}
+  .badge.win{background:rgba(61,220,132,.15);color:var(--green);border:1px solid rgba(61,220,132,.4)}
+  .record-banner{display:none;font-size:12px;font-weight:900;color:#1a0e0a;
+    background:linear-gradient(90deg,var(--amber),#ffd27a);border-radius:20px;padding:4px 12px;margin-bottom:8px}
+  .record-banner.show{display:inline-block;animation:recordPop .5s ease}
+  @keyframes recordPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+  .grade-badge{font-size:0;height:0;font-weight:900;line-height:1}
+  .grade-badge.show{font-size:34px;height:auto;margin-bottom:2px}
+  .grade-badge.grade-S{color:#ffd447;text-shadow:0 0 14px rgba(255,212,71,.55)}
+  .grade-badge.grade-A{color:var(--cyan)}
+  .grade-badge.grade-B{color:var(--green)}
+  .grade-badge.grade-C{color:var(--muted)}
+</style>
+</head>
+<body>
+<a class="back-btn" href="index.html" id="backBtnFixed">← 갤러리</a>
+<div class="wrap">
+  <header>
+    <div class="title-box">
+      <h1>🔴 화성 로버 서킷</h1>
+      <p>B전시실 "연결—화성" · 드리프트 3랩 타임어택</p>
+    </div>
+    <button class="restart-btn" id="restartBtnTop" type="button">다시 시작</button>
+  </header>
+
+  <div class="stat-row">
+    <div class="stat-box lap">
+      <div class="lbl">랩</div>
+      <div class="val" id="lapVal">0/3</div>
+    </div>
+    <div class="stat-box timer">
+      <div class="lbl">기록</div>
+      <div class="val" id="timerVal">0.0</div>
+    </div>
+    <div class="stat-box best">
+      <div class="lbl">최고 기록</div>
+      <div class="val" id="bestVal">-</div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="cp-hud" id="cpHud">
+      <span class="lbl">체크포인트</span>
+      <div class="cp-dots" id="cpDots"></div>
+    </div>
+    <div class="lap-toast" id="lapToast"></div>
+    <div class="steer-divider"></div>
+    <div class="steer-hint left" id="steerHintL">◀ 눌러서 좌회전</div>
+    <div class="steer-hint right" id="steerHintR">우회전 ▶</div>
+    <div class="sand-vignette" id="sandVignette"></div>
+  </div>
+
+  <!-- 시작 오버레이 -->
+  <div class="overlay" id="introOverlay">
+    <div class="card">
+      <h2>🔴 화성 로버 서킷</h2>
+      <p>화성 지형을 재현한 서킷 — 로버는 자동으로 앞으로 나아갑니다. 방향만 잡아주세요.</p>
+      <ul class="rule-list">
+        <li>화면 <b>왼쪽</b>을 누르고 있으면 좌회전, <b>오른쪽</b>을 누르고 있으면 우회전(자동 전진)</li>
+        <li>트랙을 벗어나 <b>모래</b>에 빠지면 확 느려집니다 — 붉은 길 위로 돌아오세요</li>
+        <li>코너에서 급하게 꺾으면 <b>미끄러지듯 드리프트</b>합니다</li>
+        <li>노란 <b>부스터 패드</b>를 밟으면 순간 가속!</li>
+        <li>체크포인트를 순서대로 통과해야 랩이 인정됩니다 · <b>3랩</b> 완주 기록 도전</li>
+      </ul>
+      <button class="big-btn" id="startBtn" type="button">출발!</button>
+    </div>
+  </div>
+
+  <!-- 결과 오버레이 -->
+  <div class="overlay hidden" id="resultOverlay">
+    <div class="card">
+      <div class="record-banner" id="recordBanner">🏆 신기록!</div>
+      <span class="badge win">완주</span>
+      <div class="grade-badge" id="gradeBadge"></div>
+      <h2>3랩 완주!</h2>
+      <div class="result-time" id="resultTime">0.0초</div>
+      <p class="result-sub" id="resultSub">-</p>
+      <button class="big-btn" id="retryBtn" type="button">한 판 더</button>
+      <a class="ghost-btn" href="index.html">← 갤러리</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ===== 트랙 정의 (Catmull-Rom 스플라인으로 폐곡선 생성, 세로형 월드) ===== */
+  var WAYPOINTS = [
+    {x:420,y:200},{x:900,y:160},{x:1300,y:380},{x:1420,y:820},
+    {x:1300,y:1280},{x:1420,y:1720},{x:1280,y:2180},{x:860,y:2420},
+    {x:420,y:2280},{x:220,y:1900},{x:340,y:1500},{x:180,y:1100},
+    {x:260,y:650},{x:180,y:340}
+  ];
+  var SEG_DIV = 26;              // 웨이포인트 구간당 샘플 수
+  var HALF_WIDTH = 150;          // 트랙 절반 폭(월드 단위)
+  var SAND_SOFT = 70;            // 트랙 밖 완충 구간(부드러운 감속 전이 폭)
+  var CP_FRACS = [1/6, 2/6, 3/6, 4/6, 5/6]; // 시작/결승선(0) 제외 중간 체크포인트
+  var BOOST_FRACS = [0.18, 0.44, 0.66, 0.88];
+  var VIEW_SCALE = 0.55;         // 월드 → 화면 픽셀 배율
+
+  var LAPS_TOTAL = 3;
+  var BEST_KEY = "kart_best";
+
+  function catmullRom(p0,p1,p2,p3,t){
+    var t2=t*t, t3=t2*t;
+    var x = 0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3);
+    var y = 0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3);
+    return {x:x,y:y};
+  }
+  function buildSamples(){
+    var n = WAYPOINTS.length;
+    var out = [];
+    for(var i=0;i<n;i++){
+      var p0 = WAYPOINTS[(i-1+n)%n], p1 = WAYPOINTS[i], p2 = WAYPOINTS[(i+1)%n], p3 = WAYPOINTS[(i+2)%n];
+      for(var s=0;s<SEG_DIV;s++){
+        out.push(catmullRom(p0,p1,p2,p3, s/SEG_DIV));
+      }
+    }
+    return out;
+  }
+  var SAMPLES = buildSamples();
+  var N_SAMPLES = SAMPLES.length;
+
+  function idxAtFrac(f){ return Math.round(f*N_SAMPLES) % N_SAMPLES; }
+  var CP_SAMPLE_IDX = CP_FRACS.map(idxAtFrac);
+  var NUM_MID_CP = CP_SAMPLE_IDX.length;
+
+  function tangentAt(i){
+    var a = SAMPLES[(i-1+N_SAMPLES)%N_SAMPLES], b = SAMPLES[(i+1)%N_SAMPLES];
+    var dx = b.x-a.x, dy = b.y-a.y, len = Math.hypot(dx,dy)||1;
+    return {x:dx/len, y:dy/len};
+  }
+
+  var BOOST_PADS = BOOST_FRACS.map(function(f){
+    var i = idxAtFrac(f);
+    var p = SAMPLES[i];
+    return {x:p.x, y:p.y, r:44, cooldown:0};
+  });
+
+  /* ===== 화성 지형 장식(바위·크레이터, 순수 도형) ===== */
+  var minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(var wi=0; wi<SAMPLES.length; wi++){
+    minX=Math.min(minX,SAMPLES[wi].x); maxX=Math.max(maxX,SAMPLES[wi].x);
+    minY=Math.min(minY,SAMPLES[wi].y); maxY=Math.max(maxY,SAMPLES[wi].y);
+  }
+  var TERRAIN_PAD = 260;
+  var deco = [];
+  (function initDeco(){
+    var n = 150;
+    for(var i=0;i<n;i++){
+      deco.push({
+        x: minX-TERRAIN_PAD + Math.random()*((maxX-minX)+TERRAIN_PAD*2),
+        y: minY-TERRAIN_PAD + Math.random()*((maxY-minY)+TERRAIN_PAD*2),
+        r: 4+Math.random()*11,
+        crater: Math.random() < 0.3,
+        shade: 0.55+Math.random()*0.4
+      });
+    }
+  })();
+
+  /* ===== DOM ===== */
+  var $ = function(id){ return document.getElementById(id); };
+  var stageEl = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
+  var lapVal = $("lapVal"), timerVal = $("timerVal"), bestVal = $("bestVal");
+  var cpDots = $("cpDots"), lapToast = $("lapToast"), sandVignette = $("sandVignette");
+  var steerHintL = $("steerHintL"), steerHintR = $("steerHintR");
+  var introOverlay = $("introOverlay"), resultOverlay = $("resultOverlay");
+  var startBtn = $("startBtn"), retryBtn = $("retryBtn"), restartBtnTop = $("restartBtnTop");
+  var resultTime = $("resultTime"), resultSub = $("resultSub"), gradeBadge = $("gradeBadge"), recordBanner = $("recordBanner");
+
+  /* 체크포인트 dot HUD 초기 생성 */
+  (function buildCpDots(){
+    for(var i=0;i<NUM_MID_CP;i++){
+      var d = document.createElement("div");
+      d.className = "cp-dot";
+      cpDots.appendChild(d);
+    }
+  })();
+  var cpDotEls = cpDots.querySelectorAll(".cp-dot");
+
+  /* ===== 최고기록 ===== */
+  function loadBest(){
+    try{
+      var raw = localStorage.getItem(BEST_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return { bestTime: null };
+  }
+  function saveBest(){ try{ localStorage.setItem(BEST_KEY, JSON.stringify(best)); }catch(e){} }
+  function renderBest(){
+    bestVal.textContent = (best.bestTime !== null) ? best.bestTime.toFixed(1)+"초" : "-";
+  }
+  var best = loadBest();
+
+  /* 그레이드 임계값은 러프 추정치(자동 튜닝 미실시) — 3랩 완주 기준 */
+  function gradeForTime(t){
+    if(t <= 42) return "S";
+    if(t <= 52) return "A";
+    if(t <= 68) return "B";
+    return "C";
+  }
+
+  /* ===== 오디오 (프로시저럴, 외부 파일 없음) ===== */
+  var audioCtx = null, sandGain = null, sandFilter = null, audioReady = false;
+  function ensureAudio(){
+    if(audioReady) return;
+    audioReady = true;
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+      var bufSize = audioCtx.sampleRate*2;
+      var buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      var data = buf.getChannelData(0);
+      for(var i=0;i<bufSize;i++){ data[i] = Math.random()*2-1; }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      sandFilter = audioCtx.createBiquadFilter();
+      sandFilter.type = "lowpass"; sandFilter.frequency.value = 900;
+      sandGain = audioCtx.createGain(); sandGain.gain.value = 0.0001;
+      src.connect(sandFilter); sandFilter.connect(sandGain); sandGain.connect(audioCtx.destination);
+      src.start(0);
+    }catch(e){ audioCtx = null; }
+  }
+  function updateSandAudio(dt, onTrackFactor, speedFrac){
+    if(!audioCtx || !sandGain) return;
+    if(audioCtx.state === "suspended") audioCtx.resume();
+    var targetGain = running ? (1-onTrackFactor) * 0.10 * (0.3+0.7*speedFrac) : 0.0001;
+    sandGain.gain.value += (targetGain - sandGain.gain.value) * Math.min(1, dt*4);
+  }
+  function playBlip(kind){
+    if(!audioCtx) return;
+    try{
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      if(kind === "boost"){
+        o.type = "sawtooth"; o.frequency.value = 220;
+        g.gain.value = 0.09; o.frequency.linearRampToValueAtTime(680, audioCtx.currentTime+0.22);
+      } else if(kind === "lap"){
+        o.type = "sine"; o.frequency.value = 520;
+        g.gain.value = 0.08; o.frequency.linearRampToValueAtTime(880, audioCtx.currentTime+0.22);
+      } else if(kind === "finish"){
+        o.type = "sine"; o.frequency.value = 520;
+        g.gain.value = 0.09; o.frequency.linearRampToValueAtTime(1180, audioCtx.currentTime+0.4);
+      } else {
+        o.type = "square"; o.frequency.value = 300;
+        g.gain.value = 0.05; o.frequency.linearRampToValueAtTime(180, audioCtx.currentTime+0.15);
+      }
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (kind==="finish" ? 0.55 : 0.4));
+      o.start(); o.stop(audioCtx.currentTime + 0.6);
+    }catch(e){}
+  }
+
+  /* ===== 캔버스 리사이즈 ===== */
+  var W=0, H=0, DPR=1;
+  function resizeCanvas(){
+    var rect = stageEl.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = Math.max(1, rect.width); H = Math.max(1, rect.height);
+    cv.width = W*DPR; cv.height = H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener("resize", resizeCanvas);
+  window.addEventListener("orientationchange", function(){ setTimeout(resizeCanvas, 200); });
+
+  /* ===== 게임 상태 ===== */
+  var running = false;
+  var clamp = function(v,a,b){ return Math.max(a, Math.min(b, v)); };
+  var lerp = function(a,b,t){ return a + (b-a)*t; };
+
+  var ENGINE_POWER = 640, DRAG_TRACK = 0.7, DRAG_SAND = 3.6;
+  var MAX_SPEED_TRACK = 620, MAX_SPEED_SAND = 140;
+  var GRIP_TRACK = 4.0, GRIP_SAND = 1.5;
+  var TURN_RATE = 2.7; // rad/s 기준치
+  var BOOST_IMPULSE = 300, BOOST_DURATION = 1.1, BOOST_SPEED_MULT = 1.35;
+  /* 부정 랩 방지: 트랙 중앙(내부)을 가로질러 질러가면 최근접 샘플 탐색이 반대편 구간으로
+     오인식되어 체크포인트를 헛찍을 수 있음 — 중심선에서 이 거리 밖이면 진행 판정 자체를 멈춘다.
+     (트랙 폭+모래 전이구간보다 넉넉히 크지만, 서로 다른 구간끼리의 최소 거리(694) 절반보다는
+     작게 잡아 반대편 구간으로의 오인식 가능성을 원천 차단 — 상세 산출: scratchpad 검증 스크립트) */
+  var CP_MAX_DIST = HALF_WIDTH + SAND_SOFT + 80; // 300
+
+  var kart = { x:0, y:0, heading:0, vx:0, vy:0 };
+  var nearestIdx = -1;
+  var distToCenter = 0;
+  var nextCp = 0;
+  var lapCount = 0;
+  var elapsed = 0;
+  var raceState = "idle"; // idle | racing | finished
+  var boostTimer = 0;
+  var shake = 0;
+  var particles = [];
+  var lapToastTimer = null;
+  var steerTouch = {}; // pointerId -> "left"|"right"
+  var steerKeys = { left:false, right:false };
+  var hintFaded = false;
+  var camera = { x:0, y:0 };
+  var lastTs = null;
+
+  /* 2026-07-26 수정: 원래 lastIdx 기준 ±45 윈도 탐색이었으나, 트랙 밖으로 멀어지면
+     "최근접"이 애매해져(윈도 안 여러 샘플이 비슷하게 멂) 매 프레임 인덱스가 최대 ±45씩
+     떠밀리는 랜덤워크가 발생 — 제자리에서 도넛만 돌아도 체크포인트를 헛통과해 몇 초 만에
+     3랩이 인정되는 부정 랩 버그로 이어짐(playwright 자동검증으로 실측). 샘플이 364개뿐이라
+     매 프레임 전수 스캔해도 비용이 미미하므로 윈도 최적화를 버리고 항상 전역 최근접을 찾는다. */
+  function findNearestIdx(x,y){
+    var total = N_SAMPLES, best = Infinity, bi = 0;
+    for(var i=0;i<total;i++){
+      var dx=SAMPLES[i].x-x, dy=SAMPLES[i].y-y, d=dx*dx+dy*dy;
+      if(d<best){ best=d; bi=i; }
+    }
+    return { idx:bi, dist:Math.sqrt(best) };
+  }
+  function passedForward(lastIdx, curIdx, targetIdx, total){
+    if(lastIdx === curIdx) return false;
+    if(lastIdx < curIdx){
+      return targetIdx > lastIdx && targetIdx <= curIdx;
+    }
+    return targetIdx > lastIdx || targetIdx <= curIdx;
+  }
+
+  function resetKart(){
+    var start = SAMPLES[0];
+    kart.x = start.x; kart.y = start.y;
+    var tan = tangentAt(0);
+    kart.heading = Math.atan2(tan.y, tan.x);
+    kart.vx = 0; kart.vy = 0;
+    nearestIdx = -1; distToCenter = 0;
+    nextCp = 0; lapCount = 0; elapsed = 0;
+    boostTimer = 0; shake = 0;
+    particles = [];
+    for(var i=0;i<BOOST_PADS.length;i++) BOOST_PADS[i].cooldown = 0;
+    camera.x = kart.x; camera.y = kart.y;
+    updateCpHud();
+    lapVal.textContent = "0/" + LAPS_TOTAL;
+    timerVal.textContent = "0.0";
+    recordBanner.classList.remove("show");
+    hintFaded = false;
+    steerHintL.classList.remove("fade"); steerHintR.classList.remove("fade");
+  }
+
+  function updateCpHud(){
+    for(var i=0;i<cpDotEls.length;i++){
+      cpDotEls[i].classList.toggle("on", i < nextCp);
+    }
+  }
+
+  function spawnParticles(x,y,color,n,spread,life){
+    for(var i=0;i<n;i++){
+      var a = Math.random()*Math.PI*2;
+      var sp = (30+Math.random()*(spread||120));
+      particles.push({ x:x,y:y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life:1, decay:1/(life||0.6), color:color, size:2+Math.random()*3 });
+    }
+  }
+  function updateParticles(dt){
+    for(var i=particles.length-1;i>=0;i--){
+      var p = particles[i];
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      p.vx *= (1-1.6*dt); p.vy *= (1-1.6*dt);
+      p.life -= dt*p.decay;
+      if(p.life<=0) particles.splice(i,1);
+    }
+  }
+
+  function showLapToast(text){
+    lapToast.textContent = text;
+    lapToast.classList.add("show");
+    clearTimeout(lapToastTimer);
+    lapToastTimer = setTimeout(function(){ lapToast.classList.remove("show"); }, 1300);
+  }
+
+  function triggerBoost(pad){
+    pad.cooldown = 1.2;
+    var headX = Math.cos(kart.heading), headY = Math.sin(kart.heading);
+    kart.vx += headX*BOOST_IMPULSE; kart.vy += headY*BOOST_IMPULSE;
+    boostTimer = BOOST_DURATION;
+    shake = Math.max(shake, 11);
+    spawnParticles(kart.x - headX*20, kart.y - headY*20, "#ffb648", 20, 170, 0.55);
+    playBlip("boost");
+    if(navigator.vibrate) navigator.vibrate(35);
+  }
+
+  function completeLap(){
+    lapCount++;
+    lapVal.textContent = lapCount + "/" + LAPS_TOTAL;
+    if(lapCount >= LAPS_TOTAL){
+      finishRace();
+    } else {
+      showLapToast("🏁 랩 " + lapCount + " 완료 · " + elapsed.toFixed(1) + "초");
+      playBlip("lap");
+      if(navigator.vibrate) navigator.vibrate([30,40,30]);
+    }
+    nextCp = 0;
+    updateCpHud();
+  }
+
+  function finishRace(){
+    running = false;
+    raceState = "finished";
+    var prevBest = best.bestTime;
+    var newRecord = (prevBest === null || elapsed < prevBest);
+    if(newRecord){ best.bestTime = elapsed; saveBest(); renderBest(); }
+
+    var grade = gradeForTime(elapsed);
+    gradeBadge.textContent = grade;
+    gradeBadge.className = "grade-badge show grade-" + grade;
+    resultTime.textContent = elapsed.toFixed(1) + "초";
+    resultSub.textContent = "3랩 완주" + (newRecord ? " · 최고 기록 경신!" : (" · 최고 " + best.bestTime.toFixed(1) + "초"));
+    recordBanner.classList.toggle("show", newRecord);
+    playBlip("finish");
+    if(navigator.vibrate) navigator.vibrate([40,60,40,60,60]);
+    resultOverlay.classList.remove("hidden");
+  }
+
+  function startRace(){
+    introOverlay.classList.add("hidden");
+    resultOverlay.classList.add("hidden");
+    resetKart();
+    ensureAudio();
+    running = true;
+    raceState = "racing";
+    lastTs = null;
+    requestAnimationFrame(loop);
+  }
+
+  /* ===== 입력: 화면 좌/우 절반 홀드 = 조향 ===== */
+  function sideForX(clientX){
+    var rect = cv.getBoundingClientRect();
+    return (clientX - rect.left) < rect.width/2 ? "left" : "right";
+  }
+  function fadeHint(){
+    if(hintFaded) return;
+    hintFaded = true;
+    steerHintL.classList.add("fade"); steerHintR.classList.add("fade");
+  }
+  function refreshSteerFromTouch(){
+    var l=false, r=false;
+    for(var id in steerTouch){
+      if(steerTouch[id] === "left") l = true;
+      if(steerTouch[id] === "right") r = true;
+    }
+    touchLeft = l; touchRight = r;
+  }
+  var touchLeft = false, touchRight = false;
+  stageEl.addEventListener("pointerdown", function(e){
+    ensureAudio(); fadeHint();
+    try{ stageEl.setPointerCapture(e.pointerId); }catch(err){}
+    steerTouch[e.pointerId] = sideForX(e.clientX);
+    refreshSteerFromTouch();
+    e.preventDefault();
+  });
+  stageEl.addEventListener("pointermove", function(e){
+    if(!(e.pointerId in steerTouch)) return;
+    steerTouch[e.pointerId] = sideForX(e.clientX);
+    refreshSteerFromTouch();
+    e.preventDefault();
+  });
+  function releasePointer(e){
+    delete steerTouch[e.pointerId];
+    refreshSteerFromTouch();
+  }
+  stageEl.addEventListener("pointerup", releasePointer);
+  stageEl.addEventListener("pointercancel", releasePointer);
+  window.addEventListener("keydown", function(e){
+    if(e.key === "ArrowLeft"){ e.preventDefault(); ensureAudio(); fadeHint(); steerKeys.left = true; }
+    if(e.key === "ArrowRight"){ e.preventDefault(); ensureAudio(); fadeHint(); steerKeys.right = true; }
+  });
+  window.addEventListener("keyup", function(e){
+    if(e.key === "ArrowLeft") steerKeys.left = false;
+    if(e.key === "ArrowRight") steerKeys.right = false;
+  });
+
+  startBtn.addEventListener("click", startRace);
+  retryBtn.addEventListener("click", startRace);
+  restartBtnTop.addEventListener("click", function(){
+    if(running){
+      running = false;
+      introOverlay.classList.remove("hidden");
+      resultOverlay.classList.add("hidden");
+      resetKart();
+    } else {
+      resultOverlay.classList.add("hidden");
+      introOverlay.classList.remove("hidden");
+    }
+  });
+
+  /* ===== 물리 업데이트 ===== */
+  function step(dt){
+    var steerLeft = touchLeft || steerKeys.left;
+    var steerRight = touchRight || steerKeys.right;
+
+    var near = findNearestIdx(kart.x, kart.y);
+    var prevIdx = nearestIdx < 0 ? near.idx : nearestIdx;
+    nearestIdx = near.idx; distToCenter = near.dist;
+
+    var over = Math.max(0, distToCenter - HALF_WIDTH);
+    var onTrackFactor = over <= 0 ? 1 : clamp(1 - over/SAND_SOFT, 0, 1);
+
+    var maxSpeed = lerp(MAX_SPEED_SAND, MAX_SPEED_TRACK, onTrackFactor);
+    if(boostTimer > 0) maxSpeed *= BOOST_SPEED_MULT;
+    var grip = lerp(GRIP_SAND, GRIP_TRACK, onTrackFactor);
+    var drag = lerp(DRAG_SAND, DRAG_TRACK, onTrackFactor);
+
+    var turnRate = TURN_RATE * (0.55 + 0.45*clamp(Math.hypot(kart.vx,kart.vy)/MAX_SPEED_TRACK, 0, 1));
+    if(steerLeft && !steerRight) kart.heading -= turnRate*dt;
+    if(steerRight && !steerLeft) kart.heading += turnRate*dt;
+
+    var headX = Math.cos(kart.heading), headY = Math.sin(kart.heading);
+    kart.vx += headX*ENGINE_POWER*dt;
+    kart.vy += headY*ENGINE_POWER*dt;
+
+    var dragMul = Math.max(0, 1 - drag*dt);
+    kart.vx *= dragMul; kart.vy *= dragMul;
+
+    var speed = Math.hypot(kart.vx, kart.vy);
+    if(speed > maxSpeed && speed > 0){
+      var f = maxSpeed/speed;
+      kart.vx *= f; kart.vy *= f;
+      speed = maxSpeed;
+    }
+
+    // 그립: 속도 방향을 heading 쪽으로 서서히 정렬 → 정렬이 느릴수록(모래/급회전) 드리프트
+    var slipAngle = 0;
+    if(speed > 4){
+      var velAngle = Math.atan2(kart.vy, kart.vx);
+      var diff = kart.heading - velAngle;
+      while(diff > Math.PI) diff -= Math.PI*2;
+      while(diff < -Math.PI) diff += Math.PI*2;
+      slipAngle = diff;
+      var align = clamp(grip*dt, 0, 1);
+      var newAngle = velAngle + diff*align;
+      kart.vx = Math.cos(newAngle)*speed;
+      kart.vy = Math.sin(newAngle)*speed;
+    }
+
+    kart.x += kart.vx*dt; kart.y += kart.vy*dt;
+
+    // 부스터 패드 충돌
+    for(var bi=0; bi<BOOST_PADS.length; bi++){
+      var pad = BOOST_PADS[bi];
+      pad.cooldown = Math.max(0, pad.cooldown - dt);
+      if(pad.cooldown <= 0){
+        var pdx = kart.x-pad.x, pdy = kart.y-pad.y;
+        if(pdx*pdx+pdy*pdy < (pad.r+16)*(pad.r+16)) triggerBoost(pad);
+      }
+    }
+
+    // 체크포인트 / 랩 판정 — 중심선에서 너무 멀어지면(트랙 내부 질러가기 등) 진행 판정 정지
+    if(distToCenter <= CP_MAX_DIST){
+      if(nextCp < NUM_MID_CP){
+        if(passedForward(prevIdx, nearestIdx, CP_SAMPLE_IDX[nextCp], N_SAMPLES)){
+          nextCp++;
+          updateCpHud();
+        }
+      } else {
+        if(passedForward(prevIdx, nearestIdx, 0, N_SAMPLES)){
+          completeLap();
+        }
+      }
+    }
+
+    // 드리프트 먼지
+    if(Math.abs(slipAngle) > 0.22 && speed > 60){
+      spawnParticles(kart.x - headX*10, kart.y - headY*10, onTrackFactor > 0.5 ? "#c9a27a" : "#8a5a34", 1, 40, 0.5);
+    }
+
+    if(boostTimer > 0) boostTimer = Math.max(0, boostTimer - dt);
+    shake *= 0.9; if(shake < 0.05) shake = 0;
+    updateParticles(dt);
+
+    sandVignette.style.opacity = (onTrackFactor < 0.6 && running) ? (0.6*(1-onTrackFactor)).toFixed(2) : "0";
+    updateSandAudio(dt, onTrackFactor, speed/MAX_SPEED_TRACK);
+
+    camera.x += (kart.x - camera.x) * Math.min(1, dt*5);
+    camera.y += (kart.y - camera.y) * Math.min(1, dt*5);
+
+    elapsed += dt;
+    timerVal.textContent = elapsed.toFixed(1);
+  }
+
+  /* ===== 렌더 ===== */
+  function worldToScreen(x,y){
+    return {
+      x: (x-camera.x)*VIEW_SCALE + W/2,
+      y: (y-camera.y)*VIEW_SCALE + H/2
+    };
+  }
+  function inView(x,y,margin){
+    var s = worldToScreen(x,y);
+    return s.x > -margin && s.x < W+margin && s.y > -margin && s.y < H+margin;
+  }
+
+  function drawTerrain(){
+    ctx.fillStyle = "#1e0f09";
+    ctx.fillRect(0,0,W,H);
+    for(var i=0;i<deco.length;i++){
+      var d = deco[i];
+      if(!inView(d.x,d.y,30)) continue;
+      var s = worldToScreen(d.x,d.y);
+      var r = d.r*VIEW_SCALE;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, r, 0, Math.PI*2);
+      if(d.crater){
+        ctx.strokeStyle = "rgba(90,45,25,"+d.shade+")";
+        ctx.lineWidth = Math.max(1, r*0.4);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = "rgba(70,35,20,"+d.shade+")";
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawTrack(){
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    // 모래 여백 느낌의 넓은 하부 스트로크
+    ctx.beginPath();
+    for(var i=0;i<=N_SAMPLES;i++){
+      var p = SAMPLES[i % N_SAMPLES];
+      var s = worldToScreen(p.x,p.y);
+      if(i===0) ctx.moveTo(s.x,s.y); else ctx.lineTo(s.x,s.y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = "#5a3018";
+    ctx.lineWidth = (HALF_WIDTH*2+SAND_SOFT*0.6)*VIEW_SCALE;
+    ctx.stroke();
+    // 실제 주행로
+    ctx.strokeStyle = "#8a4a28";
+    ctx.lineWidth = HALF_WIDTH*2*VIEW_SCALE;
+    ctx.stroke();
+    // 중앙 점선
+    ctx.setLineDash([14*VIEW_SCALE, 14*VIEW_SCALE]);
+    ctx.strokeStyle = "rgba(255,227,208,0.35)";
+    ctx.lineWidth = 3*VIEW_SCALE;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 결승선(체크무늬)
+    drawGate(0, "#ffe3d0", true);
+    // 다음 체크포인트만 강조 표시
+    if(nextCp < NUM_MID_CP){
+      drawGate(CP_SAMPLE_IDX[nextCp], "#ffb648", false);
+    }
+  }
+  function drawGate(sampleIdx, color, checker){
+    var p = SAMPLES[sampleIdx];
+    var tan = tangentAt(sampleIdx);
+    var nx = -tan.y, ny = tan.x;
+    var a = worldToScreen(p.x+nx*HALF_WIDTH, p.y+ny*HALF_WIDTH);
+    var b = worldToScreen(p.x-nx*HALF_WIDTH, p.y-ny*HALF_WIDTH);
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = checker ? 0.9 : 0.7;
+    ctx.lineWidth = 5*VIEW_SCALE;
+    ctx.setLineDash(checker ? [6*VIEW_SCALE,6*VIEW_SCALE] : [3*VIEW_SCALE,7*VIEW_SCALE]);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBoostPads(t){
+    for(var i=0;i<BOOST_PADS.length;i++){
+      var pad = BOOST_PADS[i];
+      if(!inView(pad.x,pad.y,60)) continue;
+      var s = worldToScreen(pad.x,pad.y);
+      var pulse = 1+Math.sin(t*5+i)*0.12;
+      var r = pad.r*VIEW_SCALE*pulse;
+      ctx.save();
+      ctx.globalAlpha = pad.cooldown>0 ? 0.25 : 0.9;
+      ctx.fillStyle = "#ffb648";
+      ctx.beginPath(); ctx.ellipse(s.x,s.y,r,r*0.5,0,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = "#fff3cf"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(s.x,s.y,r*0.6,r*0.3,0,0,Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawParticles(){
+    for(var i=0;i<particles.length;i++){
+      var p = particles[i];
+      var s = worldToScreen(p.x,p.y);
+      ctx.globalAlpha = Math.max(p.life,0);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(s.x,s.y,p.size*VIEW_SCALE*2, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawKart(){
+    var s = worldToScreen(kart.x, kart.y);
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(kart.heading);
+    var scale = VIEW_SCALE;
+    // 그림자
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.beginPath(); ctx.ellipse(0, 3*scale, 20*scale, 12*scale, 0, 0, Math.PI*2); ctx.fill();
+    // 몸체
+    ctx.fillStyle = "#ff6b3d";
+    ctx.beginPath();
+    ctx.moveTo(20*scale, 0);
+    ctx.lineTo(-14*scale, -12*scale);
+    ctx.lineTo(-8*scale, 0);
+    ctx.lineTo(-14*scale, 12*scale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#ffe3d0"; ctx.lineWidth = 2*scale; ctx.stroke();
+    // 안테나(로버 디테일)
+    ctx.strokeStyle = "#5fd4e8"; ctx.lineWidth = 2*scale;
+    ctx.beginPath(); ctx.moveTo(-4*scale,-4*scale); ctx.lineTo(-10*scale,-16*scale); ctx.stroke();
+    ctx.fillStyle = "#5fd4e8";
+    ctx.beginPath(); ctx.arc(-10*scale,-16*scale, 2.4*scale, 0, Math.PI*2); ctx.fill();
+    // 바퀴
+    ctx.fillStyle = "#2a1710";
+    ctx.fillRect(-10*scale,-14*scale, 10*scale, 5*scale);
+    ctx.fillRect(-10*scale, 9*scale, 10*scale, 5*scale);
+    ctx.restore();
+
+    if(boostTimer > 0){
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(kart.heading + Math.PI);
+      ctx.fillStyle = "rgba(255,182,72,0.7)";
+      ctx.beginPath();
+      ctx.moveTo(14*scale, 0); ctx.lineTo(2*scale, -7*scale); ctx.lineTo(2*scale, 7*scale);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function draw(t){
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    if(shake > 0){
+      ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+    }
+    drawTerrain();
+    drawTrack();
+    drawBoostPads(t);
+    drawParticles();
+    drawKart();
+    ctx.restore();
+  }
+
+  /* ===== 메인 루프 ===== */
+  function loop(ts){
+    if(!running) return;
+    if(lastTs === null) lastTs = ts;
+    var dt = Math.min(0.05, (ts-lastTs)/1000);
+    lastTs = ts;
+    step(dt);
+    draw(ts/1000);
+    if(raceState !== "racing"){ return; }
+    requestAnimationFrame(loop);
+  }
+
+  /* ===== 초기화(대기 화면 프리뷰) ===== */
+  resizeCanvas();
+  renderBest();
+  resetKart();
+  requestAnimationFrame(function tick(ts){
+    if(!running){ draw((ts||0)/1000); requestAnimationFrame(tick); }
+  });
+})();
+</script>
+</body>
+</html>

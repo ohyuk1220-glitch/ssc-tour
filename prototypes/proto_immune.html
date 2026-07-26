@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>면역 방어전 — 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --font-sans:"Pretendard",-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    --bg:#170609; --panel:#2a0f14; --panel2:#3a161d; --line:#4d232b;
+    --ink:#ffe6ea; --muted:#c08a92;
+    --wbc:#fff8f4; --antibody:#6fd8ff; --bacteria:#59d97a; --virus:#b878ff;
+    --spore:#ffab4d; --toxin:#ffe066; --boss:#ff4f6d; --green:#59d97a; --red:#ff4f6d; --amber:#ffab4d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;word-break:keep-all;overflow-wrap:break-word}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:var(--font-sans);
+    display:flex;flex-direction:column;align-items:center;
+    position:fixed;inset:0;height:100dvh;width:100vw;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    user-select:none;-webkit-user-select:none;overflow:hidden;
+    line-height:1.6;
+  }
+  .wrap{width:100%;max-width:480px;height:100%;display:flex;flex-direction:column;padding:10px 12px 12px;gap:8px}
+
+  /* 헤더 */
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+  .back-btn{flex-shrink:0;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    text-decoration:none;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:700;
+    display:inline-flex;align-items:center;white-space:nowrap}
+  .back-btn:active{background:var(--line)}
+  .title-box{flex:1;min-width:0;text-align:center}
+  .title-box h1{font-size:16.5px;font-weight:800;letter-spacing:-0.3px;color:var(--boss);
+    text-shadow:0 0 12px rgba(255,79,109,.35)}
+  .title-box p{font-size:10.5px;color:var(--muted);margin-top:2px}
+  .restart-btn{flex-shrink:0;background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+    border-radius:10px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
+  .restart-btn:active{background:var(--line)}
+
+  /* HUD */
+  .hud{display:flex;align-items:center;justify-content:space-between;gap:6px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:7px 10px}
+  .hud .block{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .hud .block b{color:var(--ink);font-size:13.5px;font-variant-numeric:tabular-nums}
+  .hud .score-val{color:var(--amber);font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+  .shield-pips{display:flex;gap:3px}
+  .shield-pip{width:9px;height:9px;border-radius:50%;background:var(--line)}
+  .shield-pip.on{background:var(--antibody);box-shadow:0 0 6px rgba(111,216,255,.7)}
+
+  /* 스테이지 */
+  .stage{position:relative;flex:1;min-height:280px;border-radius:16px;overflow:hidden;
+    border:1px solid var(--line);background:radial-gradient(ellipse at 50% 0%,#3a0f18 0%,#170609 75%);touch-action:none}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+
+  .combo-toast{position:absolute;left:50%;top:10px;transform:translateX(-50%) translateY(-6px);
+    font-size:13px;font-weight:800;padding:5px 13px;border-radius:20px;opacity:0;
+    background:rgba(20,8,10,.78);border:1px solid rgba(255,171,77,.5);color:var(--amber);
+    transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
+  .combo-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .fact-toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+    background:rgba(20,8,10,.82);border:1px solid var(--line);color:var(--ink);
+    font-size:11.5px;font-weight:600;padding:7px 13px;border-radius:20px;max-width:88%;
+    text-align:center;opacity:0;transition:opacity .35s;pointer-events:none}
+  .fact-toast.show{opacity:1}
+
+  /* 오버레이 */
+  .overlay{position:absolute;inset:0;background:rgba(10,3,5,.92);
+    display:flex;align-items:center;justify-content:center;padding:20px;z-index:20;
+    backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+  .overlay.hidden{display:none}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px 18px;
+    max-width:360px;width:100%;text-align:center;max-height:92%;overflow-y:auto}
+  .card h2{font-size:19px;font-weight:800;margin-bottom:8px}
+  .card p{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  .rule-list{text-align:left;font-size:12.5px;color:var(--ink);margin:12px 0;padding-left:0;list-style:none}
+  .rule-list li{margin-bottom:7px;padding-left:20px;position:relative}
+  .rule-list li::before{content:"•";position:absolute;left:5px;color:var(--antibody);font-weight:900}
+  .card .big-btn{margin-top:10px;width:100%;background:var(--boss);border:none;color:#170609;
+    font-size:14px;font-weight:800;padding:13px 0;border-radius:12px;cursor:pointer}
+  .card .big-btn:active{filter:brightness(.85)}
+  .card .ghost-btn{margin-top:8px;width:100%;background:transparent;border:1px solid var(--line);color:var(--muted);
+    font-size:13px;font-weight:700;padding:11px 0;border-radius:12px;cursor:pointer;text-decoration:none;
+    display:block;box-sizing:border-box}
+  .card .ghost-btn:active{background:var(--line)}
+
+  /* 웨이브 클리어 / 강화 선택 */
+  .fact-line{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;
+    font-size:12px;color:var(--ink);margin:10px 0 14px;text-align:left}
+  .fact-line b{color:var(--amber)}
+  .upgrade-grid{display:flex;flex-direction:column;gap:8px}
+  .upgrade-card{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:12px;padding:10px 12px;text-align:left;cursor:pointer;color:var(--ink);width:100%}
+  .upgrade-card:active{background:var(--line)}
+  .upgrade-card .icon{font-size:22px;flex-shrink:0;width:30px;text-align:center}
+  .upgrade-card .txt{flex:1;min-width:0}
+  .upgrade-card .txt .name{font-size:13px;font-weight:800}
+  .upgrade-card .txt .desc{font-size:11px;color:var(--muted);margin-top:1px}
+  .upgrade-card .lvl{font-size:11px;color:var(--antibody);font-weight:800;flex-shrink:0;white-space:nowrap}
+
+  /* 결과 */
+  .result-score{font-size:40px;font-weight:900;color:var(--amber);margin:10px 0 2px;font-variant-numeric:tabular-nums}
+  .result-sub{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  .badge{display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-bottom:8px}
+  .badge.new{background:rgba(255,171,77,.16);color:var(--amber);border:1px solid rgba(255,171,77,.45)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back-btn" href="index.html" id="backBtnTop">← 갤러리</a>
+    <div class="title-box">
+      <h1>🛡️ 면역 방어전</h1>
+      <p>O전시실 · 생존—인체와 미생물</p>
+    </div>
+    <button class="restart-btn" id="restartBtnTop" type="button">다시 도전</button>
+  </header>
+
+  <div class="hud">
+    <div class="block">❤️ <b id="livesVal">3</b></div>
+    <div class="block">웨이브 <b id="waveVal">1</b></div>
+    <div class="block score-val" id="scoreVal">0</div>
+    <div class="block">실드 <div class="shield-pips" id="shieldPips"></div></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="combo-toast" id="comboToast"></div>
+    <div class="fact-toast" id="factToast"></div>
+  </div>
+</div>
+
+<!-- 시작 오버레이 -->
+<div class="overlay" id="introOverlay">
+  <div class="card">
+    <h2>🛡️ 면역 방어전</h2>
+    <p>혈관 속을 떠다니는 백혈구가 되어, 밀려오는 병원체를 항체로 요격하세요.</p>
+    <ul class="rule-list">
+      <li><b>드래그</b>로 백혈구를 움직이세요. 항체는 자동으로 연사됩니다.</li>
+      <li>병원체 5종: 세균(직진) · 바이러스(지그재그) · 포자(맞으면 둘로 분열) · 독소(빠르게 낙하) · 보스 대장균</li>
+      <li>몸에 닿으면 <b>목숨</b>을 잃어요(실드가 있으면 대신 소모). 목숨 <b>3개</b>가 다예요.</li>
+      <li>웨이브를 클리어할 때마다 <b>강화 1개</b>를 골라요 — 연사속도 · 항체 2발 · 실드 중 선택!</li>
+    </ul>
+    <button class="big-btn" id="startBtn" type="button">시작하기</button>
+  </div>
+</div>
+
+<!-- 웨이브 클리어 / 강화 선택 오버레이 -->
+<div class="overlay hidden" id="upgradeOverlay">
+  <div class="card">
+    <h2 id="upgradeTitle">웨이브 1 클리어!</h2>
+    <div class="fact-line" id="factLine">🔬 <b>면역 상식</b> · -</div>
+    <div class="upgrade-grid">
+      <button class="upgrade-card" id="upgFire" type="button">
+        <span class="icon">🔫</span>
+        <span class="txt"><span class="name">연사속도 UP</span><span class="desc">항체를 더 빨리 쏴요</span></span>
+        <span class="lvl" id="upgFireLvl">Lv.1</span>
+      </button>
+      <button class="upgrade-card" id="upgShot" type="button">
+        <span class="icon">✌️</span>
+        <span class="txt"><span class="name">항체 추가 발사</span><span class="desc">한 번에 더 많이 쏴요</span></span>
+        <span class="lvl" id="upgShotLvl">Lv.1</span>
+      </button>
+      <button class="upgrade-card" id="upgShield" type="button">
+        <span class="icon">🛡️</span>
+        <span class="txt"><span class="name">실드 +1</span><span class="desc">한 번 맞아도 목숨 안 깎여요</span></span>
+        <span class="lvl" id="upgShieldLvl">0/3</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 게임오버 오버레이 -->
+<div class="overlay hidden" id="resultOverlay">
+  <div class="card">
+    <span class="badge new hidden" id="newBadge">🏆 신기록!</span>
+    <h2>방어선 붕괴</h2>
+    <div class="result-score" id="resultScore">0</div>
+    <p class="result-sub" id="resultSub">웨이브 1까지 버텼어요</p>
+    <p class="result-sub" id="resultBest">최고 기록 -</p>
+    <button class="big-btn" id="retryBtn" type="button">한 판 더</button>
+    <a class="ghost-btn" href="index.html" id="backBtnResult">← 갤러리</a>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ===== 상수 ===== */
+  var MAX_LIVES = 3;
+  var MAX_SHIELD = 3;
+  var COMBO_WINDOW = 1.3;      // 초 — 이 시간 안에 다음 킬이 없으면 콤보 리셋
+  var FIRE_COOLDOWN = [0.42, 0.33, 0.26, 0.20, 0.15]; // 연사속도 레벨 1~5
+  var OFFSET_Y_BASE = 90;      // 손가락 위쪽으로 백혈구를 띄워두는 오프셋(px, scale 적용)
+  var FACTS = [
+    "백혈구는 혈관을 타고 몸 곳곳을 순찰하며 침입자를 찾아다녀요.",
+    "항체는 병원체 표면에 달라붙어 '여기 있다'는 표시를 남겨요.",
+    "바이러스는 스스로 증식하지 못해서 우리 몸 세포를 빌려 써요.",
+    "세균은 우리 몸 안팎에 아주 흔하지만, 대부분은 해롭지 않아요.",
+    "포자는 나쁜 환경에서도 오래 버티려는 병원체의 생존 전략이에요.",
+    "열이 나는 건 몸이 침입자와 한창 싸우고 있다는 신호예요.",
+    "백신은 몸에 미리 '가짜 침입자 정보'를 알려주는 훈련 같은 거예요.",
+    "림프절은 면역세포들이 모여 정보를 나누는 전초기지 역할을 해요."
+  ];
+  var usedFacts = [];
+
+  /* ===== DOM ===== */
+  var el = {
+    stage: document.getElementById("stage"),
+    cv: document.getElementById("cv"),
+    livesVal: document.getElementById("livesVal"),
+    waveVal: document.getElementById("waveVal"),
+    scoreVal: document.getElementById("scoreVal"),
+    shieldPips: document.getElementById("shieldPips"),
+    comboToast: document.getElementById("comboToast"),
+    factToast: document.getElementById("factToast"),
+    introOverlay: document.getElementById("introOverlay"),
+    upgradeOverlay: document.getElementById("upgradeOverlay"),
+    resultOverlay: document.getElementById("resultOverlay"),
+    upgradeTitle: document.getElementById("upgradeTitle"),
+    factLine: document.getElementById("factLine"),
+    upgFire: document.getElementById("upgFire"),
+    upgShot: document.getElementById("upgShot"),
+    upgShield: document.getElementById("upgShield"),
+    upgFireLvl: document.getElementById("upgFireLvl"),
+    upgShotLvl: document.getElementById("upgShotLvl"),
+    upgShieldLvl: document.getElementById("upgShieldLvl"),
+    resultScore: document.getElementById("resultScore"),
+    resultSub: document.getElementById("resultSub"),
+    resultBest: document.getElementById("resultBest"),
+    newBadge: document.getElementById("newBadge"),
+    startBtn: document.getElementById("startBtn"),
+    retryBtn: document.getElementById("retryBtn"),
+    restartBtnTop: document.getElementById("restartBtnTop")
+  };
+  var ctx = el.cv.getContext("2d");
+
+  /* ===== 유틸 ===== */
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function rand(a,b){ return a + Math.random()*(b-a); }
+  function pickWeighted(entries){
+    var total = 0;
+    for(var i=0;i<entries.length;i++) total += entries[i][1];
+    var r = Math.random()*total;
+    for(var j=0;j<entries.length;j++){
+      r -= entries[j][1];
+      if(r <= 0) return entries[j][0];
+    }
+    return entries[entries.length-1][0];
+  }
+
+  /* ===== 오디오 (프로시저럴, 외부 파일 없음) ===== */
+  var actx = null;
+  function ensureAudio(){
+    if(!actx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) actx = new AC();
+    }
+    if(actx && actx.state === "suspended") actx.resume();
+  }
+  function tone(freq, dur, type, vol, delay, freqEnd){
+    if(!actx) return;
+    try{
+      var t0 = actx.currentTime + (delay||0);
+      var osc = actx.createOscillator();
+      var gain = actx.createGain();
+      osc.type = type || "sine";
+      osc.frequency.setValueAtTime(freq, t0);
+      if(freqEnd) osc.frequency.linearRampToValueAtTime(freqEnd, t0+dur);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.linearRampToValueAtTime(vol||0.12, t0+0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+      osc.connect(gain); gain.connect(actx.destination);
+      osc.start(t0); osc.stop(t0+dur+0.03);
+    }catch(e){ /* 오디오 미지원 환경도 게임은 계속 동작 */ }
+  }
+  var shotToggle = false;
+  function playShoot(){
+    // 연사가 잦으니 한 틱 걸러 소리내 소음 방지, 볼륨도 작게
+    shotToggle = !shotToggle;
+    if(shotToggle) tone(880, 0.045, "sine", 0.035, 0);
+  }
+  function playKill(type){
+    if(type === "boss") tone(180, 0.5, "sawtooth", 0.18, 0, 60);
+    else tone(560 + Math.random()*160, 0.09, "triangle", 0.11, 0);
+  }
+  function playHurt(){ tone(160, 0.32, "sawtooth", 0.16, 0, 60); }
+  function playShieldBlock(){ tone(1000, 0.16, "triangle", 0.13, 0, 700); }
+  function playWaveClear(){ tone(520, 0.16, "sine", 0.14, 0, 780); tone(780, 0.22, "sine", 0.11, 0.14, 1040); }
+  function playGameOver(){ tone(280, 0.5, "sawtooth", 0.16, 0, 70); }
+
+  /* ===== 저장된 최고점 ===== */
+  var best = loadBest();
+  function loadBest(){
+    try{
+      var raw = localStorage.getItem("immune_best");
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(typeof parsed.score === "number") return parsed;
+      }
+    }catch(e){}
+    return { score: 0, wave: 0 };
+  }
+  function saveBest(){
+    try{ localStorage.setItem("immune_best", JSON.stringify(best)); }catch(e){}
+  }
+
+  /* ===== 레이아웃 ===== */
+  var W=0, H=0, dpr=1, scale=1;
+  function layout(){
+    var rect = el.stage.getBoundingClientRect();
+    W = Math.max(rect.width, 1);
+    H = Math.max(rect.height, 1);
+    dpr = window.devicePixelRatio || 1;
+    el.cv.width = Math.round(W*dpr);
+    el.cv.height = Math.round(H*dpr);
+    el.cv.style.width = W+"px";
+    el.cv.style.height = H+"px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    scale = clamp(H/900, 0.55, 1.5);
+    if(ship){
+      ship.x = clamp(ship.x, ship.r, W-ship.r);
+      ship.y = clamp(ship.y, H*0.4, H-ship.r-14*scale);
+      ship.tx = ship.x; ship.ty = ship.y;
+    }
+  }
+  window.addEventListener("resize", layout);
+  window.addEventListener("orientationchange", function(){ setTimeout(layout, 200); });
+
+  /* ===== 적 정의 ===== */
+  var ENEMY_DEFS = {
+    bacteria: { hp:1, speed:105, rBase:17, score:10, color:"var-bacteria" },
+    virus:    { hp:2, speed:88,  rBase:16, score:20, color:"var-virus", zigzag:true, amp:46 },
+    spore:    { hp:2, speed:78,  rBase:19, score:16, color:"var-spore", splits:true, tier:1 },
+    sporeMini:{ hp:1, speed:132, rBase:10, score:8,  color:"var-spore", tier:2 },
+    toxin:    { hp:1, speed:250, rBase:11, score:13, color:"var-toxin" }
+  };
+  function waveSpeedMult(wave){ return Math.min(1 + (wave-1)*0.045, 1.7); }
+  function composeWaveMeta(wave){
+    var isBoss = (wave % 4 === 0);
+    if(isBoss){
+      return { isBoss:true, total:1, spawnInterval:0 };
+    }
+    var total = Math.min(6 + wave, 22);
+    var weights;
+    if(wave <= 2) weights = [["bacteria",70],["virus",15],["spore",10],["toxin",5]];
+    else if(wave <= 6) weights = [["bacteria",40],["virus",25],["spore",20],["toxin",15]];
+    else weights = [["bacteria",25],["virus",25],["spore",25],["toxin",25]];
+    var interval = Math.max(0.85 - wave*0.03, 0.32);
+    return { isBoss:false, total:total, spawnInterval:interval, weights:weights };
+  }
+
+  /* ===== 상태 ===== */
+  var phase = "intro"; // intro | playing | upgrade | gameover
+  var wave = 1, waveMeta = null, spawnedCount = 0, spawnTimer = 0;
+  var score = 0, displayScore = 0, lives = MAX_LIVES, shieldCharges = 0;
+  var fireRateLevel = 1, shotLevel = 1;
+  var comboCount = 0, comboTimer = 0;
+  var gameTime = 0;
+  var fireTimer = 0;
+  var shake = 0, flash = 0;
+  var ship = null;
+  var dragging = false;
+  var pointer = { x:0, y:0 };
+  var keys = { left:false, right:false, up:false, down:false };
+  var enemies = [];       // 세균/바이러스/포자/포자미니/독소
+  var boss = null;        // 보스 1체(있을 때만)
+  var bossShots = [];     // 보스가 쏘는 독소
+  var pShots = [];        // 플레이어 항체
+  var particles = [];
+  var floats = [];
+  var bgDrift = [];
+  var comboToastTimer = null;
+  var factToastTimer = null;
+
+  function initShip(){
+    ship = { x: W*0.5, y: H*0.72, tx: W*0.5, ty: H*0.72, r: 26*scale };
+  }
+  function initBgDrift(){
+    bgDrift = [];
+    for(var i=0;i<26;i++){
+      bgDrift.push({
+        x: Math.random()*W, y: Math.random()*H,
+        r: (3+Math.random()*5), vy: 12+Math.random()*18,
+        alpha: 0.08+Math.random()*0.14
+      });
+    }
+  }
+
+  function resetState(){
+    phase = "intro";
+    wave = 1;
+    score = 0; displayScore = 0; lives = MAX_LIVES; shieldCharges = 0;
+    fireRateLevel = 1; shotLevel = 1;
+    comboCount = 0; comboTimer = 0;
+    gameTime = 0; fireTimer = 0;
+    shake = 0; flash = 0;
+    enemies = []; boss = null; bossShots = []; pShots = [];
+    particles = []; floats = [];
+    dragging = false;
+    keys.left = keys.right = keys.up = keys.down = false;
+    usedFacts = [];
+    initShip();
+    initBgDrift();
+    updateHUD();
+    renderShieldPips();
+  }
+
+  function startWave(){
+    waveMeta = composeWaveMeta(wave);
+    spawnedCount = 0;
+    spawnTimer = 0.4;
+    if(waveMeta.isBoss){
+      spawnBoss();
+    }
+    phase = "playing";
+    el.waveVal.textContent = wave;
+  }
+
+  function startGame(){
+    el.introOverlay.classList.add("hidden");
+    el.upgradeOverlay.classList.add("hidden");
+    el.resultOverlay.classList.add("hidden");
+    resetState();
+    ensureAudio();
+    startWave();
+    lastTs = 0;
+    requestAnimationFrame(loop);
+  }
+
+  /* ===== 스폰 ===== */
+  function spawnEnemy(){
+    var type = pickWeighted(waveMeta.weights);
+    var def = ENEMY_DEFS[type];
+    var mult = waveSpeedMult(wave);
+    var r = def.rBase*scale;
+    var x = rand(r+10, W-r-10);
+    enemies.push({
+      type:type, tier: def.tier||1,
+      x:x, y:-30*scale, baseX:x,
+      r:r, hp:def.hp, maxHp:def.hp,
+      vy: def.speed*scale*mult,
+      vx: 0,
+      amp: (def.amp||0)*scale,
+      phase: Math.random()*Math.PI*2,
+      score: def.score
+    });
+  }
+  function splitSpore(parent){
+    var def = ENEMY_DEFS.sporeMini;
+    var mult = waveSpeedMult(wave);
+    for(var i=-1;i<=1;i+=2){
+      enemies.push({
+        type:"sporeMini", tier:2,
+        x:parent.x, y:parent.y, baseX:parent.x,
+        r:def.rBase*scale, hp:def.hp, maxHp:def.hp,
+        vy:def.speed*scale*mult, vx:i*46*scale,
+        amp:0, phase:0, score:def.score
+      });
+    }
+  }
+  function spawnBoss(){
+    var hp = 18 + wave*4;
+    boss = {
+      x: W*0.5, y: 120*scale, dir: 1,
+      w: 92*scale, h: 34*scale,
+      hp: hp, maxHp: hp,
+      fireTimer: 1.1, speed: 60*scale
+    };
+  }
+
+  /* ===== 파티클/플로트 ===== */
+  function spawnBurst(x,y,color,n){
+    n = n || 12;
+    for(var i=0;i<n;i++){
+      var a = Math.random()*Math.PI*2;
+      var sp = (60+Math.random()*140)*scale;
+      particles.push({ x:x, y:y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
+        life:1, decay:1.8, color:color, size:(2+Math.random()*3)*scale });
+    }
+  }
+  function updateParticles(dt){
+    for(var i=particles.length-1;i>=0;i--){
+      var p = particles[i];
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      p.vy += 160*scale*dt;
+      p.life -= dt*p.decay;
+      if(p.life <= 0) particles.splice(i,1);
+    }
+  }
+  function drawParticles(){
+    for(var i=0;i<particles.length;i++){
+      var p = particles[i];
+      ctx.globalAlpha = Math.max(p.life,0);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  function spawnFloat(x,y,text,color){
+    floats.push({ x:x, y:y, text:text, color:color, life:1 });
+  }
+  function updateFloats(dt){
+    for(var i=floats.length-1;i>=0;i--){
+      var f = floats[i];
+      f.y -= 40*dt*scale;
+      f.life -= dt/0.85;
+      if(f.life <= 0) floats.splice(i,1);
+    }
+  }
+  function drawFloats(){
+    ctx.textAlign = "center";
+    ctx.font = "700 " + Math.round(15*scale) + "px " + '"Pretendard",sans-serif';
+    for(var i=0;i<floats.length;i++){
+      var f = floats[i];
+      ctx.globalAlpha = Math.max(f.life,0);
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, f.x, f.y);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* ===== 콤보 / 점수 ===== */
+  function addScore(base, x, y, color){
+    comboCount++;
+    comboTimer = COMBO_WINDOW;
+    var mult = 1 + Math.min(comboCount, 10)*0.1;
+    var gained = Math.round(base*mult);
+    score += gained;
+    spawnFloat(x, y-8*scale, "+"+gained, color);
+    if(comboCount >= 3){
+      showComboToast(comboCount);
+    }
+  }
+  function showComboToast(n){
+    el.comboToast.textContent = "🔥 " + n + "콤보!";
+    el.comboToast.classList.add("show");
+    clearTimeout(comboToastTimer);
+    comboToastTimer = setTimeout(function(){ el.comboToast.classList.remove("show"); }, 700);
+  }
+
+  /* ===== 입력 ===== */
+  function pointerPos(e){
+    var rect = el.cv.getBoundingClientRect();
+    return { x: e.clientX-rect.left, y: e.clientY-rect.top };
+  }
+  function setTargetFromPointer(px, py){
+    var offset = OFFSET_Y_BASE*scale;
+    ship.tx = clamp(px, ship.r, W-ship.r);
+    ship.ty = clamp(py-offset, H*0.4, H-ship.r-14*scale);
+  }
+  function onDown(e){
+    ensureAudio();
+    if(phase !== "playing") return;
+    try{ el.cv.setPointerCapture(e.pointerId); }catch(err){}
+    dragging = true;
+    pointer = pointerPos(e);
+    setTargetFromPointer(pointer.x, pointer.y);
+    e.preventDefault();
+  }
+  function onMove(e){
+    if(!dragging) return;
+    pointer = pointerPos(e);
+    setTargetFromPointer(pointer.x, pointer.y);
+    e.preventDefault();
+  }
+  function onUp(e){
+    dragging = false;
+    if(e && e.preventDefault) e.preventDefault();
+  }
+  el.cv.addEventListener("pointerdown", onDown);
+  el.cv.addEventListener("pointermove", onMove);
+  el.cv.addEventListener("pointerup", onUp);
+  el.cv.addEventListener("pointercancel", onUp);
+
+  window.addEventListener("keydown", function(e){
+    var k = e.key;
+    if(k==="ArrowLeft"||k==="ArrowRight"||k==="ArrowUp"||k==="ArrowDown"){
+      e.preventDefault(); ensureAudio();
+      if(k==="ArrowLeft") keys.left = true;
+      if(k==="ArrowRight") keys.right = true;
+      if(k==="ArrowUp") keys.up = true;
+      if(k==="ArrowDown") keys.down = true;
+    }
+  });
+  window.addEventListener("keyup", function(e){
+    var k = e.key;
+    if(k==="ArrowLeft") keys.left = false;
+    if(k==="ArrowRight") keys.right = false;
+    if(k==="ArrowUp") keys.up = false;
+    if(k==="ArrowDown") keys.down = false;
+  });
+
+  /* ===== 사격 ===== */
+  function fireShots(){
+    var speed = 760*scale;
+    var offsets;
+    if(shotLevel === 1) offsets = [0];
+    else if(shotLevel === 2) offsets = [-11*scale, 11*scale];
+    else offsets = [-18*scale, 0, 18*scale];
+    for(var i=0;i<offsets.length;i++){
+      pShots.push({
+        x: ship.x + offsets[i], y: ship.y - ship.r*0.7,
+        vx: offsets[i]*0.9, vy: -speed, r: 6*scale
+      });
+    }
+    playShoot();
+  }
+
+  /* ===== 웨이브 클리어 / 강화 ===== */
+  function nextFact(){
+    if(usedFacts.length >= FACTS.length) usedFacts = [];
+    var idx;
+    do { idx = Math.floor(Math.random()*FACTS.length); } while(usedFacts.indexOf(idx) !== -1);
+    usedFacts.push(idx);
+    return FACTS[idx];
+  }
+  function renderUpgradeLevels(){
+    el.upgFireLvl.textContent = "Lv." + fireRateLevel;
+    el.upgFireLvl.style.opacity = fireRateLevel >= FIRE_COOLDOWN.length ? "0.5" : "1";
+    el.upgShotLvl.textContent = "Lv." + shotLevel;
+    el.upgShotLvl.style.opacity = shotLevel >= 3 ? "0.5" : "1";
+    el.upgShieldLvl.textContent = shieldCharges + "/" + MAX_SHIELD;
+  }
+  function renderShieldPips(){
+    el.shieldPips.innerHTML = "";
+    for(var i=0;i<MAX_SHIELD;i++){
+      var d = document.createElement("div");
+      d.className = "shield-pip" + (i < shieldCharges ? " on" : "");
+      el.shieldPips.appendChild(d);
+    }
+  }
+  function endWave(){
+    var clearBonus = 50*wave + (waveMeta.isBoss ? 300 + wave*20 : 0);
+    score += clearBonus;
+    phase = "upgrade";
+    bossShots = [];
+    el.upgradeTitle.textContent = "웨이브 " + wave + " 클리어! (+" + clearBonus + ")";
+    el.factLine.innerHTML = "🔬 <b>면역 상식</b> · " + nextFact();
+    renderUpgradeLevels();
+    el.upgradeOverlay.classList.remove("hidden");
+    playWaveClear();
+  }
+  function applyUpgrade(kind){
+    if(kind === "fire"){
+      if(fireRateLevel < FIRE_COOLDOWN.length) fireRateLevel++;
+      else score += 300;
+    } else if(kind === "shot"){
+      if(shotLevel < 3) shotLevel++;
+      else score += 300;
+    } else if(kind === "shield"){
+      if(shieldCharges < MAX_SHIELD) shieldCharges++;
+      else score += 300;
+    }
+    renderShieldPips();
+    el.upgradeOverlay.classList.add("hidden");
+    wave++;
+    startWave();
+  }
+  el.upgFire.addEventListener("click", function(){ applyUpgrade("fire"); });
+  el.upgShot.addEventListener("click", function(){ applyUpgrade("shot"); });
+  el.upgShield.addEventListener("click", function(){ applyUpgrade("shield"); });
+
+  /* ===== 게임오버 ===== */
+  function gameOver(){
+    phase = "gameover";
+    var isNew = score > best.score;
+    if(isNew){ best.score = score; best.wave = wave; saveBest(); }
+    el.resultScore.textContent = score;
+    el.resultSub.textContent = "웨이브 " + wave + "까지 버텼어요";
+    el.resultBest.textContent = "최고 기록 " + best.score + "점 (웨이브 " + best.wave + ")";
+    el.newBadge.classList.toggle("hidden", !isNew);
+    el.resultOverlay.classList.remove("hidden");
+    playGameOver();
+    if(navigator.vibrate) navigator.vibrate([50,60,50,60,80]);
+  }
+
+  function loseLife(x, y){
+    if(shieldCharges > 0){
+      shieldCharges--;
+      renderShieldPips();
+      spawnBurst(x, y, "#6fd8ff", 16);
+      playShieldBlock();
+      if(navigator.vibrate) navigator.vibrate(25);
+      return;
+    }
+    lives--;
+    el.livesVal.textContent = Math.max(lives,0);
+    shake = Math.max(shake, 14);
+    flash = 0.5;
+    comboCount = 0; comboTimer = 0;
+    spawnBurst(x, y, "#ff4f6d", 18);
+    playHurt();
+    if(navigator.vibrate) navigator.vibrate(90);
+    if(lives <= 0){ gameOver(); }
+  }
+
+  /* ===== HUD ===== */
+  function updateHUD(){
+    el.livesVal.textContent = Math.max(lives,0);
+    el.waveVal.textContent = wave;
+  }
+
+  /* ===== 업데이트 ===== */
+  var lastTs = 0;
+  function update(dt){
+    gameTime += dt;
+    shake *= 0.9; if(shake < 0.05) shake = 0;
+    flash *= 0.85; if(flash < 0.01) flash = 0;
+
+    // 배경 부유물
+    for(var bi=0;bi<bgDrift.length;bi++){
+      var b = bgDrift[bi];
+      b.y += b.vy*dt;
+      if(b.y - b.r > H){ b.y = -b.r; b.x = Math.random()*W; }
+    }
+
+    displayScore += (score-displayScore)*Math.min(1, dt*8);
+    el.scoreVal.textContent = Math.round(displayScore);
+
+    if(phase !== "playing"){ updateParticles(dt); updateFloats(dt); return; }
+
+    // 콤보 타이머
+    if(comboTimer > 0){
+      comboTimer -= dt;
+      if(comboTimer <= 0){ comboCount = 0; }
+    }
+
+    // 백혈구 이동(드래그 목표로 서서히 수렴 + 방향키 보조)
+    var keyRate = 340*scale;
+    if(keys.left) ship.tx -= keyRate*dt;
+    if(keys.right) ship.tx += keyRate*dt;
+    if(keys.up) ship.ty -= keyRate*dt;
+    if(keys.down) ship.ty += keyRate*dt;
+    ship.tx = clamp(ship.tx, ship.r, W-ship.r);
+    ship.ty = clamp(ship.ty, H*0.4, H-ship.r-14*scale);
+    ship.x += (ship.tx-ship.x)*Math.min(1, dt*11);
+    ship.y += (ship.ty-ship.y)*Math.min(1, dt*11);
+
+    // 자동 연사
+    fireTimer -= dt;
+    if(fireTimer <= 0){
+      fireShots();
+      fireTimer = FIRE_COOLDOWN[fireRateLevel-1];
+    }
+
+    // 스폰
+    if(!waveMeta.isBoss && spawnedCount < waveMeta.total){
+      spawnTimer -= dt;
+      if(spawnTimer <= 0){
+        spawnEnemy();
+        spawnedCount++;
+        spawnTimer = waveMeta.spawnInterval * rand(0.85, 1.15);
+      }
+    }
+
+    // 플레이어 항체 이동
+    for(var si=pShots.length-1; si>=0; si--){
+      var s = pShots[si];
+      s.x += s.vx*dt; s.y += s.vy*dt;
+      if(s.y < -20*scale){ pShots.splice(si,1); }
+    }
+
+    // 적 이동
+    for(var ei=enemies.length-1; ei>=0; ei--){
+      var en = enemies[ei];
+      en.y += en.vy*dt;
+      if(en.type === "virus"){
+        en.x = en.baseX + Math.sin(gameTime*2.6 + en.phase)*en.amp;
+      } else if(en.vx){
+        en.x += en.vx*dt;
+      }
+      if(en.y - en.r > H){ enemies.splice(ei,1); continue; }
+    }
+
+    // 보스 이동/사격
+    if(boss){
+      boss.x += boss.dir*boss.speed*dt;
+      if(boss.x < boss.w*0.6){ boss.x = boss.w*0.6; boss.dir = 1; }
+      if(boss.x > W-boss.w*0.6){ boss.x = W-boss.w*0.6; boss.dir = -1; }
+      boss.fireTimer -= dt;
+      if(boss.fireTimer <= 0){
+        bossShots.push({ x: boss.x, y: boss.y+boss.h*0.5, vy: 210*scale, r: 10*scale });
+        boss.fireTimer = Math.max(1.3 - wave*0.03, 0.6);
+      }
+    }
+    for(var bsi=bossShots.length-1; bsi>=0; bsi--){
+      var bs = bossShots[bsi];
+      bs.y += bs.vy*dt;
+      if(bs.y - bs.r > H){ bossShots.splice(bsi,1); }
+    }
+
+    // 충돌: 플레이어 항체 vs 적
+    for(var pi=pShots.length-1; pi>=0; pi--){
+      var ps = pShots[pi];
+      var hit = false;
+      for(var ej=enemies.length-1; ej>=0; ej--){
+        var e2 = enemies[ej];
+        var d = Math.hypot(ps.x-e2.x, ps.y-e2.y);
+        if(d < ps.r + e2.r){
+          e2.hp--;
+          hit = true;
+          spawnBurst(e2.x, e2.y, "#ffffff", 4);
+          if(e2.hp <= 0){
+            enemies.splice(ej,1);
+            addScore(e2.score, e2.x, e2.y, "#ffe066");
+            spawnBurst(e2.x, e2.y, enemyColor(e2.type), 14);
+            playKill(e2.type);
+            if(e2.type === "spore" && e2.tier === 1){ splitSpore(e2); }
+          }
+          break;
+        }
+      }
+      if(!hit && boss){
+        var db = Math.hypot(ps.x-boss.x, ps.y-boss.y);
+        if(db < ps.r + boss.w*0.42){
+          boss.hp--;
+          hit = true;
+          spawnBurst(boss.x, boss.y, "#ffffff", 3);
+          if(boss.hp <= 0){
+            addScore(300+wave*20, boss.x, boss.y, "#ff4f6d");
+            spawnBurst(boss.x, boss.y, enemyColor("boss"), 30);
+            playKill("boss");
+            boss = null;
+          }
+        }
+      }
+      if(hit) pShots.splice(pi,1);
+    }
+
+    // 충돌: 적/보스탄 vs 백혈구
+    for(var ek=enemies.length-1; ek>=0; ek--){
+      var e3 = enemies[ek];
+      var dd = Math.hypot(e3.x-ship.x, e3.y-ship.y);
+      if(dd < e3.r + ship.r){
+        enemies.splice(ek,1);
+        loseLife(ship.x, ship.y);
+      }
+    }
+    for(var bk=bossShots.length-1; bk>=0; bk--){
+      var b2 = bossShots[bk];
+      var db2 = Math.hypot(b2.x-ship.x, b2.y-ship.y);
+      if(db2 < b2.r + ship.r){
+        bossShots.splice(bk,1);
+        loseLife(ship.x, ship.y);
+      }
+    }
+
+    updateParticles(dt);
+    updateFloats(dt);
+
+    // 웨이브 클리어 판정
+    if(waveMeta.isBoss){
+      if(!boss){ endWave(); }
+    } else {
+      if(spawnedCount >= waveMeta.total && enemies.length === 0){ endWave(); }
+    }
+  }
+
+  function enemyColor(type){
+    if(type === "bacteria") return "#59d97a";
+    if(type === "virus") return "#b878ff";
+    if(type === "spore" || type === "sporeMini") return "#ffab4d";
+    if(type === "toxin") return "#ffe066";
+    if(type === "boss") return "#ff4f6d";
+    return "#ffffff";
+  }
+
+  /* ===== 렌더 ===== */
+  function roundRectPath(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+  function drawBackground(){
+    var g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0, "#3a0f18");
+    g.addColorStop(1, "#170609");
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+    // 혈관 벽 느낌의 세로 라인
+    ctx.strokeStyle = "rgba(255,120,140,0.06)";
+    ctx.lineWidth = 1;
+    for(var lx=0; lx<W; lx+=28){
+      ctx.beginPath(); ctx.moveTo(lx,0); ctx.lineTo(lx,H); ctx.stroke();
+    }
+    // 부유하는 적혈구(장식)
+    for(var i=0;i<bgDrift.length;i++){
+      var b = bgDrift[i];
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(255,90,110," + b.alpha + ")";
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+  function drawShip(){
+    ctx.save();
+    ctx.translate(ship.x, ship.y);
+    if(shieldCharges > 0){
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(111,216,255,0.7)";
+      ctx.lineWidth = 2.5*scale;
+      ctx.arc(0,0, ship.r + 6*scale, 0, Math.PI*2);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.fillStyle = "var(--wbc)".indexOf("var(") === 0 ? "#fff8f4" : "#fff8f4";
+    ctx.arc(0,0, ship.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,206,214,0.9)";
+    ctx.lineWidth = 2*scale;
+    ctx.stroke();
+    // 내부 핵(엽상 핵) 표현
+    ctx.fillStyle = "rgba(184,120,255,0.55)";
+    ctx.beginPath();
+    ctx.ellipse(-ship.r*0.22, -ship.r*0.12, ship.r*0.34, ship.r*0.24, 0.4, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(ship.r*0.24, ship.r*0.14, ship.r*0.3, ship.r*0.22, -0.3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+  function drawShot(s){
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.strokeStyle = "#6fd8ff";
+    ctx.shadowColor = "rgba(111,216,255,0.8)";
+    ctx.shadowBlur = 8*scale;
+    ctx.lineWidth = 2.4*scale;
+    var len = 9*scale;
+    ctx.beginPath();
+    ctx.moveTo(0, len*0.7); ctx.lineTo(0, -len*0.2);
+    ctx.moveTo(0, -len*0.2); ctx.lineTo(-len*0.55, -len*0.9);
+    ctx.moveTo(0, -len*0.2); ctx.lineTo(len*0.55, -len*0.9);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawEnemy(e){
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if(e.type === "bacteria"){
+      ctx.fillStyle = "#59d97a";
+      roundRectPath(-e.r, -e.r*0.55, e.r*2, e.r*1.1, e.r*0.55);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-e.r*1.1,0); ctx.lineTo(-e.r*1.5,-e.r*0.4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(e.r*1.1,0); ctx.lineTo(e.r*1.5,e.r*0.4); ctx.stroke();
+    } else if(e.type === "virus"){
+      ctx.fillStyle = "#b878ff";
+      ctx.beginPath(); ctx.arc(0,0,e.r*0.75,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = "#b878ff"; ctx.lineWidth = 2*scale;
+      for(var i=0;i<8;i++){
+        var a = i/8*Math.PI*2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*e.r*0.75, Math.sin(a)*e.r*0.75);
+        ctx.lineTo(Math.cos(a)*e.r*1.25, Math.sin(a)*e.r*1.25);
+        ctx.stroke();
+      }
+    } else if(e.type === "spore" || e.type === "sporeMini"){
+      ctx.fillStyle = "#ffab4d";
+      ctx.beginPath(); ctx.arc(0,0,e.r,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      ctx.beginPath(); ctx.arc(-e.r*0.28,-e.r*0.28,e.r*0.28,0,Math.PI*2); ctx.fill();
+    } else if(e.type === "toxin"){
+      ctx.fillStyle = "#ffe066";
+      ctx.beginPath();
+      ctx.moveTo(0,-e.r*1.2);
+      ctx.quadraticCurveTo(e.r*0.95,e.r*0.5,0,e.r);
+      ctx.quadraticCurveTo(-e.r*0.95,e.r*0.5,0,-e.r*1.2);
+      ctx.fill();
+    }
+    // 다단계 체력(hp>1) 미세 표시
+    if(e.maxHp > 1 && e.hp < e.maxHp){
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(-e.r, -e.r-8*scale, e.r*2, 3*scale);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(-e.r, -e.r-8*scale, e.r*2*(e.hp/e.maxHp), 3*scale);
+    }
+    ctx.restore();
+  }
+  function drawBoss(){
+    if(!boss) return;
+    ctx.save();
+    ctx.translate(boss.x, boss.y);
+    ctx.fillStyle = "#ff4f6d";
+    roundRectPath(-boss.w/2, -boss.h/2, boss.w, boss.h, boss.h*0.5);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1.4*scale;
+    for(var i=0;i<3;i++){
+      ctx.beginPath();
+      ctx.moveTo(-boss.w*0.55, -boss.h*0.15 + i*boss.h*0.15);
+      ctx.lineTo(-boss.w*0.7, -boss.h*0.3 + i*boss.h*0.28);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(boss.w*0.55, -boss.h*0.15 + i*boss.h*0.15);
+      ctx.lineTo(boss.w*0.7, -boss.h*0.3 + i*boss.h*0.28);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.beginPath(); ctx.arc(-boss.w*0.18,0,3.5*scale,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(boss.w*0.02,0,3.5*scale,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(boss.w*0.22,0,3.5*scale,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // 보스 체력바
+    var barW = Math.min(W*0.6, 260*scale), barH = 8*scale;
+    var bx = W/2 - barW/2, by = boss.y - boss.h/2 - 18*scale;
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    roundRectPath(bx,by,barW,barH,barH/2); ctx.fill();
+    ctx.fillStyle = "#ff4f6d";
+    var pct = clamp(boss.hp/boss.maxHp,0,1);
+    roundRectPath(bx,by,barW*pct,barH,barH/2); ctx.fill();
+  }
+  function drawBossShot(bs){
+    ctx.save();
+    ctx.translate(bs.x, bs.y);
+    ctx.fillStyle = "#ffe066";
+    ctx.beginPath();
+    ctx.moveTo(0,-bs.r*1.1);
+    ctx.quadraticCurveTo(bs.r*0.9,bs.r*0.4,0,bs.r*0.9);
+    ctx.quadraticCurveTo(-bs.r*0.9,bs.r*0.4,0,-bs.r*1.1);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    var sx = (Math.random()-0.5)*shake, sy = (Math.random()-0.5)*shake;
+    ctx.translate(sx, sy);
+
+    drawBackground();
+    for(var i=0;i<enemies.length;i++) drawEnemy(enemies[i]);
+    drawBoss();
+    for(var j=0;j<bossShots.length;j++) drawBossShot(bossShots[j]);
+    for(var k=0;k<pShots.length;k++) drawShot(pShots[k]);
+    drawParticles();
+    if(ship) drawShip();
+    drawFloats();
+
+    ctx.restore();
+
+    if(flash > 0){
+      ctx.fillStyle = "rgba(255,60,80," + Math.min(flash,0.55) + ")";
+      ctx.fillRect(0,0,W,H);
+    }
+  }
+
+  /* ===== 메인 루프 ===== */
+  function loop(ts){
+    if(!lastTs) lastTs = ts;
+    var dt = Math.min((ts-lastTs)/1000, 0.033);
+    lastTs = ts;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  /* ===== 버튼 ===== */
+  el.startBtn.addEventListener("click", function(){
+    ensureAudio();
+    startGame();
+  });
+  el.retryBtn.addEventListener("click", function(){
+    el.resultOverlay.classList.add("hidden");
+    startGame();
+  });
+  el.restartBtnTop.addEventListener("click", function(){
+    if(phase === "intro") return;
+    el.upgradeOverlay.classList.add("hidden");
+    el.resultOverlay.classList.add("hidden");
+    el.introOverlay.classList.remove("hidden");
+    resetState();
+  });
+
+  /* ===== 초기화 ===== */
+  layout();
+  initShip();
+  initBgDrift();
+  requestAnimationFrame(function tick(ts){
+    // 대기 화면에서도 배경이 살짝 살아있게
+    if(phase === "intro"){
+      update(0.016);
+      draw();
+    }
+    requestAnimationFrame(tick);
+  });
+})();
+</script>
+</body>
+</html>
