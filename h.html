@@ -491,7 +491,7 @@ const SECURITY_NPCS=[
     "3층 순찰 중. 지금 기획전시 '지구의 맥박' 놓치지 마세요!"]},
 ];
 GUIDE_NPCS.forEach(n=>{n.type="guide"; n._lineIdx=0; n.dir="down";});
-SECURITY_NPCS.forEach(n=>{n.type="security"; n._lineIdx=0; n.x=n.waypoints[0][0]; n.y=n.waypoints[0][1]; n._wp=0; n._pause=0; n.dir="down";});
+SECURITY_NPCS.forEach((n,i)=>{n.type="security"; n._lineIdx=0; n.x=n.waypoints[0][0]; n.y=n.waypoints[0][1]; n._wp=0; n._pause=0; n.dir="down"; n._spr=(i%2?"npc_guardB":"npc_guardA");});
 function curSceneId(){ return inRoom||FLOORS[floorIdx].id; }
 function sceneNPCs(){
   const id=curSceneId();
@@ -538,7 +538,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607151207";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607261545";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
@@ -604,7 +604,7 @@ function preload(){
   });
   ["down","up","left","right"].forEach(d=>{ const im=new Image(); pending++;
     im.onload=done; im.onerror=done; im.src="character/"+d+".png?v="+VER; CHAR[d]=im; });
-  ["npc_G","npc_quake","npc_O","npc_B","npc_astro","npc_chem","npc_earth"].forEach(n=>{ const im=new Image(); pending++;
+  ["npc_G","npc_quake","npc_O","npc_B","npc_astro","npc_chem","npc_earth","npc_guardA","npc_guardB"].forEach(n=>{ const im=new Image(); pending++;
     im.onload=done; im.onerror=done; im.src="character/"+n+".png?v="+VER; NPCSPR[n]=im; });
   ["down","up","left","right"].forEach(d=>{ const im=new Image(); pending++;
     im.onload=done; im.onerror=done; im.src="character/walk_"+d+".png?v="+VER; CHARWALK[d]=im; });
@@ -743,32 +743,31 @@ function render(){
     ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.font="800 20px var(--font-sans)";
     ctx.fillText(f.name+" 준비 중",W/2,H/2);
   }
-  // 핫스팟 마커
+  // 핫스팟 마커 — 바닥 원 제거(배경 오염 방지), 아이콘 말풍선이 표지판 역할.
+  // 근접 표시 = 말풍선 확대 + 통통 튀기 + 테두리 색 강조 (2026-07-26 마스터 지적: 발밑 타원 겹침 정리)
   f.spots.forEach(sp=>{
     const x=s2x(sp.x), y=s2y(sp.y);
     const done=(sp.kind==="game"&&isDone(sp.best));
     const isNear=(sp===nearSpot);
-    const pulse=1+Math.sin(t*0.08)*0.12;
-    // 발판 원
-    ctx.beginPath(); ctx.ellipse(x,y+16,26*pulse,12*pulse,0,0,7);
-    ctx.fillStyle=(sp.color||"#888")+"55"; ctx.fill();
-    ctx.lineWidth=isNear?3:2; ctx.strokeStyle=isNear?"#fff":(sp.color||"#888"); ctx.stroke();
+    const s=isNear?1.28:1;
+    const hop=isNear?Math.abs(Math.sin(t*0.12))*5:0;
+    const edge=done?"#f6b93b":(isNear?(sp.color||"#f6b93b"):"#2a2620"); // 완료 금색이 근접 강조보다 우선
     // 아이콘 버블
-    const by=y-30+Math.sin(t*0.06)*3;
-    roundRect(x-18,by-18,36,34,9);
+    const by=y-30+Math.sin(t*0.06)*3-hop;
+    roundRect(x-18*s,by-18*s,36*s,34*s,9*s);
     ctx.fillStyle=done?"#fff7e6":"#fffdf7"; ctx.fill();
-    ctx.lineWidth=2.5; ctx.strokeStyle=done?"#f6b93b":"#2a2620"; ctx.stroke();
+    ctx.lineWidth=isNear?3.5:2.5; ctx.strokeStyle=edge; ctx.stroke();
     ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.font="19px var(--font-sans)"; ctx.fillText(sp.icon,x,by-2);
+    ctx.font=Math.round(19*s)+"px var(--font-sans)"; ctx.fillText(sp.icon,x,by-2*s);
     // 상태 배지
     if(sp.kind==="game"){
-      ctx.font="800 11px var(--font-sans)";
+      ctx.font="800 "+Math.round(11*s)+"px var(--font-sans)";
       ctx.fillStyle=done?"#c9930a":"#2a2620";
-      ctx.fillText(done?"⭐":"▶",x+13,by-24);
+      ctx.fillText(done?"⭐":"▶",x+13*s,by-24*s);
     }
     // 삼각 꼬리
-    ctx.beginPath(); ctx.moveTo(x-5,by+15);ctx.lineTo(x+5,by+15);ctx.lineTo(x,by+21);ctx.closePath();
-    ctx.fillStyle=done?"#fff7e6":"#fffdf7"; ctx.fill(); ctx.strokeStyle=done?"#f6b93b":"#2a2620";ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x-5*s,by+15*s);ctx.lineTo(x+5*s,by+15*s);ctx.lineTo(x,by+21*s);ctx.closePath();
+    ctx.fillStyle=done?"#fff7e6":"#fffdf7"; ctx.fill(); ctx.strokeStyle=edge;ctx.stroke();
   });
   // NPC(안내·보안)
   sceneNPCs().forEach(drawNPC);
@@ -846,18 +845,17 @@ function drawNPC(npc){
     ? (moving?Math.abs(Math.sin(t*0.30+seed))*4:0)
     : Math.abs(Math.sin(t*0.03+seed))*1.5;   // 안내 NPC = 잔잔한 숨쉬기 bob
   ctx.beginPath();ctx.ellipse(x,y+16,17,7,0,0,7);ctx.fillStyle="rgba(0,0,0,.28)";ctx.fill();
-  const ownName = npc.type==="guide" ? GUIDE_SPR[npc.scene] : null;
+  const ownName = npc.type==="guide" ? GUIDE_SPR[npc.scene]
+                : npc.type==="security" ? npc._spr : null;
   const own = ownName ? NPCSPR[ownName] : null;
   if(own && own.complete && own.naturalWidth){
-    // 전용 스프라이트(색 틴트·이모지 없음) — 전시실별 과학커뮤니케이터
+    // 전용 스프라이트(색 틴트·이모지 없음) — 과학커뮤니케이터·보안 공통
     const h=44, w=own.naturalWidth*h/own.naturalHeight;
     ctx.drawImage(own, Math.round(x-w/2), Math.round(y+12-h-bob), Math.round(w), Math.round(h));
     // 데스크 스프라이트 제거(2026-07-14): 새 로비 배경에 안내데스크가 이미 그려져 있어 중복 — NPC만 카운터 뒤에 배치
   }else if(npc.type==="security"){
-    // 경비 NPC: 캔버스 직접 드로잉 — 제복+모자+배지(과학커뮤니케이터와 명확히 구분)
+    // 폴백: 보안 스프라이트 로드 실패 시에만 캔버스 드로잉
     drawSecurityNPC(x, y, bob);
-    ctx.font="13px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText("👮", x+16, y-44-bob);
   }else{
     // 폴백: 안내 NPC(전용 스프라이트 없을 때) 파란 틴트
     const spr=CHAR[npc.dir||"down"];
@@ -872,8 +870,10 @@ function drawNPC(npc){
     ctx.fillText("🧑‍🏫", x, y-40-bob);
   }
   if(npc===nearNPC){
-    ctx.beginPath(); ctx.ellipse(x,y+16,22,9,0,0,7);
-    ctx.lineWidth=2.5; ctx.strokeStyle="#fff"; ctx.stroke();
+    // 근접 표시: 발밑 링 대신 머리 위 말풍선 (발밑 그림자·타원 겹침 정리, 2026-07-26)
+    const hop=Math.abs(Math.sin(t*0.12))*4;
+    ctx.font="17px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText("💬", x, y-46-bob-hop);
   }
 }
 
