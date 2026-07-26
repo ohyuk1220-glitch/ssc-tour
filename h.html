@@ -247,10 +247,10 @@ const FLOORS=[
    spots:[
    {name:"← 서쪽 로비", kind:"gate", to:"LOBBY_W", icon:"⬅️", label:"서쪽", x:0.03,y:0.55, color:"#4caf50"},
    {name:"동쪽 로비 →", kind:"gate", to:"LOBBY_E", icon:"➡️", label:"동쪽", x:0.97,y:0.55, color:"#4a90e2"},
-   {name:"정문으로 나가기", kind:"gate", to:"OUTSIDE", icon:"🚪", label:"정문", x:0.49,y:0.88, color:"#9aa"},
-   {name:"계산기 사물함", kind:"info", icon:"🧮", x:0.15,y:0.50, color:"#78909c",
+   {name:"정문으로 나가기", kind:"gate", to:"OUTSIDE", icon:"🚪", label:"정문", x:0.49,y:0.805, color:"#9aa"},
+   {name:"계산기 사물함", kind:"info", icon:"🧮", x:0.15,y:0.4320, color:"#78909c",
     info:"로커 문이 계산기 숫자키 모양으로 꾸며진 물품보관함이에요."},
-   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.31,y:0.45, color:"#9aa"},
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.281,y:0.45, color:"#9aa"},
    {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.49,y:0.49, color:"#b0a99a"}, // 표지판은 계단 초입에 (걸어 올라가도 되고 A눌러도 됨)
    {name:"뒤틀림-토러스", kind:"exhibit", qid:"e-torus", khash:"a2fcc510479e69a0e9a90158221d500946ed933b7c0e9d3993be42665d7b7a0b", icon:"✨", x:0.55,y:0.30, color:"#f6b93b",
     info:"위상수학의 기본 개념으로 우주 공간의 모습을 형상화한 작품이에요. 안과 밖이 엇갈린 그물망은 뫼비우스의 띠처럼 상호순환하고, 얇은 구리선의 연결은 피보나치 수열을 재해석한 토러스 구조랍니다. 구리선·기판과 LED 전구 5,000개 이상으로 만든 15,600 × 9,600 × 4,900mm 크기의 작품으로, 김주현과 Our Labour가 2016년에 제작했어요. 주변 꽃잎은 대개 3·5·8장이고 솔방울 나선은 시계방향 8줄·반시계방향 13줄인 것처럼, 자연에서도 피보나치 수를 찾아볼 수 있어요."},
@@ -259,7 +259,7 @@ const FLOORS=[
  ]},
  {id:"HALF", name:"½층", bg:"bg/f_half_town.png", tint:"#f4c430", start:[0.47,0.66], spots:[
    {name:"Y전시실 입구 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.24,y:0.40, color:"#f4c430"},
-   {name:"사이언스홀 입구", room:"½층", kind:"soon", icon:"🎪", x:0.62,y:0.32, color:"#8bbf6b"},
+   {name:"사이언스홀 입구", room:"½층", kind:"soon", icon:"🎪", x:0.62,y:0.372, color:"#8bbf6b"},
    {name:"다이나믹 토네이도", room:"½층 · 아시아 최대", kind:"soon", icon:"🌪️", x:0.45,y:0.50, color:"#7ec8e3"},
    {name:"제4교육장 입구 · 물리", room:"제4교육장", kind:"soon", icon:"🧲", x:0.85,y:0.54, color:"#b06ab3"},
    {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.14,y:0.55, color:"#9aa"},
@@ -304,10 +304,10 @@ const FLOORS=[
  {id:"LOBBY_W", name:"1층 로비 · 서쪽", bg:"bg/lobby_west.png", tint:"#4caf50", start:[0.60,0.62],
    obstacles:[[0.00,0.00,0.12,0.48],[0.12,0.25,0.38,0.48],[0.36,0.32,0.59,0.55],[0.18,0.40,0.34,0.83],[0.00,0.60,0.12,0.96]], walkable:[0.03,0.10,0.97,0.94], spots:[
    {name:"중앙 로비 →", kind:"gate", to:"1F", icon:"➡️", label:"중앙", x:0.92,y:0.62, color:"#4a90e2"},
-   {name:"G전시실 입구 · 공존", kind:"door", room:"room_G", icon:"🌿", x:0.47,y:0.42, color:"#4caf50"},
-   {name:"원소 주기율표 사물함", kind:"info", icon:"🧪", x:0.26,y:0.60, color:"#7cb342",
+   {name:"G전시실 입구 · 공존", kind:"door", room:"room_G", icon:"🌿", x:0.47,y:0.352, color:"#4caf50"},
+   {name:"원소 주기율표 사물함", kind:"info", icon:"🧪", x:0.312,y:0.60, color:"#7cb342",
     info:"G전시실 입구 옆 사물함이에요. 로커 하나하나가 He·Ne·F·Cl·Ar·Kr·I·Xe·At·Og·Ts 같은 원소 칸이고, 디지털 잠금장치로 여닫아요."},
-   {name:"메이커 스튜디오 문", kind:"info", icon:"🚪", x:0.07,y:0.78, color:"#8d6e63",
+   {name:"메이커 스튜디오 문", kind:"info", icon:"🚪", x:0.103,y:0.78, color:"#8d6e63",
     info:"메이커 스튜디오로 이어지는 문이에요. 운영 프로그램은 현장 안내를 확인해주세요."},
    {name:"↑ ½층 슬로프", kind:"stair", to:"HALF", icon:"♿", x:0.20,y:0.20, color:"#b0a99a"},
    {name:"↑ ½층 계단", kind:"stair", to:"HALF", icon:"🪜", x:0.50,y:0.12, color:"#b0a99a"},
@@ -315,14 +315,14 @@ const FLOORS=[
  {id:"LOBBY_E", name:"1층 로비 · 동쪽", bg:"bg/lobby_east.png", tint:"#4a90e2", start:[0.10,0.62],
    obstacles:[[0.00,0.00,1.00,0.14],[0.10,0.33,0.39,0.58],[0.42,0.18,0.64,0.44],[0.70,0.18,0.82,0.44],[0.86,0.12,1.00,0.63],[0.52,0.55,0.68,0.86]], walkable:[0.03,0.16,0.97,0.94], spots:[
    {name:"← 중앙 로비", kind:"gate", to:"1F", icon:"⬅️", label:"중앙", x:0.03,y:0.62, color:"#4caf50"},
-   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.22,y:0.47, color:"#4a90e2",
+   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.22,y:0.542, color:"#4a90e2",
     info:"안내·매표를 맡는 메인데스크예요. 이곳의 안내원은 과학 이야기를 알기 쉽게 전하는 S.C(과학커뮤니케이터)랍니다."},
-   {name:"북카페 · 과학책방", kind:"door", room:"room_cafe", icon:"☕", x:0.52,y:0.33, color:"#8d6e63"},
-   {name:"갈릴레오의 책", kind:"info", icon:"📖", x:0.59,y:0.72, color:"#8d6e63",
+   {name:"북카페 · 과학책방", kind:"door", room:"room_cafe", icon:"☕", x:0.52,y:0.402, color:"#8d6e63"},
+   {name:"갈릴레오의 책", kind:"info", icon:"📖", x:0.541,y:0.72, color:"#8d6e63",
     info:"갈릴레오의 저서 『DIALOGO』(1632) 표지를 재현한 나무 조형물과 Escapement(탈진기) 시계가 함께 있어요. 기념사진을 남기기 좋은 포토존이에요."},
-   {name:"화장실", kind:"info", icon:"🚻", x:0.76,y:0.33, color:"#78909c",
+   {name:"화장실", kind:"info", icon:"🚻", x:0.799,y:0.33, color:"#78909c",
     info:"남녀 화장실이 나란히 있어요. 이용 안내 표지를 확인해주세요."},
-   {name:"과학관 후문", kind:"info", icon:"🚪", x:0.93,y:0.35, color:"#6b7a5a",
+   {name:"과학관 후문", kind:"info", icon:"🚪", x:0.881,y:0.35, color:"#6b7a5a",
     info:"과학관 동쪽 후문이에요. 현재 게임에서는 바깥으로 이동하지 않아요."},
  ]},
 ];
@@ -332,15 +332,15 @@ const FLOORS=[
 const ROOMS={
   room_G:{ name:"G전시실 · 공존", bg:"bg/room_G_hq.png", tint:"#4caf50", floorName:"1층", start:[0.5,0.80],
     obstacles:[[0.15,0.15,0.42,0.42],[0.20,0.50,0.46,0.72],[0.62,0.13,0.95,0.42],[0.80,0.50,0.97,0.68]], walkable:[0.05,0.13,0.95,0.90], spots:[
-    {name:"티움 실험실", kind:"exhibit", qid:"g-tium", khash:"0ad257dbf3d82b40481565b95ef29160b3fb641a9a0018e473cbb3bd806618fe", icon:"🔬", x:0.25,y:0.30, color:"#4caf50",
+    {name:"티움 실험실", kind:"exhibit", qid:"g-tium", khash:"0ad257dbf3d82b40481565b95ef29160b3fb641a9a0018e473cbb3bd806618fe", icon:"🔬", x:0.25,y:0.3780, color:"#4caf50",
      info:"티움(Tium)은 생태를 관찰하고 실험하는 코너예요. 유리 부스 안에서 자연을 들여다봐요."},
     {name:"원소 사물함", kind:"exhibit", qid:"g-locker", khash:"58140975eb7a2ffff9f057e487182e556e58ee7a3a895713dd63fdddec0e39bc", icon:"🧪", x:0.08,y:0.52, color:"#7cb342",
      info:"주기율표 모양의 사물함이에요. 헬륨(He)·네온(Ne)·크립톤(Kr)… 원소 기호로 내 칸을 찾아요."},
-    {name:"지질 단면", kind:"exhibit", qid:"g-strata", khash:"ecf99b046306d8f94d4080873d8cd3722e6c3a9c35ea3436cd53de5a2b25e20f", icon:"🪨", x:0.31,y:0.60, color:"#8d6e63",
+    {name:"지질 단면", kind:"exhibit", qid:"g-strata", khash:"ecf99b046306d8f94d4080873d8cd3722e6c3a9c35ea3436cd53de5a2b25e20f", icon:"🪨", x:0.31,y:0.5320, color:"#8d6e63",
      info:"땅을 세로로 자른 모습. 층층이 쌓인 지층 속 화석이 지구의 역사를 기록해요."},
-    {name:"인류세 철망", kind:"exhibit", qid:"g-mesh", khash:"cffe00b8581dc845db467b6040c9276bd14c3532160461ec3000f2d28f00e2e1", icon:"🗑️", x:0.76,y:0.27, color:"#9e9e9e",
+    {name:"인류세 철망", kind:"exhibit", qid:"g-mesh", khash:"cffe00b8581dc845db467b6040c9276bd14c3532160461ec3000f2d28f00e2e1", icon:"🗑️", x:0.76,y:0.179, color:"#9e9e9e",
      info:"철망 안에 눌러 담은 플라스틱 쓰레기. '인류세' — 인간이 만든 새 지질시대의 상징이에요."},
-    {name:"미세플라스틱 현미경", kind:"exhibit", qid:"g-micro", khash:"9d5a848823c96aa05a1ec0fea78de4a1cefcf9d3286e38ba22902c448fb8e825", icon:"🔎", x:0.88,y:0.57, color:"#4a90e2",
+    {name:"미세플라스틱 현미경", kind:"exhibit", qid:"g-micro", khash:"9d5a848823c96aa05a1ec0fea78de4a1cefcf9d3286e38ba22902c448fb8e825", icon:"🔎", x:0.88,y:0.521, color:"#4a90e2",
      info:"눈에 안 보이는 작은 플라스틱 조각을 현미경으로 관찰해요. 우리 밥상까지 돌아온답니다."},
     {name:"지진 체험관", kind:"door", room:"room_quake", icon:"🌋", x:0.50,y:0.31, color:"#8a7a6a"},
     {name:"분리수거 챌린지", kind:"game", file:"g.html", best:"recycle_best", label:"분리수거 챌린지",
@@ -349,11 +349,11 @@ const ROOMS={
   ]},
   room_cafe:{ name:"북카페 · 과학책방", bg:"bg/room_cafe.png", tint:"#8d6e63", floorName:"1층", start:[0.48,0.78],
     obstacles:[[0.03,0.06,0.97,0.27],[0.03,0.27,0.14,0.62],[0.70,0.27,0.97,0.62],[0.42,0.40,0.55,0.62]], walkable:[0.05,0.15,0.95,0.90], spots:[
-    {name:"과학책 서가", kind:"exhibit", qid:"cafe-books", khash:"6836c6832434ae2d3164d28c10ed5fd18ac9de8d035bf1d7ca090a17e415f235", icon:"📚", x:0.45,y:0.18, color:"#6d4c41",
+    {name:"과학책 서가", kind:"exhibit", qid:"cafe-books", khash:"6836c6832434ae2d3164d28c10ed5fd18ac9de8d035bf1d7ca090a17e415f235", icon:"📚", x:0.45,y:0.239, color:"#6d4c41",
      info:"천문학·물리·생물… 과학책이 벽 가득해요. 궁금한 주제를 골라 읽어보세요."},
-    {name:"천체망원경 코너", kind:"exhibit", qid:"cafe-scope", khash:"81eb09ffc01c613091a848739fa5642225df373a80a0cb5a3c9b3e7c1c709ba9", icon:"🔭", x:0.10,y:0.32, color:"#4a90e2",
+    {name:"천체망원경 코너", kind:"exhibit", qid:"cafe-scope", khash:"81eb09ffc01c613091a848739fa5642225df373a80a0cb5a3c9b3e7c1c709ba9", icon:"🔭", x:0.126,y:0.32, color:"#4a90e2",
      info:"옛 천문학자가 밤하늘을 관측하던 망원경. 갈릴레오도 이런 걸로 목성의 위성을 봤죠."},
-    {name:"커피바", kind:"info", icon:"☕", x:0.82,y:0.32, color:"#8d6e63",
+    {name:"커피바", kind:"info", icon:"☕", x:0.729,y:0.32, color:"#8d6e63",
      info:"과학책을 읽으며 커피 한 잔. 편히 쉬어가는 공간이에요."},
     {name:"나가기", kind:"exit", icon:"🚪", x:0.48,y:0.86, color:"#b0a99a"},
   ]},
@@ -361,9 +361,9 @@ const ROOMS={
     obstacles:[[0.06,0.28,0.37,0.83],[0.57,0.20,0.93,0.73]], walkable:[0.05,0.15,0.95,0.93], spots:[
     {name:"지진파 모니터", kind:"exhibit", qid:"q-monitor", khash:"d528ffc17f877468733e64de73e174a188231471a79f77e5d22ac092e161b6da", icon:"📈", x:0.48,y:0.20, color:"#4a90e2",
      info:"땅의 흔들림을 기록하는 화면이에요. 지진의 세기(규모)를 파형으로 보여줘요."},
-    {name:"지진 시뮬레이터", kind:"exhibit", qid:"q-simulator", khash:"574def7a84c8b484a7e4c47d9bfd22db6a83e23351b98ebcb7a2d78eedc5a745", icon:"🏗️", x:0.74,y:0.44, color:"#e05a4a",
+    {name:"지진 시뮬레이터", kind:"exhibit", qid:"q-simulator", khash:"574def7a84c8b484a7e4c47d9bfd22db6a83e23351b98ebcb7a2d78eedc5a745", icon:"🏗️", x:0.74,y:0.256, color:"#e05a4a",
      info:"흔들림을 직접 체험하는 장치. 흔들리면 책상 아래로! 멈추면 계단으로 대피해요(엘베 위험)."},
-    {name:"용암 균열존", kind:"exhibit", qid:"q-lava", khash:"33ee01c562454a91ebbe5728aee08df60a98bdd7fc83a4975d2a5d64c6f4bba4", icon:"🌋", x:0.20,y:0.54, color:"#c0563a",
+    {name:"용암 균열존", kind:"exhibit", qid:"q-lava", khash:"33ee01c562454a91ebbe5728aee08df60a98bdd7fc83a4975d2a5d64c6f4bba4", icon:"🌋", x:0.094,y:0.54, color:"#c0563a",
      info:"땅속 마그마가 지표로 올라오는 모습. 지진과 화산은 판이 움직여 생겨요."},
     {name:"지진 대피 훈련", kind:"game", file:"q.html", best:"quake_best", label:"지진 대피 훈련",
      icon:"🚨", room:"지진 체험관", x:0.46,y:0.62, color:"#8a7a6a"},
@@ -371,11 +371,11 @@ const ROOMS={
   ]},
   room_O:{ name:"O전시실 · 생존", bg:"bg/room_O_hq.png", tint:"#ef8c3b", floorName:"√2층", start:[0.5,0.82],
     obstacles:[[0.10,0.28,0.33,0.72],[0.59,0.27,0.79,0.62],[0.63,0.60,0.97,0.83]], walkable:[0.05,0.15,0.95,0.93], spots:[
-    {name:"DNA 이중나선", kind:"exhibit", qid:"o-dna", khash:"6285402ecfa68bd959b539b6b33f4ee0216810e14d503d62b24874e8ab93df13", icon:"🧬", x:0.21,y:0.48, color:"#ef8c3b",
+    {name:"DNA 이중나선", kind:"exhibit", qid:"o-dna", khash:"6285402ecfa68bd959b539b6b33f4ee0216810e14d503d62b24874e8ab93df13", icon:"🧬", x:0.129,y:0.48, color:"#ef8c3b",
      info:"우리 몸의 설계도예요. 두 가닥이 꼬인 사다리(이중나선) 모양이죠."},
     {name:"주기율표", kind:"exhibit", qid:"o-periodic", khash:"986f557c8ce42208cf34f7fe79c9ba876eaa3892487ab4e0e98b65a6e220103e", icon:"🔲", x:0.45,y:0.16, color:"#e0a040",
      info:"세상 모든 물질을 이루는 원소들의 지도. 118개 원소가 규칙대로 놓여요."},
-    {name:"인체 모형", kind:"exhibit", qid:"o-body", khash:"c3ca8e0903e048865a2e7bd97aee6f6c9974ffdf39d98af0c3eb310c04961015", icon:"🫀", x:0.69,y:0.42, color:"#e05a4a",
+    {name:"인체 모형", kind:"exhibit", qid:"o-body", khash:"c3ca8e0903e048865a2e7bd97aee6f6c9974ffdf39d98af0c3eb310c04961015", icon:"🫀", x:0.69,y:0.319, color:"#e05a4a",
      info:"몸속 장기들을 볼 수 있어요. 심장·폐·위·장이 각자 하는 일이 달라요."},
     {name:"DNA 짝 맞추기", kind:"game", file:"d.html", best:"dna_best", label:"DNA 짝 맞추기",
      icon:"🧬", room:"O전시실", x:0.43,y:0.62, color:"#ef8c3b"},
@@ -383,11 +383,11 @@ const ROOMS={
   ]},
   room_B:{ name:"B전시실 · 연결", bg:"bg/room_B_hq.png", tint:"#4a90e2", floorName:"2층", start:[0.5,0.82],
     obstacles:[[0.08,0.28,0.36,0.76],[0.37,0.18,0.66,0.53],[0.65,0.30,0.94,0.73]], walkable:[0.05,0.14,0.95,0.93], spots:[
-    {name:"로켓", kind:"exhibit", qid:"b-rocket", khash:"be570fa8d4b2794dd60b4dc427a5dca74d21a931d8ba531d2d5a2d2dc40d30c0", icon:"🚀", x:0.21,y:0.46, color:"#c9c2b0",
+    {name:"로켓", kind:"exhibit", qid:"b-rocket", khash:"be570fa8d4b2794dd60b4dc427a5dca74d21a931d8ba531d2d5a2d2dc40d30c0", icon:"🚀", x:0.21,y:0.336, color:"#c9c2b0",
      info:"우주로 나가는 발사체예요. 엄청난 힘으로 지구 중력을 벗어나요."},
-    {name:"태양계", kind:"exhibit", qid:"b-solar", khash:"cbd0965e029d7e5beb3a8a64c6a17f694959798ac15f3b15432afb210159bdcc", icon:"🪐", x:0.50,y:0.34, color:"#4a90e2",
+    {name:"태양계", kind:"exhibit", qid:"b-solar", khash:"cbd0965e029d7e5beb3a8a64c6a17f694959798ac15f3b15432afb210159bdcc", icon:"🪐", x:0.5,y:0.233, color:"#4a90e2",
      info:"태양과 8개 행성. 지구는 태양에서 세 번째 행성이에요."},
-    {name:"뇌 모형", kind:"exhibit", qid:"b-brain", khash:"358fe7a10fdf32e0bf0577145e07360399da814ae435e0c338eedaf33466afd8", icon:"🧠", x:0.78,y:0.45, color:"#e07ab0",
+    {name:"뇌 모형", kind:"exhibit", qid:"b-brain", khash:"358fe7a10fdf32e0bf0577145e07360399da814ae435e0c338eedaf33466afd8", icon:"🧠", x:0.78,y:0.349, color:"#e07ab0",
      info:"생각·기억·감각을 담당하는 우리 몸의 사령탑이에요."},
     {name:"우주 합체 실험실", kind:"game", file:"m.html", best:"cosmo_best", label:"우주 합체 실험실",
      icon:"🪐", room:"B전시실", x:0.50,y:0.64, color:"#4a90e2"},
@@ -395,11 +395,11 @@ const ROOMS={
   ]},
   room_astro:{ name:"천문대 · 태양관측", bg:"bg/room_astro_hq.png", tint:"#2e3a6b", floorName:"2층", start:[0.5,0.82],
     obstacles:[[0.05,0.32,0.33,0.77],[0.37,0.18,0.60,0.63],[0.70,0.42,0.91,0.67]], walkable:[0.05,0.16,0.95,0.93], spots:[
-    {name:"돔 관측소", kind:"exhibit", qid:"a-dome", khash:"08cd75b467b0bf2a53067b40310ffca9c1b5f403968729d0d52770dd2c79d423", icon:"🔭", x:0.18,y:0.55, color:"#9aa",
+    {name:"돔 관측소", kind:"exhibit", qid:"a-dome", khash:"08cd75b467b0bf2a53067b40310ffca9c1b5f403968729d0d52770dd2c79d423", icon:"🔭", x:0.18,y:0.709, color:"#9aa",
      info:"지붕이 열리는 관측소. 큰 망원경으로 밤하늘을 자세히 봐요."},
-    {name:"천체 망원경", kind:"exhibit", qid:"a-telescope", khash:"ea4ba1c87f75ebe8412957eab64059ddab6f0380504877420079242d660ad07a", icon:"✨", x:0.48,y:0.40, color:"#2e3a6b",
+    {name:"천체 망원경", kind:"exhibit", qid:"a-telescope", khash:"ea4ba1c87f75ebe8412957eab64059ddab6f0380504877420079242d660ad07a", icon:"✨", x:0.399,y:0.40, color:"#2e3a6b",
      info:"옛사람들이 별을 이어 만든 별자리를 관측해요. 계절마다 보이는 별자리가 달라요."},
-    {name:"태양 관측 장비", kind:"exhibit", qid:"a-sun", khash:"e076eb367fdb060f65681abadded6cc8490d9f03776e5ca772e711a56dd77710", icon:"☀️", x:0.80,y:0.50, color:"#f6b93b",
+    {name:"태양 관측 장비", kind:"exhibit", qid:"a-sun", khash:"e076eb367fdb060f65681abadded6cc8490d9f03776e5ca772e711a56dd77710", icon:"☀️", x:0.8,y:0.4450, color:"#f6b93b",
      info:"특수 필터로 태양의 흑점을 안전하게 관찰해요. 맨눈으로 보면 안 돼요!"},
     {name:"별자리 관측", kind:"game", file:"s.html", best:"astro_best", label:"별자리 관측",
      icon:"🔭", room:"천문대 BOOT", x:0.50,y:0.70, color:"#2e3a6b"},
@@ -407,7 +407,7 @@ const ROOMS={
   ]},
   room_chem:{ name:"2교육실 · 화학", bg:"bg/room_chem_hq.png", tint:"#9c6ade", floorName:"π층", start:[0.5,0.83],
     obstacles:[[0.18,0.42,0.45,0.70],[0.54,0.42,0.81,0.70],[0.83,0.42,0.97,0.62]], walkable:[0.05,0.15,0.95,0.93], spots:[
-    {name:"실험 도구", kind:"exhibit", qid:"c-tools", khash:"1233c8ae7c33d498fef3833c2cc8a840380d51a829c2090b2f1667b1fe49d2e9", icon:"⚗️", x:0.28,y:0.55, color:"#9c6ade",
+    {name:"실험 도구", kind:"exhibit", qid:"c-tools", khash:"1233c8ae7c33d498fef3833c2cc8a840380d51a829c2090b2f1667b1fe49d2e9", icon:"⚗️", x:0.28,y:0.462, color:"#9c6ade",
      info:"플라스크·비커로 물질이 섞이고 변하는 걸 관찰해요."},
     {name:"분자 모형", kind:"exhibit", qid:"c-molecule", khash:"8e0632b72a0a8c0cecddf416702037465975b27361342bbf3b2068d32eb8c633", icon:"🔴", x:0.89,y:0.48, color:"#7c4ade",
      info:"작은 원자들이 모여 물질이 되는 방식을 공·막대로 보여줘요."},
@@ -421,7 +421,7 @@ const ROOMS={
      info:"땅이 켜켜이 쌓인 것. 화석과 용암 흔적으로 지구의 역사를 읽어요."},
     {name:"지구본", kind:"exhibit", qid:"e-globe", khash:"86f28c1e9a8d50f91702bd6a60b50fc5f3dc849639e5f172df5410046038fb33", icon:"🌍", x:0.22,y:0.34, color:"#4a90e2",
      info:"우리가 사는 지구를 작게 만든 모형. 대륙과 바다가 다 있어요."},
-    {name:"화산 모형", kind:"exhibit", qid:"e-volcano", khash:"7a9843999d820adb875e8323201aac1a803a02d0918eac9c75ee67275ad5a4e3", icon:"🌋", x:0.79,y:0.40, color:"#c0563a",
+    {name:"화산 모형", kind:"exhibit", qid:"e-volcano", khash:"7a9843999d820adb875e8323201aac1a803a02d0918eac9c75ee67275ad5a4e3", icon:"🌋", x:0.79,y:0.3060, color:"#c0563a",
      info:"땅속 마그마가 분출하면 화산, 식어 굳으면 암석이 돼요."},
     {name:"지구과학 실험실", kind:"game", file:"t.html", best:"earth_best", label:"지구과학 실험실",
      icon:"🌍", room:"3교육실", x:0.42,y:0.62, color:"#8d6e63"},
@@ -566,7 +566,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607261626";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607261815";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
