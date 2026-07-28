@@ -27,8 +27,8 @@
     background:#0d0b08;font-family:var(--font-sans);color:var(--ink);
     user-select:none;-webkit-user-select:none;touch-action:none}
   #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
-  canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
-    position:fixed;inset:0;width:100vw;height:100vh}
+  canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+  #cv{position:fixed;inset:0;width:100vw;height:100vh}   /* 게임 캔버스 전용 — 전역 canvas에 fixed를 걸면 미니맵 등 다른 캔버스가 오염됨 (P3에서 실측) */
 
   /* ---- 세로 회전 안내 ---- */
   #rotate{position:fixed;inset:0;z-index:200;background:#0d0b08;color:#fff;
@@ -631,7 +631,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607281624";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607281633";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 const INTERACTION_V2=false; // P0-③ 골격: P4 UI 개편(탭 상호작용+walk-in) 상위 플래그 — false면 구 경로 그대로
 /* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
    구 숫자 키(ufo_floor)는 "마이그레이션 시점 순서 동결 테이블"로만 해석·기록 (codex R1: 현재 배열로 읽고 쓰면
@@ -1311,6 +1311,25 @@ document.getElementById("cheerNext").onclick=()=>{
 /* ══════════ 모달 열림 여부 ══════════ */
 function anyModalOpen(){ return !!document.querySelector(".modal.show"); }
 
+/* ══════════ 미니맵 렌더러 — walkable·obstacles·spots·NPC·현위치를 게임 데이터에서 직접 그림 ══════════ */
+function drawMiniMap(mc){
+  const sc=curScene(); if(!mc||!sc)return;
+  const W2=640,H2=360; mc.width=W2; mc.height=H2;   // 배경 비율(16:9)과 동일 좌표계
+  const g=mc.getContext("2d");
+  g.fillStyle="#241f1a"; g.fillRect(0,0,W2,H2);
+  const wa=sc.walkable||[0.02,0.02,0.98,0.98];
+  g.fillStyle="#efe7d2"; g.fillRect(wa[0]*W2,wa[1]*H2,(wa[2]-wa[0])*W2,(wa[3]-wa[1])*H2);
+  g.fillStyle="rgba(90,82,68,0.85)";
+  (sc.obstacles||[]).forEach(o=>{ g.fillRect(o[0]*W2,o[1]*H2,(o[2]-o[0])*W2,(o[3]-o[1])*H2); });
+  g.fillStyle="rgba(76,175,80,0.35)";
+  (sc.zones||[]).forEach(z=>{ g.fillRect(z.rect[0]*W2,z.rect[1]*H2,(z.rect[2]-z.rect[0])*W2,(z.rect[3]-z.rect[1])*H2); });
+  g.font="20px sans-serif"; g.textAlign="center"; g.textBaseline="middle";
+  (sc.spots||[]).forEach(sp=>{ g.fillText(sp.icon||"·",sp.x*W2,sp.y*H2); });
+  if(typeof sceneNPCs==="function")sceneNPCs().forEach(n=>{ g.fillText(n.type==="guide"?"🧑‍🏫":n.type==="cleaning"?"🧹":"👮",n.x*W2,n.y*H2); });
+  g.fillStyle=sc.tint||"#4caf50"; g.strokeStyle="#fff"; g.lineWidth=3;
+  g.beginPath(); g.arc(player.px*W2,player.py*H2,9,0,Math.PI*2); g.fill(); g.stroke();
+}
+
 /* ══════════ 지도 ══════════ */
 document.getElementById("mapBtn").onclick=()=>{
   if(fadeState)return;
@@ -1329,6 +1348,9 @@ document.getElementById("mapBtn").onclick=()=>{
     '<div style="height:16px;background:#dcebdc;border-radius:9px;overflow:hidden;border:1.5px solid #a9cdaa">'+
     '<div style="height:100%;width:'+scanPct+'%;background:linear-gradient(90deg,#4caf50,#287a2e);transition:width .4s"></div></div>'+
     '<div style="text-align:right;font-size:12px;font-weight:700;color:#287a2e;margin-top:3px">'+scanPct+'% 현장 완주</div></div>';
+  // 미니맵 (2026-07-28 P3, 마스터 요청): 충돌 데이터를 그대로 그린다 — 지도=동선 데이터 그 자체라 그림-동선 불일치가 원리적으로 불가능
+  body.insertAdjacentHTML("beforeend",'<div style="margin:0 0 14px"><div style="font-size:13px;font-weight:800;color:#5a5244;margin-bottom:6px">🗺️ 현재 위치 — '+(inRoom?ROOMS[inRoom].name:FLOORS[floorIdx].name)+'</div><canvas id="miniMap" style="width:100%;height:auto;border-radius:12px;border:1.5px solid var(--line);display:block"></canvas></div>');
+  drawMiniMap(document.getElementById("miniMap"));
   // 씬별: 미니게임 + 전시물 관람 여부
   const s=seenMap(), scans=scanMap();
   const appendCatalogScene=(scene,title)=>{
