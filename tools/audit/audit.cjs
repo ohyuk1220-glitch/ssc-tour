@@ -48,6 +48,24 @@ const report = {
     failures: [],
     scenes: [],
   },
+  sceneGeometry: {
+    // P0-② (2026-07-28 마스터플랜 v3 §2): 병목폭·양축차단·HERO면적
+    minCorridor: 0.06,
+    heroAreaMax: 0.10,
+    sceneCount: 0,
+    violations: [],
+  },
+  anchorAlignment: {
+    // P0-② §3 앵커 정합 — tools/audit/anchors/<scene>.json 있는 씬만 검사
+    specCount: 0,
+    checkedAnchors: 0,
+    failures: [],
+  },
+  viewportSmoke: {
+    // P0-② 가로뷰·다중 뷰포트 (B관 게임 가로 잘림 재발 방지)
+    viewports: [],
+    results: [],
+  },
   dataIntegrity: {
     checkedSpots: 0,
     checkedNpcs: 0,
@@ -178,21 +196,23 @@ function isWalkable(scene, x, y) {
   return !pointInObstacle(scene.obstacles, x, y);
 }
 
-function nearbyCells(scene, x, y, radius) {
-  // radius 인자는 무시하고 실측 타원(SPOT_RX·SPOT_RY) 사용 — 게임의 135px 근접판정과 동일 조건
+function nearbyCells(scene, x, y, scale = 1) {
+  // 실측 타원(SPOT_RX·SPOT_RY) 사용 — 게임의 135px 근접판정과 동일 조건. scale로 완충 확대 가능
   if (!Number.isFinite(x) || !Number.isFinite(y)) return [];
+  const rx = SPOT_RX * scale;
+  const ry = SPOT_RY * scale;
   const cells = [];
-  const minX = Math.max(0, Math.floor((x - SPOT_RX) * GRID_SCALE));
-  const maxX = Math.min(GRID_SCALE, Math.ceil((x + SPOT_RX) * GRID_SCALE));
-  const minY = Math.max(0, Math.floor((y - SPOT_RY) * GRID_SCALE));
-  const maxY = Math.min(GRID_SCALE, Math.ceil((y + SPOT_RY) * GRID_SCALE));
+  const minX = Math.max(0, Math.floor((x - rx) * GRID_SCALE));
+  const maxX = Math.min(GRID_SCALE, Math.ceil((x + rx) * GRID_SCALE));
+  const minY = Math.max(0, Math.floor((y - ry) * GRID_SCALE));
+  const maxY = Math.min(GRID_SCALE, Math.ceil((y + ry) * GRID_SCALE));
 
   for (let iy = minY; iy <= maxY; iy += 1) {
     for (let ix = minX; ix <= maxX; ix += 1) {
       const px = ix / GRID_SCALE;
       const py = iy / GRID_SCALE;
-      const ex = (px - x) / SPOT_RX;
-      const ey = (py - y) / SPOT_RY;
+      const ex = (px - x) / rx;
+      const ey = (py - y) / ry;
       if (ex * ex + ey * ey > 1 + 1e-9) continue;
       if (isWalkable(scene, px, py)) cells.push([ix, iy]);
     }
@@ -396,7 +416,7 @@ function auditSceneBfs(data) {
     for (const spot of scene.spots || []) {
       sceneResult.spotCount += 1;
       report.sceneBfs.spotCount += 1;
-      const candidates = nearbyCells(scene, spot.x, spot.y, SPOT_RADIUS);
+      const candidates = nearbyCells(scene, spot.x, spot.y);
       const reachable = candidates.some(([x, y]) => grid.visited[y * width + x]);
       if (reachable) {
         sceneResult.reachableSpotCount += 1;
@@ -425,6 +445,327 @@ function auditSceneBfs(data) {
   report.sceneBfs.sceneCount = entries.length;
 }
 
+// ── P0-② 기하 검사 (2026-07-28) ─────────────────────────────
+function clearanceGrid(scene) {
+  // 각 통행 셀의 "가장 가까운 비통행 셀까지 거리"(셀 단위, 4방향 BFS 멀티소스).
+  // 회랑 폭 ≈ 클리어런스×2 → 폭 0.06 기준은 클리어런스 3셀(0.03).
+  const width = GRID_SCALE + 1;
+  const total = width * width;
+  const dist = new Int16Array(total).fill(-1);
+  const queue = new Int32Array(total);
+  let tail = 0;
+  for (let iy = 0; iy <= GRID_SCALE; iy += 1) {
+    for (let ix = 0; ix <= GRID_SCALE; ix += 1) {
+      if (!isWalkable(scene, ix / GRID_SCALE, iy / GRID_SCALE)) {
+        const index = iy * width + ix;
+        dist[index] = 0;
+        queue[tail] = index;
+        tail += 1;
+      }
+    }
+  }
+  const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (let head = 0; head < tail; head += 1) {
+    const current = queue[head];
+    const x = current % width;
+    const y = Math.floor(current / width);
+    for (const [dx, dy] of directions) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || nx > GRID_SCALE || ny < 0 || ny > GRID_SCALE) continue;
+      const index = ny * width + nx;
+      if (dist[index] !== -1) continue;
+      dist[index] = dist[current] + 1;
+      queue[tail] = index;
+      tail += 1;
+    }
+  }
+  return dist;
+}
+
+function erodedReachable(scene, minClearanceCells) {
+  // 클리어런스 미달 셀을 막은 상태로 start에서 BFS → "폭 넓은 길만으로" 도달 가능한 셀
+  const width = GRID_SCALE + 1;
+  const clearance = clearanceGrid(scene);
+  const visited = new Uint8Array(width * width);
+  const queue = new Int32Array(width * width);
+  const start = scene.start || [0.5, 0.5];
+  const sx = Math.round(start[0] * GRID_SCALE);
+  const sy = Math.round(start[1] * GRID_SCALE);
+  const startIndex = sy * width + sx;
+  if (clearance[startIndex] <= 0) return { visited, ok: false };
+
+  // 시드: 시작셀이 넓으면 그대로, 좁으면 "시작 포켓 예외" — 통상 이동으로 8셀 안에서
+  // 처음 만나는 넓은 셀들만 시드로 (좁은 시작셀이 침식 검사를 통째로 우회하는 버그 방지)
+  const seeds = [];
+  if (clearance[startIndex] >= minClearanceCells) {
+    seeds.push(startIndex);
+  } else {
+    const seen = new Uint8Array(width * width);
+    const pocket = [startIndex];
+    const pocketDist = new Int16Array(width * width);
+    seen[startIndex] = 1;
+    for (let head0 = 0; head0 < pocket.length; head0 += 1) {
+      const current = pocket[head0];
+      if (pocketDist[current] >= 8) continue;
+      const x = current % width;
+      const y = Math.floor(current / width);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || nx > GRID_SCALE || ny < 0 || ny > GRID_SCALE) continue;
+        const index = ny * width + nx;
+        if (seen[index] || clearance[index] <= 0) continue;
+        seen[index] = 1;
+        pocketDist[index] = pocketDist[current] + 1;
+        if (clearance[index] >= minClearanceCells) seeds.push(index);
+        else pocket.push(index);
+      }
+    }
+    if (!seeds.length) return { visited, ok: false };
+  }
+
+  let head = 0;
+  let tail = 0;
+  for (const seed of seeds) {
+    if (visited[seed]) continue;
+    visited[seed] = 1;
+    queue[tail] = seed;
+    tail += 1;
+  }
+  const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  while (head < tail) {
+    const current = queue[head];
+    head += 1;
+    const x = current % width;
+    const y = Math.floor(current / width);
+    for (const [dx, dy] of directions) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || nx > GRID_SCALE || ny < 0 || ny > GRID_SCALE) continue;
+      const index = ny * width + nx;
+      if (visited[index]) continue;
+      if (clearance[index] < minClearanceCells) continue;
+      visited[index] = 1;
+      queue[tail] = index;
+      tail += 1;
+    }
+  }
+  return { visited, ok: true };
+}
+
+function interiorObstacles(scene) {
+  // 씬 가장자리(벽 밴드)가 아닌, 내부에 떠 있는 장애물만
+  const EDGE = 0.02;
+  return (scene.obstacles || []).filter((o) => (
+    o[0] > EDGE && o[1] > EDGE && o[2] < 1 - EDGE && o[3] < 1 - EDGE
+  ));
+}
+
+function auditSceneGeometry(data) {
+  const entries = sceneEntries(data);
+  report.sceneGeometry.sceneCount = entries.length;
+  const width = GRID_SCALE + 1;
+  // 경계 셀이 obstacle 모서리 위에서도 통행 판정(엄격 부등호)이라 회랑이 1셀씩 넓게 잡힘
+  // → 임계 4셀이 실질 폭 0.06에 대응 (codex R1 지적 반영)
+  const MIN_CLEAR_CELLS = 4;
+
+  for (const [sceneId, scene] of entries) {
+    // 1) HERO/대형 내부 장애물 면적 ≤ 10%
+    for (const o of interiorObstacles(scene)) {
+      const area = Math.max(0, o[2] - o[0]) * Math.max(0, o[3] - o[1]);
+      if (area > report.sceneGeometry.heroAreaMax) {
+        const violation = {
+          scene: sceneId, check: "hero-area",
+          detail: `내부 장애물 [${o.join(",")}] 면적 ${(area * 100).toFixed(1)}% > 10% — 충돌은 발밑만(§2-2)`,
+        };
+        report.sceneGeometry.violations.push(violation);
+        addDefect("medium", sceneId, "geometry", violation.detail);
+      }
+    }
+
+    // 2) 양축 횡단: BFS 도달 셀이 동↔서·남↔북 스팬을 확보하는지 (둘 다 실패 = 중앙 차단)
+    const grid = reachableGrid(scene);
+    if (grid.startPassable) {
+      const walkable = scene.walkable || [0, 0, 1, 1];
+      const M = 0.04;
+      let west = false; let east = false; let north = false; let south = false;
+      for (let iy = 0; iy <= GRID_SCALE; iy += 1) {
+        for (let ix = 0; ix <= GRID_SCALE; ix += 1) {
+          if (!grid.visited[iy * width + ix]) continue;
+          const px = ix / GRID_SCALE;
+          const py = iy / GRID_SCALE;
+          if (px <= walkable[0] + M) west = true;
+          if (px >= walkable[2] - M) east = true;
+          if (py <= walkable[1] + M) north = true;
+          if (py >= walkable[3] - M) south = true;
+        }
+      }
+      const horizontal = west && east;
+      const vertical = north && south;
+      if (!horizontal && !vertical) {
+        const violation = {
+          scene: sceneId, check: "both-axis-block",
+          detail: "도달 영역이 가로·세로 어느 축으로도 횡단하지 못합니다 — 중앙 장애물 양축 차단 금지(§2-1)",
+        };
+        report.sceneGeometry.violations.push(violation);
+        addDefect("medium", sceneId, "geometry", violation.detail);
+      }
+    }
+
+    // 3) 병목 폭: 폭 0.06 미만 길만으로 이어진 주요 전환구는 위반
+    //    (일반 BFS론 도달하는데 침식 BFS론 못 가면 = 그 길목이 좁다)
+    const eroded = erodedReachable(scene, MIN_CLEAR_CELLS);
+    if (grid.startPassable && eroded.ok) {
+      for (const spot of scene.spots || []) {
+        if (!["stair", "gate", "door", "elevator", "exit"].includes(spot.kind)) continue;
+        const cells = nearbyCells(scene, spot.x, spot.y);
+        const normalOk = cells.some(([x, y]) => grid.visited[y * width + x]);
+        if (!normalOk) continue; // 도달 불가는 BFS 감사가 이미 잡음
+        const wideOk = cells.some(([x, y]) => eroded.visited[y * width + x])
+          // 스팟 바로 앞은 좁아도 됨 — 근접 타원을 조금 넓혀 재확인
+          || nearbyCells(scene, spot.x, spot.y, 1.6)
+            .some(([x, y]) => eroded.visited[y * width + x]);
+        if (!wideOk) {
+          const violation = {
+            scene: sceneId, check: "bottleneck",
+            spot: spot.name || null,
+            detail: `"${spot.name}"까지의 주 동선이 폭 ${report.sceneGeometry.minCorridor} 미만 길목에 의존합니다(§2-1)`,
+          };
+          report.sceneGeometry.violations.push(violation);
+          addDefect("medium", sceneId, spot.name || "geometry", violation.detail);
+        }
+      }
+    }
+  }
+}
+
+function auditAnchorAlignment(data) {
+  // 씬별 스펙 파일(tools/audit/anchors/<scene>.json)이 있으면 대조.
+  // 형식: [{name, x, y, matchSpot?: "스팟이름", expect?: "walkable"|"obstacle", tol?: 0.05}]
+  const anchorsDir = path.join(__dirname, "anchors");
+  if (!fs.existsSync(anchorsDir)) return;
+  const sceneMap = new Map(sceneEntries(data).map(([sceneId, scene]) => [sceneId, scene]));
+  for (const file of fs.readdirSync(anchorsDir).filter((f) => f.endsWith(".json"))) {
+    const sceneId = path.basename(file, ".json");
+    const scene = sceneMap.get(sceneId);
+    if (!scene) {
+      addDefect("medium", sceneId, "anchors", `앵커 스펙이 있으나 씬이 존재하지 않습니다: ${file}`);
+      continue;
+    }
+    let anchors;
+    try {
+      anchors = JSON.parse(fs.readFileSync(path.join(anchorsDir, file), "utf8"));
+    } catch (error) {
+      addDefect("medium", sceneId, "anchors", `앵커 스펙 파싱 실패: ${errorText(error)}`);
+      continue;
+    }
+    report.anchorAlignment.specCount += 1;
+    for (const anchor of anchors) {
+      report.anchorAlignment.checkedAnchors += 1;
+      const tol = anchor.tol ?? 0.05;
+      if (anchor.matchSpot) {
+        const spot = (scene.spots || []).find((s) => s.name === anchor.matchSpot);
+        if (!spot) {
+          const failure = { scene: sceneId, anchor: anchor.name, reason: `스팟 "${anchor.matchSpot}" 없음` };
+          report.anchorAlignment.failures.push(failure);
+          addDefect("medium", sceneId, anchor.name, failure.reason);
+          continue;
+        }
+        const dx = Math.abs(spot.x - anchor.x);
+        const dy = Math.abs(spot.y - anchor.y);
+        if (dx > tol || dy > tol) {
+          const failure = {
+            scene: sceneId, anchor: anchor.name,
+            reason: `스팟 위치 (${spot.x},${spot.y})가 스펙 (${anchor.x},${anchor.y})에서 (${dx.toFixed(3)},${dy.toFixed(3)}) 벗어남 (tol ${tol})`,
+          };
+          report.anchorAlignment.failures.push(failure);
+          addDefect("medium", sceneId, anchor.name, failure.reason);
+        }
+      } else if (anchor.expect) {
+        const walkableHere = isWalkable(scene, anchor.x, anchor.y);
+        const pass = anchor.expect === "walkable" ? walkableHere : !walkableHere;
+        if (!pass) {
+          const failure = {
+            scene: sceneId, anchor: anchor.name,
+            reason: `(${anchor.x},${anchor.y})가 스펙상 ${anchor.expect}여야 하는데 아닙니다`,
+          };
+          report.anchorAlignment.failures.push(failure);
+          addDefect("medium", sceneId, anchor.name, failure.reason);
+        }
+      }
+    }
+  }
+}
+
+const SMOKE_VIEWPORTS = [
+  { name: "phone-portrait", width: 430, height: 820 },
+  { name: "phone-landscape", width: 820, height: 430 },
+  { name: "small-portrait", width: 320, height: 568 },
+];
+
+async function smokeOnePage(browser, url, viewport, label) {
+  const result = {
+    label, viewport: viewport.name, url,
+    loaded: false, pageErrors: [], overflowX: null,
+  };
+  let context;
+  try {
+    context = await browser.newContext({
+      viewport: { width: viewport.width, height: viewport.height },
+      hasTouch: true, isMobile: true,
+    });
+    const page = await context.newPage();
+    page.on("pageerror", (error) => result.pageErrors.push(error.message));
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: PAGE_TIMEOUT_MS });
+    result.loaded = true;
+    await delay(500);
+    result.overflowX = await withTimeout(page.evaluate(() => {
+      const el = document.scrollingElement || document.documentElement;
+      return el.scrollWidth > innerWidth + 1;
+    }), 2000, "가로 넘침 검사");
+  } catch (error) {
+    result.loadError = errorText(error);
+  } finally {
+    if (context) await context.close().catch(() => {});
+  }
+  result.pageErrors = uniqueBy(result.pageErrors, (item) => item);
+  return result;
+}
+
+async function auditViewportSmoke(browser, data) {
+  report.viewportSmoke.viewports = SMOKE_VIEWPORTS.map((v) => v.name);
+  const targets = [];
+  for (const viewport of SMOKE_VIEWPORTS) {
+    targets.push({ url: `${BASE_URL}/h.html`, viewport, label: "h.html" });
+  }
+  // 미니게임은 가로뷰만 (B관 게임 가로 잘림 사고 재발 방지 지점)
+  const landscape = SMOKE_VIEWPORTS[1];
+  for (const entry of collectMiniGameFiles(data)) {
+    if (entry.source !== "game") continue;
+    targets.push({ url: `${BASE_URL}/${entry.file}`, viewport: landscape, label: entry.item });
+  }
+  const results = await mapLimit(targets, 3, async (target) => {
+    if (Date.now() - startedAt >= OVERALL_TIMEOUT_MS) {
+      return { label: target.label, viewport: target.viewport.name, url: target.url,
+        loaded: false, pageErrors: [], overflowX: null, loadError: "전체 제한 시간 도달" };
+    }
+    return smokeOnePage(browser, target.url, target.viewport, target.label);
+  });
+  report.viewportSmoke.results = results;
+  for (const result of results) {
+    if (!result.loaded) {
+      addDefect("medium", null, result.label, `[${result.viewport}] 로드 실패: ${result.loadError || "?"}`);
+    }
+    if (result.overflowX) {
+      addDefect("medium", null, result.label, `[${result.viewport}] 가로 스크롤 넘침 — 뷰포트에 안 맞습니다`);
+    }
+    for (const detail of result.pageErrors) {
+      addDefect("medium", null, result.label, `[${result.viewport}] pageerror: ${detail}`);
+    }
+  }
+}
+
 function validFilePath(relativeFile) {
   if (typeof relativeFile !== "string" || !relativeFile.trim()) return null;
   const clean = relativeFile.split(/[?#]/, 1)[0];
@@ -446,7 +787,7 @@ function auditDataIntegrity(data) {
     for (const spot of scene.spots || []) {
       report.dataIntegrity.checkedSpots += 1;
       if (pointInObstacle(scene.obstacles, spot.x, spot.y)) {
-        const nearby = nearbyCells(scene, spot.x, spot.y, SPOT_RADIUS);
+        const nearby = nearbyCells(scene, spot.x, spot.y);
         // 통행셀이 근처에 있으면 "전시물 위 마커 + 앞에서 상호작용" = 의도된 설계 → minor (2026-07-26 보정)
         addDefect(
           nearby.length ? "minor" : "critical",
@@ -538,7 +879,7 @@ function auditDataIntegrity(data) {
         ? npc.waypoints[0]
         : [npc.x, npc.y];
       if (pointInObstacle(scene.obstacles, start[0], start[1])) {
-        const nearby = nearbyCells(scene, start[0], start[1], SPOT_RADIUS);
+        const nearby = nearbyCells(scene, start[0], start[1]);
         addDefect(
           nearby.length ? "medium" : "critical",
           npc.scene,
@@ -1247,6 +1588,23 @@ function printSummary() {
     + ` · 4xx+ ${report.resources.httpErrors.length}`,
   );
   console.log(
+    `[기하] 씬 ${report.sceneGeometry.sceneCount}`
+    + ` · 위반 ${report.sceneGeometry.violations.length}`
+    + ` (병목 ${report.sceneGeometry.violations.filter((v) => v.check === "bottleneck").length}`
+    + ` · 양축 ${report.sceneGeometry.violations.filter((v) => v.check === "both-axis-block").length}`
+    + ` · HERO ${report.sceneGeometry.violations.filter((v) => v.check === "hero-area").length})`,
+  );
+  console.log(
+    `[앵커 정합] 스펙 ${report.anchorAlignment.specCount}`
+    + ` · 앵커 ${report.anchorAlignment.checkedAnchors}`
+    + ` · 실패 ${report.anchorAlignment.failures.length}`,
+  );
+  console.log(
+    `[뷰포트 스모크] 대상 ${report.viewportSmoke.results.length}`
+    + ` · 가로넘침 ${report.viewportSmoke.results.filter((r) => r.overflowX).length}`
+    + ` · 로드실패 ${report.viewportSmoke.results.filter((r) => !r.loaded).length}`,
+  );
+  console.log(
     `[결함] critical ${severities.critical}`
     + ` · medium ${severities.medium}`
     + ` · minor ${severities.minor}`,
@@ -1277,9 +1635,12 @@ async function main() {
     if (data) {
       auditSceneGraph(data);
       auditSceneBfs(data);
+      auditSceneGeometry(data);
+      auditAnchorAlignment(data);
       auditDataIntegrity(data);
       await auditMiniGames(browser, data);
       await auditFloorResources(browser, data);
+      await auditViewportSmoke(browser, data);
     }
   } catch (error) {
     if (!browser) {
