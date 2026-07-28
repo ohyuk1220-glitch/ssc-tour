@@ -631,7 +631,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607281633";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607281817";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 const INTERACTION_V2=false; // P0-③ 골격: P4 UI 개편(탭 상호작용+walk-in) 상위 플래그 — false면 구 경로 그대로
 /* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
    구 숫자 키(ufo_floor)는 "마이그레이션 시점 순서 동결 테이블"로만 해석·기록 (codex R1: 현재 배열로 읽고 쓰면
@@ -1005,7 +1005,7 @@ function updateFade(){
 }
 
 /* ══════════ 이동 업데이트 ══════════ */
-const SPEED=0.00225;   // 이동 속도 절반(과학관 넓게 느껴지게)
+const SPEED=0.003375;  // 2026-07-28 마스터 지시: 1.5배 상향(0.00225→0.003375) — "맵이 방대해 이동이 느리다"
 function update(){
   updateFade();
   updateParts();
