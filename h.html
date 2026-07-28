@@ -278,11 +278,34 @@ const FLOORS=[
    {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.05,y:0.56, color:"#9aa"},
    {name:"↑ 서쪽 로비", kind:"stair", to:"LOBBY_W", icon:"🪜", x:0.72,y:0.60, color:"#b0a99a"},
  ]},
- {id:"SQRT2", name:"√2층", bg:"bg/f_sqrt2_town.png", tint:"#ef8c3b", start:[0.47,0.62], spots:[
-   {name:"O전시실 입구 · 생존", kind:"door", room:"room_O", icon:"🧬", x:0.47,y:0.36, color:"#ef8c3b"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.16,y:0.56, color:"#9aa"},
-   {name:"↑ 2층 계단", kind:"stair", to:"2F", icon:"🪜", x:0.40,y:0.80, color:"#b0a99a"},
-   {name:"↓ 1층 계단", kind:"stair", to:"1F", icon:"🪜", x:0.60,y:0.80, color:"#b0a99a"},
+ {id:"SQRT2", name:"√2층", bg:"bg/f_sqrt2_town.png", tint:"#ef8c3b", start:[0.58,0.46],
+   // 2026-07-28 아이소(2024 2층A 주황존)+도면 기반 재구성: O전시실 메자닌, 남측=로비 아트리움 보이드
+   obstacles:[[0.00,0.00,1.00,0.16],   // 상단 벽·파사드 밴드
+     [0.00,0.16,0.16,0.35],            // 서측 상부 벽·포스터
+     [0.04,0.36,0.16,0.47],            // 꼬마 코너(초록 바닥 원탁)
+     [0.23,0.16,0.47,0.38],            // 초록 곡선 서가 휴게존
+     [0.50,0.00,0.86,0.30],            // O홀 주황 파사드+주 게이트 벽
+     [0.86,0.16,1.00,0.42],            // 동측 유리방
+     [0.43,0.30,0.48,0.42],            // 안내 키오스크
+     [0.50,0.34,0.59,0.44],            // 유리 진열 큐브
+     [0.62,0.35,0.76,0.54],            // 조형물·터치테이블 군
+     [0.80,0.36,0.99,0.50],            // 동측 전시 스테이션 밴드
+     [0.90,0.50,1.00,0.78],            // 동측 하부 부스·원탁
+     [0.00,0.35,0.13,0.86],            // 서측 벽 매스(화물엘베 문)
+     [0.24,0.44,0.36,0.70],            // 2층행 계단 몸체
+     [0.30,0.52,0.78,1.00],            // 에스컬레이터 보이드+난간(토네이도 원통)
+     [0.00,0.86,0.30,1.00]],           // 남서 하단 가장자리
+   walkable:[0.03,0.28,0.97,0.90],
+   spots:[
+   {name:"O전시실 입구 · 생존", kind:"door", room:"room_O", icon:"🧬", x:0.66,y:0.325, color:"#ef8c3b"}, // 주 게이트(퇴장 복귀 지점 = 첫 door)
+   {name:"O전시실 서쪽 입구", kind:"door", room:"room_O", icon:"🧬", x:0.19,y:0.385, color:"#ef8c3b"},
+   {name:"초록 서가 쉼터", kind:"info", icon:"📚", x:0.38,y:0.41, color:"#2e7d32",
+    info:"곡선 원목 벤치와 초록 서가가 있는 휴게 공간이에요. 관람하다 다리 아프면 여기서 잠깐 쉬어 가세요."},
+   {name:"난간 전망 · 토네이도", kind:"info", icon:"🌪️", x:0.83,y:0.70, color:"#7ec8e3",
+    info:"메자닌 난간 아래로 ½층의 다이나믹 토네이도가 내려다보여요. 아시아 최대 11m 소용돌이를 위에서 내려다보는 건 √2층만의 특권이에요."},
+   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.155,y:0.70, color:"#9aa"},
+   {name:"↑ 2층 계단", kind:"stair", to:"2F", icon:"🪜", x:0.28,y:0.73, color:"#b0a99a"},
+   {name:"↓ 1층 계단", kind:"stair", to:"1F", icon:"🪜", x:0.58,y:0.48, color:"#b0a99a"}, // 실물=트윈 에스컬레이터+대계단 (아이소 근거)
  ]},
  {id:"2F", name:"2층", bg:"bg/f_2f_town.png", tint:"#4a90e2", start:[0.47,0.66], spots:[
    {name:"B전시실 입구 · 연결", kind:"door", room:"room_B", icon:"🪐", x:0.30,y:0.35, color:"#4a90e2"},
@@ -504,7 +527,7 @@ const SECURITY_NPCS=[
     "1층 중앙 로비를 순찰하고 있어요. 안내는 동쪽 로비 메인데스크의 S.C에게 물어보세요!"]},
   {scene:"HALF", name:"보안", waypoints:[[0.14,0.70],[0.50,0.82],[0.85,0.55]], lines:[
     "½층 순찰 중! 다이나믹 토네이도 라이브쇼 시간 놓치지 마세요."]},
-  {scene:"SQRT2", name:"보안", waypoints:[[0.20,0.65],[0.70,0.60]], lines:[
+  {scene:"SQRT2", name:"보안", waypoints:[[0.84,0.32],[0.55,0.44]], lines:[   // 2026-07-28 재구성: [0]=스폰만 실사용(순찰은 walkable 랜덤). 스폰은 전 스팟과 150px+ 이격(실측 스캔) — NPC가 A버튼 우선이라 전환구를 가리면 안 됨
     "√2층이에요. 전시실 통로에서는 뛰지 말아주세요!"]},
   {scene:"2F", name:"보안", waypoints:[[0.20,0.60],[0.70,0.60],[0.45,0.75]], lines:[
     "2층 순찰 중입니다. 천문대 BOOT는 예약이 필요해요, 참고하세요!"]},
@@ -518,7 +541,7 @@ const CLEANING_NPCS=[
   {scene:"1F", name:"미화주임님", x:0.62,y:0.60, lines:[
     "로비 바닥을 닦고 있어요. 물기 있는 곳은 살짝 돌아가 주세요!",
     "이 넓은 로비가 반짝이는 건 매일 아침 부지런히 닦아서예요."]},
-  {scene:"SQRT2", name:"미화주임님", x:0.30,y:0.60, lines:[
+  {scene:"SQRT2", name:"미화주임님", x:0.22,y:0.55, lines:[   // 2026-07-28 재구성: 서측 통로 중간, 전 스팟과 250px+ 이격(문·엘베 가림 방지 실측)
     "√2층 담당이에요. 다 본 안내지는 분리수거함에 부탁해요!"]},
   {scene:"PI", name:"미화주임님", x:0.60,y:0.65, lines:[
     "교육실 복도는 실험 끝나면 바로 닦아요. 미끄럼 조심하세요!"]},
@@ -579,7 +602,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607281141";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607281336";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
@@ -596,6 +619,7 @@ const NPCSPR={}; // 전시실별 과학커뮤니케이터 전용 스프라이트
 const GUIDE_SPR={room_G:"npc_G",room_quake:"npc_quake",room_O:"npc_O",room_B:"npc_B",room_astro:"npc_astro",room_chem:"npc_chem",room_earth:"npc_earth"};
 let nearSpot=null;
 let inRoom=null, roomStack=[];   // inRoom=현재 방 / roomStack=방→방 진입 히스토리(나가기=이전 방)
+let lastFloorDoor=null;          // 층에서 마지막으로 통과한 door 스팟 — 문이 2개인 방(√2층 room_O)에서 들어온 문으로 복귀시키기 위함
 let doneCache={};
 function curScene(){ return inRoom ? ROOMS[inRoom] : FLOORS[floorIdx]; }
 
@@ -740,7 +764,8 @@ function exitRoom(){
   const back=inRoom; inRoom=null;
   const f=curScene();
   curImg=(f._ok?images[f.id]:null);
-  const d=f.spots.find(s=>s.kind==="door"&&s.room===back);   // 들어왔던 문 앞으로 복귀
+  const d=(lastFloorDoor&&lastFloorDoor.room===back)?lastFloorDoor
+        :f.spots.find(s=>s.kind==="door"&&s.room===back);   // 들어온 문 기억 우선(문 2개 방 대응), 딥링크 등 기억 없으면 첫 문
   if(d){ const sp=safeSpawn(f,d.x,Math.min(0.9,d.y+0.08)); player.px=sp[0]; player.py=sp[1]; }
   else { const st=f.start||[0.5,0.5]; player.px=st[0]; player.py=st[1]; }
   player.vx=player.vy=0; camX=player.px; camY=player.py; nearSpot=null; nearNPC=null; updateFloorTag();
@@ -1055,6 +1080,7 @@ document.getElementById("abtn").addEventListener("pointerdown",(e)=>{
     sfx(600,0.10,"triangle"); const ti=FLOORS.findIndex(f=>f.id===sp.to);
     if(ti>=0)startFade(()=>enterFloor(ti));
   }else if(sp.kind==="door"){
+    if(!inRoom) lastFloorDoor={room:sp.room,x:sp.x,y:sp.y};   // 층→방 진입만 기억 (방→방은 roomStack 소관)
     sfx(587,0.12,"triangle"); startFade(()=>enterRoom(sp.room));
   }else if(sp.kind==="exit"){
     sfx(392,0.12,"triangle"); startFade(()=>exitRoom());
