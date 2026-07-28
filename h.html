@@ -263,7 +263,7 @@ const FLOORS=[
    {name:"다이나믹 토네이도", room:"½층 · 아시아 최대", kind:"soon", icon:"🌪️", x:0.45,y:0.50, color:"#7ec8e3"},
    {name:"제4교육장 입구 · 물리", room:"제4교육장", kind:"soon", icon:"🧲", x:0.85,y:0.54, color:"#b06ab3"},
    {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.14,y:0.55, color:"#9aa"},
-   {name:"↓ 서쪽 로비", kind:"stair", to:"LOBBY_W", icon:"🪜", x:0.47,y:0.80, color:"#b0a99a"},
+   {name:"↑ 서쪽 로비", kind:"stair", to:"LOBBY_W", icon:"🪜", x:0.47,y:0.80, color:"#b0a99a"},
  ]},
  {id:"SQRT2", name:"√2층", bg:"bg/f_sqrt2_town.png", tint:"#ef8c3b", start:[0.47,0.62], spots:[
    {name:"O전시실 입구 · 생존", kind:"door", room:"room_O", icon:"🧬", x:0.47,y:0.36, color:"#ef8c3b"},
@@ -284,12 +284,12 @@ const FLOORS=[
    {name:"2교육실 입구 · 화학", kind:"door", room:"room_chem", icon:"⚗️", x:0.50,y:0.34, color:"#9c6ade"},
    {name:"3교육실 입구 · 지구과학", kind:"door", room:"room_earth", icon:"🌍", x:0.80,y:0.34, color:"#8d6e63"},
    {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.15,y:0.52, color:"#9aa"},
-   {name:"↑ 3층 계단", kind:"stair", to:"3F", icon:"🪜", x:0.47,y:0.80, color:"#b0a99a"},
+   {name:"↓ 3층 계단", kind:"stair", to:"3F", icon:"🪜", x:0.47,y:0.80, color:"#b0a99a"},
  ]},
  {id:"3F", name:"3층", bg:"bg/f_3f_town.png", tint:"#90a4ae", start:[0.5,0.60], spots:[
    {name:"X전시실 입구 · 기획전시", room:"X전시실", kind:"soon", icon:"🎨", x:0.50,y:0.40, color:"#90a4ae"},
    {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.82,y:0.52, color:"#9aa"},
-   {name:"↓ π층 계단", kind:"stair", to:"PI", icon:"🪜", x:0.47,y:0.82, color:"#b0a99a"},
+   {name:"↑ π층 계단", kind:"stair", to:"PI", icon:"🪜", x:0.47,y:0.82, color:"#b0a99a"},
    {name:"↑ 옥상 계단", kind:"stair", to:"R", icon:"🪜", x:0.34,y:0.70, color:"#b0a99a"},
  ]},
  {id:"R", name:"옥상", bg:"bg/f_rooftop_hq.png", tint:"#7ec8e3", start:[0.55,0.55], spots:[
@@ -309,8 +309,8 @@ const FLOORS=[
     info:"G전시실 입구 옆 사물함이에요. 로커 하나하나가 He·Ne·F·Cl·Ar·Kr·I·Xe·At·Og·Ts 같은 원소 칸이고, 디지털 잠금장치로 여닫아요."},
    {name:"메이커 스튜디오 문", kind:"info", icon:"🚪", x:0.103,y:0.78, color:"#8d6e63",
     info:"메이커 스튜디오로 이어지는 문이에요. 운영 프로그램은 현장 안내를 확인해주세요."},
-   {name:"↑ ½층 슬로프", kind:"stair", to:"HALF", icon:"♿", x:0.20,y:0.20, color:"#b0a99a"},
-   {name:"↑ ½층 계단", kind:"stair", to:"HALF", icon:"🪜", x:0.50,y:0.12, color:"#b0a99a"},
+   {name:"↓ ½층 슬로프", kind:"stair", to:"HALF", icon:"♿", x:0.20,y:0.20, color:"#b0a99a"},
+   {name:"↓ ½층 계단", kind:"stair", to:"HALF", icon:"🪜", x:0.50,y:0.12, color:"#b0a99a"},
  ]},
  {id:"LOBBY_E", name:"1층 로비 · 동쪽", bg:"bg/lobby_east.png", tint:"#4a90e2", start:[0.10,0.62],
    obstacles:[[0.00,0.00,1.00,0.14],[0.10,0.33,0.39,0.58],[0.42,0.18,0.64,0.44],[0.70,0.18,0.82,0.44],[0.86,0.12,1.00,0.63],[0.52,0.55,0.68,0.86]], walkable:[0.03,0.16,0.97,0.94], spots:[
@@ -566,7 +566,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607261815";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607281109";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
