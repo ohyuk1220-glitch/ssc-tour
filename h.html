@@ -602,10 +602,24 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607281336";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
-let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
-const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
-if(_q.has("f"))floorIdx=+_q.get("f");
+const VER="202607281504";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+/* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
+   구 숫자 키(ufo_floor)는 "마이그레이션 시점 순서 동결 테이블"로만 해석·기록 (codex R1: 현재 배열로 읽고 쓰면
+   씬 삽입 배포 순간 구 저장값·구 캐시 클라이언트가 전부 오층이 됨). */
+const LEGACY_FLOOR_IDS=["B1","1F","HALF","SQRT2","2F","PI","3F","R","OUTSIDE","LOBBY_W","LOBBY_E"];   // ⚠️ 2026-07-28 동결 — 절대 수정·재정렬 금지
+let _fid=safeGet("ufo_floor_id");
+{ const _snap=safeGet("ufo_floor_sync"), _num=safeGet("ufo_floor");          // 세대 판별(codex R2): 구 클라이언트가 숫자만 갱신했으면
+  if(_fid&&_snap!=null&&_num!=null&&_num!==_snap) _fid=null; }               // id는 낡은 것 → 버리고 숫자를 믿는다
+let floorIdx=_fid?FLOORS.findIndex(f=>f.id===_fid):NaN;                      // 모르는 id면 -1→아래 폴백
+if(!Number.isInteger(floorIdx)||floorIdx<0){
+  let _ln=safeGet("ufo_floor"); _ln=(_ln==null||_ln==="")?NaN:+_ln;          // 레거시 숫자 = 동결 테이블 기준 해석
+  floorIdx=Number.isInteger(_ln)?FLOORS.findIndex(f=>f.id===LEGACY_FLOOR_IDS[_ln]):NaN;
+}
+function saveFloor(i){ const n=LEGACY_FLOOR_IDS.indexOf(FLOORS[i].id);       // 신규 씬은 -1 기록 → 구 클라이언트 바운드체크로 OUTSIDE 폴백(안전)
+  safeSet("ufo_floor_id",FLOORS[i].id); safeSet("ufo_floor",n); safeSet("ufo_floor_sync",n); }
+const _q=new URLSearchParams(location.search);           // ?f=<id|번호> 로 시작 층 지정(딥링크/테스트 — id 권장, 번호는 레거시)
+if(_q.has("f")){ const _fv=_q.get("f"), _bi=FLOORS.findIndex(f=>f.id===_fv);   // id 우선, 번호는 동결 테이블 해석(codex R3 — 씬 삽입 후 구 링크 보호)
+  floorIdx=_bi>=0?_bi:FLOORS.findIndex(f=>f.id===LEGACY_FLOOR_IDS[+_fv]); }
 if(!Number.isInteger(floorIdx)||floorIdx<0||floorIdx>=FLOORS.length)floorIdx=FLOORS.findIndex(f=>f.id==="OUTSIDE");   // 첫 방문=과학관 앞(외부)
 const player={px:0.5,py:0.5,vx:0,vy:0,dir:"down"};
 let camX=0.5, camY=0.5;   // 카메라(부드럽게 뒤따라옴 = 공간감)
@@ -687,7 +701,7 @@ function roomFloorIndex(roomId){
 }
 function enterLinkedRoom(roomId){
   const own=roomFloorIndex(roomId);                         // ?room= 및 QR 모두 같은 층 소유권 동기화
-  if(own>=0){ floorIdx=own; safeSet("ufo_floor",own); }
+  if(own>=0){ floorIdx=own; saveFloor(own); }
   enterRoom(roomId);
 }
 function enterLinkedScene(sceneId){
@@ -723,7 +737,7 @@ window.addEventListener("resize",resize); resize();
 /* ── 층 진입 ── */
 function enterFloor(idx,instant){
   inRoom=null; roomStack=[];
-  floorIdx=idx; safeSet("ufo_floor",idx);
+  floorIdx=idx; saveFloor(idx);
   const f=FLOORS[idx];
   curImg=(f._ok?images[f.id]:null);
   const st=f.start||[0.5,0.5];
@@ -1073,7 +1087,7 @@ document.getElementById("abtn").addEventListener("pointerdown",(e)=>{
   const sp=nearSpot;
   if(sp.kind==="game"){
     sfx(660,0.1,"square",0.15);
-    startFade(()=>{ safeSet("ufo_floor",floorIdx); location.href=sp.file; });
+    startFade(()=>{ saveFloor(floorIdx); location.href=sp.file; });
   }else if(sp.kind==="elevator"){
     sfx(520,0.09,"triangle"); openElevator(sp);
   }else if(sp.kind==="stair"||sp.kind==="gate"){   // gate=외부↔로비(층 전환 재활용)
