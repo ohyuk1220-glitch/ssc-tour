@@ -257,13 +257,26 @@ const FLOORS=[
    {name:"휴게 쇼파", kind:"info", icon:"🛋️", x:0.50,y:0.62, color:"#607d8b",
     info:"넓은 로비 쇼파예요. 잠시 앉아 다음 탐방 코스를 정해보세요."},
  ]},
- {id:"HALF", name:"½층", bg:"bg/f_half_town.png", tint:"#f4c430", start:[0.47,0.66], spots:[
-   {name:"Y전시실 입구 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.24,y:0.40, color:"#f4c430"},
-   {name:"사이언스홀 입구", room:"½층", kind:"soon", icon:"🎪", x:0.62,y:0.372, color:"#8bbf6b"},
-   {name:"다이나믹 토네이도", room:"½층 · 아시아 최대", kind:"soon", icon:"🌪️", x:0.45,y:0.50, color:"#7ec8e3"},
-   {name:"제4교육장 입구 · 물리", room:"제4교육장", kind:"soon", icon:"🧲", x:0.85,y:0.54, color:"#b06ab3"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.14,y:0.55, color:"#9aa"},
-   {name:"↑ 서쪽 로비", kind:"stair", to:"LOBBY_W", icon:"🪜", x:0.47,y:0.80, color:"#b0a99a"},
+ {id:"HALF", name:"½층", bg:"bg/f_half_town.png", tint:"#f4c430", start:[0.30,0.76],
+   // 2026-07-28 아이소(2024)+건축도면 기반 재구성: 선큰 레벨, 토네이도=계단 옆 HERO
+   obstacles:[[0.00,0.00,1.00,0.09],   // 상단 벽
+     [0.04,0.08,0.30,0.50],            // Y전시실 존(노랑·민트)
+     [0.26,0.28,0.49,0.74],            // 토네이도 원통(대형)
+     [0.54,0.08,0.77,0.33],            // 대계단 상부+사이언스홀 벽
+     [0.50,0.35,0.68,0.58],            // 에스컬레이터 몸체
+     [0.79,0.10,0.99,0.37],            // 도서관 서가 구역
+     [0.56,0.70,0.77,0.89],            // 휴게존(연못+핑크 시트)
+     [0.81,0.71,0.91,0.88]],           // 전시 케이스
+   walkable:[0.02,0.10,0.98,0.94],
+   spots:[
+   {name:"다이나믹 토네이도", room:"½층 · 아시아 최대", kind:"soon", icon:"🌪️", x:0.52,y:0.66, color:"#7ec8e3"},
+   {name:"Y전시실 입구 · 시간", room:"Y전시실", kind:"soon", icon:"🕐", x:0.24,y:0.55, color:"#f4c430"},
+   {name:"사이언스홀 입구", room:"½층", kind:"soon", icon:"🎪", x:0.71,y:0.37, color:"#8bbf6b"},
+   {name:"½층 도서관", kind:"info", icon:"📚", x:0.84,y:0.42, color:"#8d6e63",
+    info:"과학책이 가득한 서가와 원탁이 있는 도서관이에요. 관람하다 지치면 책 한 권 어때요?"},
+   {name:"제4교육장 입구 · 물리", room:"제4교육장", kind:"soon", icon:"🧲", x:0.92,y:0.53, color:"#b06ab3"},
+   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.05,y:0.56, color:"#9aa"},
+   {name:"↑ 서쪽 로비", kind:"stair", to:"LOBBY_W", icon:"🪜", x:0.72,y:0.60, color:"#b0a99a"},
  ]},
  {id:"SQRT2", name:"√2층", bg:"bg/f_sqrt2_town.png", tint:"#ef8c3b", start:[0.47,0.62], spots:[
    {name:"O전시실 입구 · 생존", kind:"door", room:"room_O", icon:"🧬", x:0.47,y:0.36, color:"#ef8c3b"},
@@ -489,7 +502,7 @@ const SECURITY_NPCS=[
     "지하 주차장 순찰 중입니다. 위쪽 엘리베이터로 안전하게 이동하세요!"]},
   {scene:"1F", name:"보안", waypoints:[[0.36,0.66],[0.63,0.68],[0.62,0.55]], lines:[
     "1층 중앙 로비를 순찰하고 있어요. 안내는 동쪽 로비 메인데스크의 S.C에게 물어보세요!"]},
-  {scene:"HALF", name:"보안", waypoints:[[0.20,0.65],[0.75,0.60],[0.45,0.45]], lines:[
+  {scene:"HALF", name:"보안", waypoints:[[0.14,0.70],[0.50,0.82],[0.85,0.55]], lines:[
     "½층 순찰 중! 다이나믹 토네이도 라이브쇼 시간 놓치지 마세요."]},
   {scene:"SQRT2", name:"보안", waypoints:[[0.20,0.65],[0.70,0.60]], lines:[
     "√2층이에요. 전시실 통로에서는 뛰지 말아주세요!"]},
@@ -566,7 +579,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607281109";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607281141";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 let floorIdx=safeGet("ufo_floor"); floorIdx=(floorIdx==null||floorIdx==="")?NaN:+floorIdx;   // 저장 없으면 NaN→아래서 외부로(빈값이 0=B1 되던 버그 방지)
 const _q=new URLSearchParams(location.search);           // ?f=N 로 시작 층 지정(딥링크/테스트)
 if(_q.has("f"))floorIdx=+_q.get("f");
