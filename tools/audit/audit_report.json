@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-28T06:41:21.945Z",
+  "generatedAt": "2026-07-28T07:18:59.006Z",
   "repoRoot": "/Users/a55/ssc-tour",
   "baseUrl": "http://localhost:8899",
-  "durationMs": 57079,
+  "durationMs": 56619,
   "runtimeExport": {
     "ok": true,
     "counts": {
@@ -125,130 +125,129 @@
             0.05,
             0.97,
             0.95
-          ],
-          "_ok": true
+          ]
         },
         {
           "id": "1F",
           "name": "1층 로비 · 중앙",
-          "bg": "bg/lobby_center.png",
+          "bg": "bg/lobby_center.webp",
           "tint": "#4caf50",
           "start": [
-            0.42,
-            0.72
+            0.458,
+            0.7
           ],
           "obstacles": [
             [
               0,
               0,
               1,
-              0.16
+              0.07
             ],
             [
-              0.1,
-              0.4,
-              0.23,
-              0.66
-            ],
-            [
-              0.3,
-              0.26,
+              0.16,
+              0.12,
               0.36,
-              0.58
+              0.45
+            ],
+            [
+              0.36,
+              0.12,
+              0.55,
+              0.45
             ],
             [
               0,
               0.16,
-              0.51,
-              0.28
-            ],
-            [
-              0.62,
               0.16,
+              0.38
+            ],
+            [
+              0.1,
+              0.42,
+              0.2,
+              0.55
+            ],
+            [
+              0.55,
+              0.1,
+              0.578,
+              0.3
+            ],
+            [
+              0.72,
+              0,
+              0.86,
+              0.16
+            ],
+            [
+              0.86,
+              0.06,
               1,
-              0.28
+              0.46
             ],
             [
-              0.43,
-              0.28,
-              0.51,
-              0.36
+              0.75,
+              0.52,
+              0.88,
+              0.78
             ],
             [
-              0.43,
-              0.36,
-              0.47,
-              0.44
+              0.82,
+              0.72,
+              0.98,
+              0.87
             ],
             [
-              0.39,
+              0.375,
+              0.7,
+              0.425,
+              0.93
+            ],
+            [
+              0.49,
+              0.7,
+              0.545,
+              0.93
+            ],
+            [
               0.4,
-              0.44,
-              0.52
+              0.46,
+              0.585,
+              0.63
             ],
             [
-              0.54,
-              0.44,
-              0.6,
-              0.52
-            ],
-            [
-              0.62,
-              0.28,
-              0.67,
-              0.36
-            ],
-            [
-              0.58,
-              0.36,
-              0.67,
-              0.52
-            ],
-            [
-              0.66,
-              0.35,
-              0.84,
-              0.64
-            ],
-            [
-              0.44,
-              0.56,
-              0.58,
-              0.67
+              0.03,
+              0.5,
+              0.08,
+              0.56
             ],
             [
               0.13,
-              0.67,
-              0.27,
-              0.84
+              0.63,
+              0.175,
+              0.71
             ],
             [
               0.7,
-              0.71,
-              0.85,
-              0.82
-            ],
-            [
-              0.34,
-              0.77,
-              0.7,
-              1
+              0.53,
+              0.745,
+              0.6
             ]
           ],
           "walkable": [
             0.03,
-            0.18,
+            0.08,
             0.97,
-            0.94
+            0.9
           ],
           "zones": [
             {
               "to": "SQRT2",
               "rect": [
-                0.51,
-                0.17,
-                0.62,
-                0.28
+                0.655,
+                0,
+                0.735,
+                0.11
               ]
             }
           ],
@@ -260,7 +259,7 @@
               "icon": "⬅️",
               "label": "서쪽",
               "x": 0.03,
-              "y": 0.55,
+              "y": 0.6,
               "color": "#4caf50"
             },
             {
@@ -269,8 +268,8 @@
               "to": "LOBBY_E",
               "icon": "➡️",
               "label": "동쪽",
-              "x": 0.97,
-              "y": 0.55,
+              "x": 0.965,
+              "y": 0.62,
               "color": "#4a90e2"
             },
             {
@@ -279,16 +278,16 @@
               "to": "OUTSIDE",
               "icon": "🚪",
               "label": "정문",
-              "x": 0.49,
-              "y": 0.805,
+              "x": 0.458,
+              "y": 0.8,
               "color": "#9aa"
             },
             {
               "name": "계산기 사물함",
               "kind": "info",
               "icon": "🧮",
-              "x": 0.15,
-              "y": 0.432,
+              "x": 0.235,
+              "y": 0.5,
               "color": "#78909c",
               "info": "로커 문이 계산기 숫자키 모양으로 꾸며진 물품보관함이에요."
             },
@@ -303,8 +302,8 @@
                 "B1"
               ],
               "icon": "🛗",
-              "x": 0.281,
-              "y": 0.45,
+              "x": 0.72,
+              "y": 0.72,
               "color": "#9aa"
             },
             {
@@ -312,8 +311,8 @@
               "kind": "stair",
               "to": "SQRT2",
               "icon": "🪜",
-              "x": 0.49,
-              "y": 0.49,
+              "x": 0.59,
+              "y": 0.335,
               "color": "#b0a99a"
             },
             {
@@ -322,8 +321,8 @@
               "qid": "e-torus",
               "khash": "a2fcc510479e69a0e9a90158221d500946ed933b7c0e9d3993be42665d7b7a0b",
               "icon": "✨",
-              "x": 0.55,
-              "y": 0.3,
+              "x": 0.36,
+              "y": 0.485,
               "color": "#f6b93b",
               "info": "위상수학의 기본 개념으로 우주 공간의 모습을 형상화한 작품이에요. 안과 밖이 엇갈린 그물망은 뫼비우스의 띠처럼 상호순환하고, 얇은 구리선의 연결은 피보나치 수열을 재해석한 토러스 구조랍니다. 구리선·기판과 LED 전구 5,000개 이상으로 만든 15,600 × 9,600 × 4,900mm 크기의 작품으로, 김주현과 Our Labour가 2016년에 제작했어요. 주변 꽃잎은 대개 3·5·8장이고 솔방울 나선은 시계방향 8줄·반시계방향 13줄인 것처럼, 자연에서도 피보나치 수를 찾아볼 수 있어요."
             },
@@ -331,8 +330,8 @@
               "name": "휴게 쇼파",
               "kind": "info",
               "icon": "🛋️",
-              "x": 0.5,
-              "y": 0.62,
+              "x": 0.49,
+              "y": 0.655,
               "color": "#607d8b",
               "info": "넓은 로비 쇼파예요. 잠시 앉아 다음 탐방 코스를 정해보세요."
             }
@@ -474,8 +473,7 @@
               "y": 0.6,
               "color": "#b0a99a"
             }
-          ],
-          "_ok": true
+          ]
         },
         {
           "id": "SQRT2",
@@ -648,8 +646,7 @@
               "y": 0.48,
               "color": "#b0a99a"
             }
-          ],
-          "_ok": true
+          ]
         },
         {
           "id": "2F",
@@ -733,8 +730,7 @@
             0.4,
             0.94,
             0.9
-          ],
-          "_ok": true
+          ]
         },
         {
           "id": "PI",
@@ -940,49 +936,79 @@
         {
           "id": "LOBBY_W",
           "name": "1층 로비 · 서쪽",
-          "bg": "bg/lobby_west.png",
+          "bg": "bg/lobby_west.webp",
           "tint": "#4caf50",
           "start": [
-            0.6,
-            0.62
+            0.55,
+            0.7
           ],
           "obstacles": [
             [
               0,
               0,
-              0.12,
-              0.48
+              0.3,
+              0.26
             ],
             [
-              0.12,
-              0.25,
-              0.38,
-              0.48
+              0.245,
+              0,
+              0.5,
+              0.28
             ],
             [
-              0.36,
+              0.5,
+              0,
+              0.9,
+              0.24
+            ],
+            [
+              0.79,
+              0,
+              1,
+              0.6
+            ],
+            [
+              0.6,
               0.32,
-              0.59,
-              0.55
+              0.79,
+              0.58
             ],
             [
-              0.18,
-              0.4,
-              0.34,
-              0.83
+              0.61,
+              0.56,
+              0.68,
+              0.63
             ],
             [
               0,
-              0.6,
-              0.12,
-              0.96
+              0.28,
+              0.075,
+              0.8
+            ],
+            [
+              0.115,
+              0.5,
+              0.22,
+              0.74
+            ],
+            [
+              0.2,
+              0.33,
+              0.35,
+              0.58
+            ],
+            [
+              0.87,
+              0.56,
+              1,
+              0.86
             ]
           ],
           "walkable": [
             0.03,
-            0.1,
+            0.24,
             0.97,
-            0.94
+            0.95
           ],
           "spots": [
             {
@@ -991,8 +1017,8 @@
               "to": "1F",
               "icon": "➡️",
               "label": "중앙",
-              "x": 0.92,
-              "y": 0.62,
+              "x": 0.96,
+              "y": 0.9,
               "color": "#4a90e2"
             },
             {
@@ -1000,16 +1026,16 @@
               "kind": "door",
               "room": "room_G",
               "icon": "🌿",
-              "x": 0.47,
-              "y": 0.352,
+              "x": 0.4,
+              "y": 0.305,
               "color": "#4caf50"
             },
             {
               "name": "원소 주기율표 사물함",
               "kind": "info",
               "icon": "🧪",
-              "x": 0.312,
-              "y": 0.6,
+              "x": 0.28,
+              "y": 0.62,
               "color": "#7cb342",
               "info": "G전시실 입구 옆 사물함이에요. 로커 하나하나가 He·Ne·F·Cl·Ar·Kr·I·Xe·At·Og·Ts 같은 원소 칸이고, 디지털 잠금장치로 여닫아요."
             },
@@ -1017,18 +1043,18 @@
               "name": "메이커 스튜디오 문",
               "kind": "info",
               "icon": "🚪",
-              "x": 0.103,
-              "y": 0.78,
+              "x": 0.095,
+              "y": 0.7,
               "color": "#8d6e63",
               "info": "메이커 스튜디오로 이어지는 문이에요. 운영 프로그램은 현장 안내를 확인해주세요."
             },
             {
-              "name": "↓ ½층 슬로프",
+              "name": "↓ ½층 에스컬레이터",
               "kind": "stair",
               "to": "HALF",
-              "icon": "♿",
-              "x": 0.2,
-              "y": 0.2,
+              "icon": "🪜",
+              "x": 0.54,
+              "y": 0.295,
               "color": "#b0a99a"
             },
             {
@@ -1036,62 +1062,119 @@
               "kind": "stair",
               "to": "HALF",
               "icon": "🪜",
-              "x": 0.5,
-              "y": 0.12,
+              "x": 0.69,
+              "y": 0.28,
               "color": "#b0a99a"
+            },
+            {
+              "name": "다이나믹 토네이도 · 관통부",
+              "kind": "info",
+              "icon": "🌪️",
+              "x": 0.73,
+              "y": 0.63,
+              "color": "#7ec8e3",
+              "info": "½층에서 솟아오른 토네이도 기둥의 위쪽이에요. 소용돌이는 ½층에서 만들어져 이 유리 원통을 타고 올라온답니다. 라이브쇼는 ½층에서 만나요!"
             }
           ]
         },
         {
           "id": "LOBBY_E",
           "name": "1층 로비 · 동쪽",
-          "bg": "bg/lobby_east.png",
+          "bg": "bg/lobby_east.webp",
           "tint": "#4a90e2",
           "start": [
-            0.1,
-            0.62
+            0.12,
+            0.68
           ],
           "obstacles": [
             [
               0,
               0,
               1,
-              0.14
+              0.1
             ],
             [
+              0,
+              0.06,
               0.1,
-              0.33,
-              0.39,
-              0.58
+              0.3
             ],
             [
-              0.42,
-              0.18,
-              0.64,
+              0.09,
+              0.26,
+              0.28,
               0.44
             ],
             [
-              0.7,
-              0.18,
-              0.82,
-              0.44
+              0.26,
+              0.17,
+              0.47,
+              0.31
             ],
             [
-              0.86,
-              0.12,
+              0.47,
+              0,
+              0.58,
+              0.18
+            ],
+            [
+              0.58,
+              0,
               1,
-              0.63
+              0.46
             ],
             [
-              0.52,
-              0.55,
-              0.68,
-              0.86
+              0.6,
+              0.44,
+              0.69,
+              0.56
+            ],
+            [
+              0.56,
+              0.62,
+              0.88,
+              0.72
+            ],
+            [
+              0.94,
+              0.62,
+              1,
+              0.72
+            ],
+            [
+              0.56,
+              0.66,
+              0.61,
+              0.98
+            ],
+            [
+              0.61,
+              0.8,
+              0.78,
+              0.98
+            ],
+            [
+              0,
+              0.42,
+              0.075,
+              0.66
+            ],
+            [
+              0.06,
+              0.51,
+              0.1,
+              0.57
+            ],
+            [
+              0.355,
+              0.76,
+              0.395,
+              0.82
             ]
           ],
           "walkable": [
             0.03,
-            0.16,
+            0.14,
             0.97,
             0.94
           ],
@@ -1103,15 +1186,15 @@
               "icon": "⬅️",
               "label": "중앙",
               "x": 0.03,
-              "y": 0.62,
+              "y": 0.76,
               "color": "#4caf50"
             },
             {
               "name": "메인데스크",
               "kind": "info",
               "icon": "🏛️",
-              "x": 0.22,
-              "y": 0.542,
+              "x": 0.37,
+              "y": 0.36,
               "color": "#4a90e2",
               "info": "안내·매표를 맡는 메인데스크예요. 이곳의 안내원은 과학 이야기를 알기 쉽게 전하는 S.C(과학커뮤니케이터)랍니다."
             },
@@ -1120,16 +1203,16 @@
               "kind": "door",
               "room": "room_cafe",
               "icon": "☕",
-              "x": 0.52,
-              "y": 0.402,
+              "x": 0.73,
+              "y": 0.5,
               "color": "#8d6e63"
             },
             {
               "name": "갈릴레오의 책",
               "kind": "info",
               "icon": "📖",
-              "x": 0.541,
-              "y": 0.72,
+              "x": 0.55,
+              "y": 0.57,
               "color": "#8d6e63",
               "info": "갈릴레오의 저서 『DIALOGO』(1632) 표지를 재현한 나무 조형물과 Escapement(탈진기) 시계가 함께 있어요. 기념사진을 남기기 좋은 포토존이에요."
             },
@@ -1137,8 +1220,8 @@
               "name": "화장실",
               "kind": "info",
               "icon": "🚻",
-              "x": 0.799,
-              "y": 0.33,
+              "x": 0.53,
+              "y": 0.21,
               "color": "#78909c",
               "info": "남녀 화장실이 나란히 있어요. 이용 안내 표지를 확인해주세요."
             },
@@ -1146,8 +1229,8 @@
               "name": "과학관 후문",
               "kind": "info",
               "icon": "🚪",
-              "x": 0.881,
-              "y": 0.35,
+              "x": 0.91,
+              "y": 0.73,
               "color": "#6b7a5a",
               "info": "과학관 동쪽 후문이에요. 현재 게임에서는 바깥으로 이동하지 않아요."
             }
@@ -1997,8 +2080,8 @@
         {
           "scene": "LOBBY_E",
           "name": "S.C",
-          "x": 0.22,
-          "y": 0.6,
+          "x": 0.3,
+          "y": 0.34,
           "lines": [
             "어서오세요! 서울시립과학관은 무료입장이에요.",
             "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요."
@@ -2618,7 +2701,7 @@
         "from": "1F",
         "to": "SQRT2",
         "kind": "zone",
-        "item": "[0.51,0.17,0.62,0.28]"
+        "item": "[0.655,0,0.735,0.11]"
       },
       {
         "from": "HALF",
@@ -2858,7 +2941,7 @@
         "from": "LOBBY_W",
         "to": "HALF",
         "kind": "stair",
-        "item": "↓ ½층 슬로프"
+        "item": "↓ ½층 에스컬레이터"
       },
       {
         "from": "LOBBY_E",
@@ -2933,8 +3016,8 @@
     "gridStep": 0.01,
     "spotRadius": 0.06,
     "sceneCount": 19,
-    "spotCount": 95,
-    "reachableSpotCount": 95,
+    "spotCount": 96,
+    "reachableSpotCount": 96,
     "failures": [],
     "scenes": [
       {
@@ -2952,11 +3035,11 @@
       {
         "scene": "1F",
         "start": [
-          0.42,
-          0.72
+          0.458,
+          0.7
         ],
         "startPassable": true,
-        "visitedCellCount": 4196,
+        "visitedCellCount": 4721,
         "spotCount": 8,
         "reachableSpotCount": 8,
         "failures": []
@@ -3048,23 +3131,23 @@
       {
         "scene": "LOBBY_W",
         "start": [
-          0.6,
-          0.62
+          0.55,
+          0.7
         ],
         "startPassable": true,
-        "visitedCellCount": 5883,
-        "spotCount": 6,
-        "reachableSpotCount": 6,
+        "visitedCellCount": 4494,
+        "spotCount": 7,
+        "reachableSpotCount": 7,
         "failures": []
       },
       {
         "scene": "LOBBY_E",
         "start": [
-          0.1,
-          0.62
+          0.12,
+          0.68
         ],
         "startPassable": true,
-        "visitedCellCount": 5066,
+        "visitedCellCount": 4886,
         "spotCount": 6,
         "reachableSpotCount": 6,
         "failures": []
@@ -3225,8 +3308,8 @@
     ]
   },
   "anchorAlignment": {
-    "specCount": 0,
-    "checkedAnchors": 0,
+    "specCount": 3,
+    "checkedAnchors": 16,
     "failures": []
   },
   "viewportSmoke": {
@@ -3319,11 +3402,11 @@
     ]
   },
   "dataIntegrity": {
-    "checkedSpots": 95,
+    "checkedSpots": 96,
     "checkedNpcs": 18,
     "checkedGames": 7,
     "checkedExhibits": 25,
-    "issueCount": 32,
+    "issueCount": 21,
     "catalogMissing": [],
     "catalogExtra": []
   },
@@ -3341,8 +3424,8 @@
         "startButton": "챌린지 시작",
         "actionCount": 38,
         "interactionErrors": [],
-        "rafBefore": 46,
-        "rafAfter": 685,
+        "rafBefore": 47,
+        "rafAfter": 682,
         "frozen": false,
         "returnAnchor": {
           "text": "← 허브",
@@ -3352,7 +3435,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9765
+        "durationMs": 9770
       },
       {
         "file": "q.html",
@@ -3364,8 +3447,8 @@
         "startButton": "훈련 시작",
         "actionCount": 38,
         "interactionErrors": [],
-        "rafBefore": 46,
-        "rafAfter": 684,
+        "rafBefore": 47,
+        "rafAfter": 685,
         "frozen": false,
         "returnAnchor": {
           "text": "← 허브",
@@ -3375,7 +3458,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9812
+        "durationMs": 9918
       },
       {
         "file": "d.html",
@@ -3387,8 +3470,8 @@
         "startButton": "실험 시작",
         "actionCount": 38,
         "interactionErrors": [],
-        "rafBefore": 46,
-        "rafAfter": 683,
+        "rafBefore": 47,
+        "rafAfter": 682,
         "frozen": false,
         "returnAnchor": {
           "text": "🏛 허브로",
@@ -3398,7 +3481,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9738
+        "durationMs": 9771
       },
       {
         "file": "m.html",
@@ -3408,10 +3491,10 @@
         "url": "http://localhost:8899/m.html",
         "loaded": true,
         "startButton": "실험 시작",
-        "actionCount": 37,
+        "actionCount": 28,
         "interactionErrors": [],
-        "rafBefore": 41,
-        "rafAfter": 676,
+        "rafBefore": 40,
+        "rafAfter": 530,
         "frozen": false,
         "returnAnchor": {
           "text": "← 허브",
@@ -3421,7 +3504,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9510
+        "durationMs": 9476
       },
       {
         "file": "s.html",
@@ -3431,10 +3514,10 @@
         "url": "http://localhost:8899/s.html",
         "loaded": true,
         "startButton": "관측 시작",
-        "actionCount": 32,
+        "actionCount": 24,
         "interactionErrors": [],
-        "rafBefore": 43,
-        "rafAfter": 696,
+        "rafBefore": 42,
+        "rafAfter": 545,
         "frozen": false,
         "returnAnchor": {
           "text": "🏛 허브로 돌아가기",
@@ -3444,7 +3527,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9779
+        "durationMs": 9714
       },
       {
         "file": "c.html",
@@ -3454,10 +3537,10 @@
         "url": "http://localhost:8899/c.html",
         "loaded": true,
         "startButton": "실험 시작",
-        "actionCount": 49,
+        "actionCount": 37,
         "interactionErrors": [],
-        "rafBefore": 45,
-        "rafAfter": 680,
+        "rafBefore": 43,
+        "rafAfter": 533,
         "frozen": false,
         "returnAnchor": {
           "text": "🏛 허브로 돌아가기",
@@ -3467,7 +3550,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9524
+        "durationMs": 9409
       },
       {
         "file": "t.html",
@@ -3477,10 +3560,10 @@
         "url": "http://localhost:8899/t.html",
         "loaded": true,
         "startButton": "실험 시작",
-        "actionCount": 37,
+        "actionCount": 31,
         "interactionErrors": [],
-        "rafBefore": 43,
-        "rafAfter": 676,
+        "rafBefore": 45,
+        "rafAfter": 684,
         "frozen": false,
         "returnAnchor": {
           "text": "🏛 과학관 허브로 돌아가기",
@@ -3490,7 +3573,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9370
+        "durationMs": 9430
       },
       {
         "file": "prototypes/proto_bridge.html",
@@ -3502,8 +3585,8 @@
         "startButton": null,
         "actionCount": 38,
         "interactionErrors": [],
-        "rafBefore": 40,
-        "rafAfter": 693,
+        "rafBefore": 41,
+        "rafAfter": 695,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -3513,7 +3596,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9394
+        "durationMs": 9464
       },
       {
         "file": "prototypes/proto_caffeine.html",
@@ -3523,10 +3606,10 @@
         "url": "http://localhost:8899/prototypes/proto_caffeine.html",
         "loaded": true,
         "startButton": "실험 시작",
-        "actionCount": 49,
+        "actionCount": 50,
         "interactionErrors": [],
-        "rafBefore": 38,
-        "rafAfter": 675,
+        "rafBefore": 40,
+        "rafAfter": 682,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -3536,7 +3619,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9161
+        "durationMs": 9253
       },
       {
         "file": "prototypes/proto_doorlock.html",
@@ -3548,8 +3631,8 @@
         "startButton": null,
         "actionCount": 40,
         "interactionErrors": [],
-        "rafBefore": 36,
-        "rafAfter": 509,
+        "rafBefore": 34,
+        "rafAfter": 514,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -3559,7 +3642,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9233
+        "durationMs": 9278
       },
       {
         "file": "prototypes/proto_immune.html",
@@ -3569,10 +3652,10 @@
         "url": "http://localhost:8899/prototypes/proto_immune.html",
         "loaded": true,
         "startButton": "시작하기",
-        "actionCount": 30,
+        "actionCount": 31,
         "interactionErrors": [],
-        "rafBefore": 42,
-        "rafAfter": 677,
+        "rafBefore": 43,
+        "rafAfter": 683,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -3582,7 +3665,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9310
+        "durationMs": 9372
       },
       {
         "file": "prototypes/proto_kart.html",
@@ -3594,7 +3677,76 @@
         "startButton": "다시 시작",
         "actionCount": 31,
         "interactionErrors": [],
-        "rafBefore": 42,
+        "rafBefore": 44,
+        "rafAfter": 681,
+        "frozen": false,
+        "returnAnchor": {
+          "text": "← 갤러리",
+          "href": "index.html"
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "failedRequests": [],
+        "httpErrors": [],
+        "durationMs": 9318
+      },
+      {
+        "file": "prototypes/proto_light.html",
+        "source": "prototype",
+        "scene": "prototypes",
+        "item": "proto_light.html",
+        "url": "http://localhost:8899/prototypes/proto_light.html",
+        "loaded": true,
+        "startButton": "시작하기",
+        "actionCount": 31,
+        "interactionErrors": [],
+        "rafBefore": 40,
+        "rafAfter": 680,
+        "frozen": false,
+        "returnAnchor": {
+          "text": "← 갤러리",
+          "href": "index.html"
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "failedRequests": [],
+        "httpErrors": [],
+        "durationMs": 9213
+      },
+      {
+        "file": "prototypes/proto_tornado.html",
+        "source": "prototype",
+        "scene": "prototypes",
+        "item": "proto_tornado.html",
+        "url": "http://localhost:8899/prototypes/proto_tornado.html",
+        "loaded": true,
+        "startButton": "시작하기",
+        "actionCount": 32,
+        "interactionErrors": [],
+        "rafBefore": 44,
+        "rafAfter": 678,
+        "frozen": false,
+        "returnAnchor": {
+          "text": "← 갤러리",
+          "href": "index.html"
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "failedRequests": [],
+        "httpErrors": [],
+        "durationMs": 9287
+      },
+      {
+        "file": "prototypes/proto_vortex.html",
+        "source": "prototype",
+        "scene": "prototypes",
+        "item": "proto_vortex.html",
+        "url": "http://localhost:8899/prototypes/proto_vortex.html",
+        "loaded": true,
+        "startButton": "다시 시작",
+        "actionCount": 31,
+        "interactionErrors": [],
+        "rafBefore": 43,
         "rafAfter": 684,
         "frozen": false,
         "returnAnchor": {
@@ -3605,76 +3757,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9393
-      },
-      {
-        "file": "prototypes/proto_light.html",
-        "source": "prototype",
-        "scene": "prototypes",
-        "item": "proto_light.html",
-        "url": "http://localhost:8899/prototypes/proto_light.html",
-        "loaded": true,
-        "startButton": "시작하기",
-        "actionCount": 38,
-        "interactionErrors": [],
-        "rafBefore": 43,
-        "rafAfter": 697,
-        "frozen": false,
-        "returnAnchor": {
-          "text": "← 갤러리",
-          "href": "index.html"
-        },
-        "pageErrors": [],
-        "consoleErrors": [],
-        "failedRequests": [],
-        "httpErrors": [],
-        "durationMs": 9460
-      },
-      {
-        "file": "prototypes/proto_tornado.html",
-        "source": "prototype",
-        "scene": "prototypes",
-        "item": "proto_tornado.html",
-        "url": "http://localhost:8899/prototypes/proto_tornado.html",
-        "loaded": true,
-        "startButton": "시작하기",
-        "actionCount": 40,
-        "interactionErrors": [],
-        "rafBefore": 43,
-        "rafAfter": 679,
-        "frozen": false,
-        "returnAnchor": {
-          "text": "← 갤러리",
-          "href": "index.html"
-        },
-        "pageErrors": [],
-        "consoleErrors": [],
-        "failedRequests": [],
-        "httpErrors": [],
-        "durationMs": 9203
-      },
-      {
-        "file": "prototypes/proto_vortex.html",
-        "source": "prototype",
-        "scene": "prototypes",
-        "item": "proto_vortex.html",
-        "url": "http://localhost:8899/prototypes/proto_vortex.html",
-        "loaded": true,
-        "startButton": "다시 시작",
-        "actionCount": 37,
-        "interactionErrors": [],
-        "rafBefore": 40,
-        "rafAfter": 674,
-        "frozen": false,
-        "returnAnchor": {
-          "text": "← 갤러리",
-          "href": "index.html"
-        },
-        "pageErrors": [],
-        "consoleErrors": [],
-        "failedRequests": [],
-        "httpErrors": [],
-        "durationMs": 9179
+        "durationMs": 9367
       }
     ]
   },
@@ -3834,72 +3917,6 @@
       "scene": "room_earth",
       "item": "geometry",
       "detail": "내부 장애물 [0.55,0.58,0.97,0.84] 면적 10.9% > 10% — 충돌은 발밑만(§2-2)"
-    },
-    {
-      "severity": "minor",
-      "scene": "1F",
-      "item": "정문으로 나가기",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
-    },
-    {
-      "severity": "minor",
-      "scene": "1F",
-      "item": "계산기 사물함",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
-    },
-    {
-      "severity": "minor",
-      "scene": "1F",
-      "item": "휴게 쇼파",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
-    },
-    {
-      "severity": "minor",
-      "scene": "LOBBY_W",
-      "item": "G전시실 입구 · 공존",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
-    },
-    {
-      "severity": "minor",
-      "scene": "LOBBY_W",
-      "item": "원소 주기율표 사물함",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
-    },
-    {
-      "severity": "minor",
-      "scene": "LOBBY_W",
-      "item": "메이커 스튜디오 문",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
-    },
-    {
-      "severity": "minor",
-      "scene": "LOBBY_E",
-      "item": "메인데스크",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
-    },
-    {
-      "severity": "minor",
-      "scene": "LOBBY_E",
-      "item": "북카페 · 과학책방",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
-    },
-    {
-      "severity": "minor",
-      "scene": "LOBBY_E",
-      "item": "갈릴레오의 책",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
-    },
-    {
-      "severity": "minor",
-      "scene": "LOBBY_E",
-      "item": "화장실",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
-    },
-    {
-      "severity": "minor",
-      "scene": "LOBBY_E",
-      "item": "과학관 후문",
-      "detail": "[설계상 정상 가능] 스팟 중심이 obstacle 안이지만 근접 타원 안에 통행셀이 있습니다."
     },
     {
       "severity": "minor",

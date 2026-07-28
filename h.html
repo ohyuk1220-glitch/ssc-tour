@@ -233,29 +233,33 @@ const FLOORS=[
    {name:"수상한 상자", room:"B1 주차장", kind:"soon", icon:"📦", x:0.10,y:0.62, color:"#8a7a5a"},
    {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.48,y:0.42, color:"#9aa"},
  ]},
- {id:"1F", name:"1층 로비 · 중앙", bg:"bg/lobby_center.png", tint:"#4caf50", start:[0.42,0.72],
-   // 계단 재설계(2026-07-26): 구 통짜 장애물[0.43,0.28,0.59,0.52]이 계단 몸통까지 막아
-   // "보이는 계단을 못 오르고, 위 발코니는 공중걷기"가 됐었음 → 계단=대각 통로 3단 개방,
-   // 발코니 띠(0.16~0.28)·계단 좌우 벽·화단은 봉쇄, 꼭대기는 zones 자동 전환(√2층)
-   // P1 병목 수리(2026-07-28): 서쪽 게이트 회랑 0.03→0.07, 동쪽 슬릿 0.01→0.07 (§2-1 폭 0.06↑)
-   obstacles:[[0.00,0.00,1.00,0.16],[0.10,0.40,0.23,0.66],[0.30,0.26,0.36,0.58],
-     [0.00,0.16,0.51,0.28],[0.62,0.16,1.00,0.28],          // 발코니 띠 (계단 꼭대기만 개방)
-     [0.43,0.28,0.51,0.36],[0.43,0.36,0.47,0.44],[0.39,0.40,0.44,0.52], // 계단 왼쪽 벽·화단
-     [0.54,0.44,0.60,0.52],[0.62,0.28,0.67,0.36],[0.58,0.36,0.67,0.52], // 계단 오른쪽 화단·벽
-     [0.66,0.35,0.84,0.64],[0.44,0.56,0.58,0.67],[0.13,0.67,0.27,0.84],[0.70,0.71,0.85,0.82],[0.34,0.77,0.70,1.00]],
-   walkable:[0.03,0.18,0.97,0.94],
-   zones:[{to:"SQRT2",rect:[0.51,0.17,0.62,0.28]}],        // 계단 끝까지 오르면 자동 √2층
+ {id:"1F", name:"1층 로비 · 중앙", bg:"bg/lobby_center.webp", tint:"#4caf50", start:[0.458,0.70],
+   // 2026-07-28 P1 아이소(2024 1층A) 정합 재생성: 토러스=보이드 상공, 정문=남측 방풍실, √2계단=북동(개방 채널+zones)
+   obstacles:[[0.00,0.00,1.00,0.07],   // 상단 벽·천창부
+     [0.16,0.12,0.36,0.45],[0.36,0.12,0.55,0.45],   // 선큰 보이드 난간(2분할 — §2-2 단일 rect 10% 상한)
+     [0.00,0.16,0.16,0.38],            // 빨간 전시월·안내판
+     [0.10,0.42,0.20,0.55],            // 계산기 사물함
+     [0.55,0.10,0.578,0.30],           // √2계단 좌측 난간(보이드와 계단 채널 분리)
+     [0.72,0.00,0.86,0.16],            // 계단 우측 상부 벽
+     [0.86,0.06,1.00,0.46],            // 동측 벽·부속실 (하단 0.46 — 동측 회랑 진입폭 0.06 확보)
+     [0.75,0.52,0.88,0.78],            // 메인 엘리베이터 샤프트
+     [0.82,0.72,0.98,0.87],            // 쇼파 알코브
+     [0.375,0.70,0.425,0.93],[0.49,0.70,0.545,0.93],   // 정문 방풍실 좌·우벽
+     [0.40,0.46,0.585,0.63],           // 곡선 벤치 클러스터
+     [0.03,0.50,0.08,0.56],[0.13,0.63,0.175,0.71],[0.70,0.53,0.745,0.60]], // 기둥 3 (계단 채널 안 유령 기둥 제거 — codex R1)
+   walkable:[0.03,0.08,0.97,0.90],
+   zones:[{to:"SQRT2",rect:[0.655,0.00,0.735,0.11]}],   // 개방 계단 채널(x0.578~0.72) 꼭대기 도달 시 자동 √2층
    spots:[
-   {name:"← 서쪽 로비", kind:"gate", to:"LOBBY_W", icon:"⬅️", label:"서쪽", x:0.03,y:0.55, color:"#4caf50"},
-   {name:"동쪽 로비 →", kind:"gate", to:"LOBBY_E", icon:"➡️", label:"동쪽", x:0.97,y:0.55, color:"#4a90e2"},
-   {name:"정문으로 나가기", kind:"gate", to:"OUTSIDE", icon:"🚪", label:"정문", x:0.49,y:0.805, color:"#9aa"},
-   {name:"계산기 사물함", kind:"info", icon:"🧮", x:0.15,y:0.4320, color:"#78909c",
+   {name:"← 서쪽 로비", kind:"gate", to:"LOBBY_W", icon:"⬅️", label:"서쪽", x:0.03,y:0.60, color:"#4caf50"},
+   {name:"동쪽 로비 →", kind:"gate", to:"LOBBY_E", icon:"➡️", label:"동쪽", x:0.965,y:0.62, color:"#4a90e2"},
+   {name:"정문으로 나가기", kind:"gate", to:"OUTSIDE", icon:"🚪", label:"정문", x:0.458,y:0.80, color:"#9aa"},
+   {name:"계산기 사물함", kind:"info", icon:"🧮", x:0.235,y:0.50, color:"#78909c",
     info:"로커 문이 계산기 숫자키 모양으로 꾸며진 물품보관함이에요."},
-   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.281,y:0.45, color:"#9aa"},
-   {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.49,y:0.49, color:"#b0a99a"}, // 표지판은 계단 초입에 (걸어 올라가도 되고 A눌러도 됨)
-   {name:"뒤틀림-토러스", kind:"exhibit", qid:"e-torus", khash:"a2fcc510479e69a0e9a90158221d500946ed933b7c0e9d3993be42665d7b7a0b", icon:"✨", x:0.55,y:0.30, color:"#f6b93b",
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.72,y:0.72, color:"#9aa"},
+   {name:"↑ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.59,y:0.335, color:"#b0a99a"}, // 표지판은 계단 초입에 (걸어 올라가도 되고 A눌러도 됨)
+   {name:"뒤틀림-토러스", kind:"exhibit", qid:"e-torus", khash:"a2fcc510479e69a0e9a90158221d500946ed933b7c0e9d3993be42665d7b7a0b", icon:"✨", x:0.36,y:0.485, color:"#f6b93b",
     info:"위상수학의 기본 개념으로 우주 공간의 모습을 형상화한 작품이에요. 안과 밖이 엇갈린 그물망은 뫼비우스의 띠처럼 상호순환하고, 얇은 구리선의 연결은 피보나치 수열을 재해석한 토러스 구조랍니다. 구리선·기판과 LED 전구 5,000개 이상으로 만든 15,600 × 9,600 × 4,900mm 크기의 작품으로, 김주현과 Our Labour가 2016년에 제작했어요. 주변 꽃잎은 대개 3·5·8장이고 솔방울 나선은 시계방향 8줄·반시계방향 13줄인 것처럼, 자연에서도 피보나치 수를 찾아볼 수 있어요."},
-   {name:"휴게 쇼파", kind:"info", icon:"🛋️", x:0.50,y:0.62, color:"#607d8b",
+   {name:"휴게 쇼파", kind:"info", icon:"🛋️", x:0.49,y:0.655, color:"#607d8b",
     info:"넓은 로비 쇼파예요. 잠시 앉아 다음 탐방 코스를 정해보세요."},
  ]},
  {id:"HALF", name:"½층", bg:"bg/f_half_town.png", tint:"#f4c430", start:[0.30,0.76],
@@ -339,28 +343,51 @@ const FLOORS=[
    {name:"과학관 입장", kind:"gate", to:"1F", icon:"🚪", label:"입장", x:0.40,y:0.54, color:"#4a90e2"},
  ]},
  // start를 0.80(우측 끝)에 두면 폰 세로 화면에선 텅 빈 바닥만 보이고 주인공인 주기율표 사물함이 화면 밖이다 → 0.60으로 당김
- {id:"LOBBY_W", name:"1층 로비 · 서쪽", bg:"bg/lobby_west.png", tint:"#4caf50", start:[0.60,0.62],
-   obstacles:[[0.00,0.00,0.12,0.48],[0.12,0.25,0.38,0.48],[0.36,0.32,0.59,0.55],[0.18,0.40,0.34,0.83],[0.00,0.60,0.12,0.96]], walkable:[0.03,0.10,0.97,0.94], spots:[
-   {name:"중앙 로비 →", kind:"gate", to:"1F", icon:"➡️", label:"중앙", x:0.92,y:0.62, color:"#4a90e2"},
-   {name:"G전시실 입구 · 공존", kind:"door", room:"room_G", icon:"🌿", x:0.47,y:0.352, color:"#4caf50"},
-   {name:"원소 주기율표 사물함", kind:"info", icon:"🧪", x:0.312,y:0.60, color:"#7cb342",
+ {id:"LOBBY_W", name:"1층 로비 · 서쪽", bg:"bg/lobby_west.webp", tint:"#4caf50", start:[0.55,0.70],
+   // 2026-07-28 P1 아이소 정합 재생성: G=서측 벽, ½층 연결=북측(=G 마주보고 오른쪽 — 마스터 평면도 SoT), 토네이도 관통부=북동
+   obstacles:[[0.00,0.00,0.30,0.26],   // 좌상 벽
+     [0.245,0.00,0.50,0.28],           // G 초록 포털 벽(발권기 포함)
+     [0.50,0.00,0.90,0.24],            // ½층행 에스컬레이터·대계단 상부
+     [0.79,0.00,1.00,0.60],            // 토네이도 유리 원통(관통부)
+     [0.60,0.32,0.79,0.58],            // 보이드 난간
+     [0.61,0.56,0.68,0.63],            // 초록 벤치·화분
+     [0.00,0.28,0.075,0.80],           // 좌측 벽(메이커 문)
+     [0.115,0.50,0.22,0.74],[0.20,0.33,0.35,0.58],   // 주기율표 사물함(좌반·우반)
+     [0.87,0.56,1.00,0.86]],           // 우하단 게시판 벽
+   walkable:[0.03,0.24,0.97,0.95], spots:[
+   {name:"중앙 로비 →", kind:"gate", to:"1F", icon:"➡️", label:"중앙", x:0.96,y:0.90, color:"#4a90e2"},
+   {name:"G전시실 입구 · 공존", kind:"door", room:"room_G", icon:"🌿", x:0.40,y:0.305, color:"#4caf50"},
+   {name:"원소 주기율표 사물함", kind:"info", icon:"🧪", x:0.28,y:0.62, color:"#7cb342",
     info:"G전시실 입구 옆 사물함이에요. 로커 하나하나가 He·Ne·F·Cl·Ar·Kr·I·Xe·At·Og·Ts 같은 원소 칸이고, 디지털 잠금장치로 여닫아요."},
-   {name:"메이커 스튜디오 문", kind:"info", icon:"🚪", x:0.103,y:0.78, color:"#8d6e63",
+   {name:"메이커 스튜디오 문", kind:"info", icon:"🚪", x:0.095,y:0.70, color:"#8d6e63",
     info:"메이커 스튜디오로 이어지는 문이에요. 운영 프로그램은 현장 안내를 확인해주세요."},
-   {name:"↓ ½층 슬로프", kind:"stair", to:"HALF", icon:"♿", x:0.20,y:0.20, color:"#b0a99a"},
-   {name:"↓ ½층 계단", kind:"stair", to:"HALF", icon:"🪜", x:0.50,y:0.12, color:"#b0a99a"},
+   {name:"↓ ½층 에스컬레이터", kind:"stair", to:"HALF", icon:"🪜", x:0.54,y:0.295, color:"#b0a99a"},
+   {name:"↓ ½층 계단", kind:"stair", to:"HALF", icon:"🪜", x:0.69,y:0.28, color:"#b0a99a"},
+   {name:"다이나믹 토네이도 · 관통부", kind:"info", icon:"🌪️", x:0.73,y:0.63, color:"#7ec8e3",
+    info:"½층에서 솟아오른 토네이도 기둥의 위쪽이에요. 소용돌이는 ½층에서 만들어져 이 유리 원통을 타고 올라온답니다. 라이브쇼는 ½층에서 만나요!"},
  ]},
- {id:"LOBBY_E", name:"1층 로비 · 동쪽", bg:"bg/lobby_east.png", tint:"#4a90e2", start:[0.10,0.62],
-   obstacles:[[0.00,0.00,1.00,0.14],[0.10,0.33,0.39,0.58],[0.42,0.18,0.64,0.44],[0.70,0.18,0.82,0.44],[0.86,0.12,1.00,0.63],[0.52,0.55,0.68,0.86]], walkable:[0.03,0.16,0.97,0.94], spots:[
-   {name:"← 중앙 로비", kind:"gate", to:"1F", icon:"⬅️", label:"중앙", x:0.03,y:0.62, color:"#4caf50"},
-   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.22,y:0.542, color:"#4a90e2",
+ {id:"LOBBY_E", name:"1층 로비 · 동쪽", bg:"bg/lobby_east.webp", tint:"#4a90e2", start:[0.12,0.68],
+   // 2026-07-28 P1 아이소 정합 재생성: 메인데스크=북, 북카페=동(유리방), 갈릴레오=카페 앞, 후문=남동
+   obstacles:[[0.00,0.00,1.00,0.10],   // 상단 벽
+     [0.00,0.06,0.10,0.30],            // 좌상 난간벽
+     [0.09,0.26,0.28,0.44],[0.26,0.17,0.47,0.31],   // 메인데스크 L카운터(좌·우)
+     [0.47,0.00,0.58,0.18],            // 화장실 벽
+     [0.58,0.00,1.00,0.46],            // 북카페 유리방
+     [0.60,0.44,0.69,0.56],            // 갈릴레오의 책 조형물(발밑만 — §2-2, 남측 회랑 0.06 확보)
+     [0.56,0.62,0.88,0.72],[0.94,0.62,1.00,0.72],   // 남동 저벽(후문 문틀 x0.88~0.94 개방)
+     [0.56,0.66,0.61,0.98],[0.61,0.80,0.78,0.98],   // 쇼파 라운지(서벽·쇼파)
+     [0.00,0.42,0.075,0.66],           // 좌하 외부계단
+     [0.06,0.51,0.10,0.57],[0.355,0.76,0.395,0.82]],  // 기둥 2
+   walkable:[0.03,0.14,0.97,0.94], spots:[
+   {name:"← 중앙 로비", kind:"gate", to:"1F", icon:"⬅️", label:"중앙", x:0.03,y:0.76, color:"#4caf50"},
+   {name:"메인데스크", kind:"info", icon:"🏛️", x:0.37,y:0.36, color:"#4a90e2",
     info:"안내·매표를 맡는 메인데스크예요. 이곳의 안내원은 과학 이야기를 알기 쉽게 전하는 S.C(과학커뮤니케이터)랍니다."},
-   {name:"북카페 · 과학책방", kind:"door", room:"room_cafe", icon:"☕", x:0.52,y:0.402, color:"#8d6e63"},
-   {name:"갈릴레오의 책", kind:"info", icon:"📖", x:0.541,y:0.72, color:"#8d6e63",
+   {name:"북카페 · 과학책방", kind:"door", room:"room_cafe", icon:"☕", x:0.73,y:0.50, color:"#8d6e63"},
+   {name:"갈릴레오의 책", kind:"info", icon:"📖", x:0.55,y:0.57, color:"#8d6e63",
     info:"갈릴레오의 저서 『DIALOGO』(1632) 표지를 재현한 나무 조형물과 Escapement(탈진기) 시계가 함께 있어요. 기념사진을 남기기 좋은 포토존이에요."},
-   {name:"화장실", kind:"info", icon:"🚻", x:0.799,y:0.33, color:"#78909c",
+   {name:"화장실", kind:"info", icon:"🚻", x:0.53,y:0.21, color:"#78909c",
     info:"남녀 화장실이 나란히 있어요. 이용 안내 표지를 확인해주세요."},
-   {name:"과학관 후문", kind:"info", icon:"🚪", x:0.881,y:0.35, color:"#6b7a5a",
+   {name:"과학관 후문", kind:"info", icon:"🚪", x:0.91,y:0.73, color:"#6b7a5a",
     info:"과학관 동쪽 후문이에요. 현재 게임에서는 바깥으로 이동하지 않아요."},
  ]},
 ];
@@ -518,7 +545,7 @@ const GUIDE_NPCS=[
   {scene:"room_earth", name:"S.C", x:0.42,y:0.87, lines:[
     "여긴 지구과학 실험실이에요. 편광현미경으로 암석 속 결정을 들여다볼 수 있어요.",
     "땅이 켜켜이 쌓아온 시간, 지층과 화석으로 지구의 역사를 읽어요."]},
-  {scene:"LOBBY_E", name:"S.C", x:0.22,y:0.60, lines:[
+  {scene:"LOBBY_E", name:"S.C", x:0.30,y:0.34, lines:[   // 2026-07-28 P1: 데스크 안쪽 모서리(통행셀). 데스크 스팟과 ~106px — npcWins() 최근접 우선이 가림 방지
     "어서오세요! 서울시립과학관은 무료입장이에요.",
     "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요."]},
 ];
@@ -604,7 +631,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607281542";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607281624";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 const INTERACTION_V2=false; // P0-③ 골격: P4 UI 개편(탭 상호작용+walk-in) 상위 플래그 — false면 구 경로 그대로
 /* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
    구 숫자 키(ufo_floor)는 "마이그레이션 시점 순서 동결 테이블"로만 해석·기록 (codex R1: 현재 배열로 읽고 쓰면
@@ -719,7 +746,14 @@ function boot(){
   const scanKey=_q.has("k")?_q.get("k"):null;
   const scanEx=scanQid==null?null:exhibitByQid(scanQid);
   const sceneId=scanEx?scanEx.roomId:(_q.has("room")&&ROOMS[_q.get("room")]?_q.get("room"):null);
+  const _raw=safeGet("ufo_room_ctx"); if(_raw)safeSet("ufo_room_ctx","");   // 1회성 소비 — 깨진 값도 무조건 비움
+  let _ctx=null; try{ _ctx=JSON.parse(_raw||"null"); }catch(_){ _ctx=null; }
   if(sceneId)enterLinkedScene(sceneId);                    // 유효 QR이 있으면 해당 씬이 기존 room 딥링크보다 우선
+  else if(_ctx&&_ctx.r&&ROOMS[_ctx.r]){                    // 미니게임에서 돌아오면 층이 아니라 "그 방"으로
+    enterLinkedRoom(_ctx.r);
+    roomStack=(Array.isArray(_ctx.s)?_ctx.s.filter(id=>ROOMS[id]):[]);   // 중첩 방 스택 복원 (지진→G실 나가기 보존)
+    if(_ctx.d&&_ctx.d.room)lastFloorDoor=_ctx.d;           // 들어온 문 복원 (O실 서쪽 문 퇴장 보존)
+  }
   loop();
   if(_q.has("scan")){
     handleScanParam(scanQid,scanKey,scanEx).catch(e=>{console.warn("QR 인증 처리 실패:",e);toast("QR 인증을 처리할 수 없어요");});
@@ -736,6 +770,7 @@ function resize(){
   ctx.imageSmoothingEnabled=false;
 }
 window.addEventListener("resize",resize); resize();
+window.addEventListener("pageshow",e=>{ if(e.persisted)safeSet("ufo_room_ctx",""); });   // BFCache 복귀 시 잔존 컨텍스트 폐기 (codex R1)
 
 /* ── 층 진입 ── */
 function enterFloor(idx,instant){
@@ -1023,9 +1058,16 @@ function update(){
   if(shake>0.3){ shake*=0.85; shX=(Math.random()-0.5)*shake; shY=(Math.random()-0.5)*shake; }
   else { shake=0; shX=shY=0; }
 }
+function npcWins(){   // 최근접 우선(2026-07-28): 스팟·NPC 중 가까운 쪽이 A버튼 차지
+  if(!nearNPC)return false;
+  if(!nearSpot)return true;
+  const dN=Math.hypot((nearNPC.x-player.px)*bgRect.w,(nearNPC.y-player.py)*bgRect.h);
+  const dS=Math.hypot((nearSpot.x-player.px)*bgRect.w,(nearSpot.y-player.py)*bgRect.h);
+  return dN<dS;
+}
 function updateAbtn(){
   const a=document.getElementById("abtn"), lb=document.getElementById("alabel"), ic=a.querySelector(".ai");
-  if(nearNPC){
+  if(npcWins()){
     a.classList.add("on"); ic.textContent=nearNPC.type==="guide"?"🧑‍🏫":nearNPC.type==="cleaning"?"🧹":"👮"; lb.textContent="대화";
   }else if(nearSpot){
     a.classList.add("on");
@@ -1085,12 +1127,12 @@ function loop(){ update(); render(); requestAnimationFrame(loop); }
 document.getElementById("abtn").addEventListener("pointerdown",(e)=>{
   e.preventDefault();
   if(fadeState||anyModalOpen())return;   // 전환·모달 중 입력 잠금
-  if(nearNPC){ sfx(587,0.1,"triangle",0.12); npcDialogue(nearNPC); return; }
+  if(npcWins()){ sfx(587,0.1,"triangle",0.12); npcDialogue(nearNPC); return; }   // 최근접 우선 — NPC 무조건 우선이 문·데스크를 가리던 클래스 해소
   if(!nearSpot)return;
   const sp=nearSpot;
   if(sp.kind==="game"){
     sfx(660,0.1,"square",0.15);
-    startFade(()=>{ saveFloor(floorIdx); location.href=sp.file; });
+    startFade(()=>{ saveFloor(floorIdx); safeSet("ufo_room_ctx",JSON.stringify({r:inRoom||"",s:roomStack,d:lastFloorDoor})); location.href=sp.file; });   // 미니게임 복귀용 — 방+스택+들어온 문 통째 기억 (codex R1)
   }else if(sp.kind==="elevator"){
     sfx(520,0.09,"triangle"); openElevator(sp);
   }else if(sp.kind==="stair"||sp.kind==="gate"){   // gate=외부↔로비(층 전환 재활용)
