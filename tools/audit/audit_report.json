@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-28T06:33:42.924Z",
+  "generatedAt": "2026-07-28T06:41:21.945Z",
   "repoRoot": "/Users/a55/ssc-tour",
   "baseUrl": "http://localhost:8899",
-  "durationMs": 57066,
+  "durationMs": 57079,
   "runtimeExport": {
     "ok": true,
     "counts": {
@@ -125,7 +125,8 @@
             0.05,
             0.97,
             0.95
-          ]
+          ],
+          "_ok": true
         },
         {
           "id": "1F",
@@ -335,7 +336,8 @@
               "color": "#607d8b",
               "info": "넓은 로비 쇼파예요. 잠시 앉아 다음 탐방 코스를 정해보세요."
             }
-          ]
+          ],
+          "_ok": true
         },
         {
           "id": "HALF",
@@ -472,7 +474,8 @@
               "y": 0.6,
               "color": "#b0a99a"
             }
-          ]
+          ],
+          "_ok": true
         },
         {
           "id": "SQRT2",
@@ -645,7 +648,8 @@
               "y": 0.48,
               "color": "#b0a99a"
             }
-          ]
+          ],
+          "_ok": true
         },
         {
           "id": "2F",
@@ -695,8 +699,8 @@
                 "B1"
               ],
               "icon": "🛗",
-              "x": 0.4,
-              "y": 0.62,
+              "x": 0.7,
+              "y": 0.51,
               "color": "#9aa"
             },
             {
@@ -710,8 +714,8 @@
                 "HALF"
               ],
               "icon": "🛗",
-              "x": 0.55,
-              "y": 0.62,
+              "x": 0.08,
+              "y": 0.55,
               "color": "#9aa"
             },
             {
@@ -720,7 +724,7 @@
               "to": "SQRT2",
               "icon": "🪜",
               "x": 0.13,
-              "y": 0.7,
+              "y": 0.72,
               "color": "#b0a99a"
             }
           ],
@@ -729,7 +733,8 @@
             0.4,
             0.94,
             0.9
-          ]
+          ],
+          "_ok": true
         },
         {
           "id": "PI",
@@ -746,7 +751,7 @@
               "room": "1교육실",
               "kind": "soon",
               "icon": "🧫",
-              "x": 0.22,
+              "x": 0.5,
               "y": 0.34,
               "color": "#7cb342"
             },
@@ -755,7 +760,7 @@
               "kind": "door",
               "room": "room_chem",
               "icon": "⚗️",
-              "x": 0.5,
+              "x": 0.7,
               "y": 0.34,
               "color": "#9c6ade"
             },
@@ -764,7 +769,7 @@
               "kind": "door",
               "room": "room_earth",
               "icon": "🌍",
-              "x": 0.8,
+              "x": 0.88,
               "y": 0.34,
               "color": "#8d6e63"
             },
@@ -779,8 +784,8 @@
                 "B1"
               ],
               "icon": "🛗",
-              "x": 0.15,
-              "y": 0.52,
+              "x": 0.7,
+              "y": 0.51,
               "color": "#9aa"
             },
             {
@@ -788,8 +793,8 @@
               "kind": "stair",
               "to": "3F",
               "icon": "🪜",
-              "x": 0.47,
-              "y": 0.8,
+              "x": 0.85,
+              "y": 0.62,
               "color": "#b0a99a"
             }
           ],
@@ -815,8 +820,8 @@
               "room": "X전시실",
               "kind": "soon",
               "icon": "🎨",
-              "x": 0.5,
-              "y": 0.4,
+              "x": 0.28,
+              "y": 0.36,
               "color": "#90a4ae"
             },
             {
@@ -830,8 +835,8 @@
                 "HALF"
               ],
               "icon": "🛗",
-              "x": 0.82,
-              "y": 0.52,
+              "x": 0.08,
+              "y": 0.58,
               "color": "#9aa"
             },
             {
@@ -839,8 +844,8 @@
               "kind": "stair",
               "to": "PI",
               "icon": "🪜",
-              "x": 0.47,
-              "y": 0.82,
+              "x": 0.8,
+              "y": 0.48,
               "color": "#b0a99a"
             },
             {
@@ -848,8 +853,8 @@
               "kind": "stair",
               "to": "R",
               "icon": "🪜",
-              "x": 0.34,
-              "y": 0.7,
+              "x": 0.52,
+              "y": 0.42,
               "color": "#b0a99a"
             }
           ],
@@ -3336,8 +3341,8 @@
         "startButton": "챌린지 시작",
         "actionCount": 38,
         "interactionErrors": [],
-        "rafBefore": 45,
-        "rafAfter": 681,
+        "rafBefore": 46,
+        "rafAfter": 685,
         "frozen": false,
         "returnAnchor": {
           "text": "← 허브",
@@ -3347,7 +3352,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9750
+        "durationMs": 9765
       },
       {
         "file": "q.html",
@@ -3359,8 +3364,8 @@
         "startButton": "훈련 시작",
         "actionCount": 38,
         "interactionErrors": [],
-        "rafBefore": 45,
-        "rafAfter": 681,
+        "rafBefore": 46,
+        "rafAfter": 684,
         "frozen": false,
         "returnAnchor": {
           "text": "← 허브",
@@ -3370,7 +3375,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9749
+        "durationMs": 9812
       },
       {
         "file": "d.html",
@@ -3382,8 +3387,8 @@
         "startButton": "실험 시작",
         "actionCount": 38,
         "interactionErrors": [],
-        "rafBefore": 45,
-        "rafAfter": 681,
+        "rafBefore": 46,
+        "rafAfter": 683,
         "frozen": false,
         "returnAnchor": {
           "text": "🏛 허브로",
@@ -3393,7 +3398,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9750
+        "durationMs": 9738
       },
       {
         "file": "m.html",
@@ -3405,8 +3410,8 @@
         "startButton": "실험 시작",
         "actionCount": 37,
         "interactionErrors": [],
-        "rafBefore": 40,
-        "rafAfter": 671,
+        "rafBefore": 41,
+        "rafAfter": 676,
         "frozen": false,
         "returnAnchor": {
           "text": "← 허브",
@@ -3416,7 +3421,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9446
+        "durationMs": 9510
       },
       {
         "file": "s.html",
@@ -3426,10 +3431,10 @@
         "url": "http://localhost:8899/s.html",
         "loaded": true,
         "startButton": "관측 시작",
-        "actionCount": 38,
+        "actionCount": 32,
         "interactionErrors": [],
-        "rafBefore": 42,
-        "rafAfter": 685,
+        "rafBefore": 43,
+        "rafAfter": 696,
         "frozen": false,
         "returnAnchor": {
           "text": "🏛 허브로 돌아가기",
@@ -3439,7 +3444,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9672
+        "durationMs": 9779
       },
       {
         "file": "c.html",
@@ -3449,10 +3454,10 @@
         "url": "http://localhost:8899/c.html",
         "loaded": true,
         "startButton": "실험 시작",
-        "actionCount": 50,
+        "actionCount": 49,
         "interactionErrors": [],
-        "rafBefore": 41,
-        "rafAfter": 681,
+        "rafBefore": 45,
+        "rafAfter": 680,
         "frozen": false,
         "returnAnchor": {
           "text": "🏛 허브로 돌아가기",
@@ -3462,7 +3467,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9580
+        "durationMs": 9524
       },
       {
         "file": "t.html",
@@ -3472,10 +3477,10 @@
         "url": "http://localhost:8899/t.html",
         "loaded": true,
         "startButton": "실험 시작",
-        "actionCount": 31,
+        "actionCount": 37,
         "interactionErrors": [],
-        "rafBefore": 42,
-        "rafAfter": 682,
+        "rafBefore": 43,
+        "rafAfter": 676,
         "frozen": false,
         "returnAnchor": {
           "text": "🏛 과학관 허브로 돌아가기",
@@ -3485,7 +3490,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9531
+        "durationMs": 9370
       },
       {
         "file": "prototypes/proto_bridge.html",
@@ -3495,10 +3500,10 @@
         "url": "http://localhost:8899/prototypes/proto_bridge.html",
         "loaded": true,
         "startButton": null,
-        "actionCount": 47,
+        "actionCount": 38,
         "interactionErrors": [],
-        "rafBefore": 41,
-        "rafAfter": 677,
+        "rafBefore": 40,
+        "rafAfter": 693,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -3508,7 +3513,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9162
+        "durationMs": 9394
       },
       {
         "file": "prototypes/proto_caffeine.html",
@@ -3521,7 +3526,7 @@
         "actionCount": 49,
         "interactionErrors": [],
         "rafBefore": 38,
-        "rafAfter": 670,
+        "rafAfter": 675,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -3531,7 +3536,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9113
+        "durationMs": 9161
       },
       {
         "file": "prototypes/proto_doorlock.html",
@@ -3543,8 +3548,8 @@
         "startButton": null,
         "actionCount": 40,
         "interactionErrors": [],
-        "rafBefore": 39,
-        "rafAfter": 515,
+        "rafBefore": 36,
+        "rafAfter": 509,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -3554,7 +3559,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9329
+        "durationMs": 9233
       },
       {
         "file": "prototypes/proto_immune.html",
@@ -3564,76 +3569,7 @@
         "url": "http://localhost:8899/prototypes/proto_immune.html",
         "loaded": true,
         "startButton": "시작하기",
-        "actionCount": 37,
-        "interactionErrors": [],
-        "rafBefore": 42,
-        "rafAfter": 679,
-        "frozen": false,
-        "returnAnchor": {
-          "text": "← 갤러리",
-          "href": "index.html"
-        },
-        "pageErrors": [],
-        "consoleErrors": [],
-        "failedRequests": [],
-        "httpErrors": [],
-        "durationMs": 9376
-      },
-      {
-        "file": "prototypes/proto_kart.html",
-        "source": "prototype",
-        "scene": "prototypes",
-        "item": "proto_kart.html",
-        "url": "http://localhost:8899/prototypes/proto_kart.html",
-        "loaded": true,
-        "startButton": "다시 시작",
-        "actionCount": 37,
-        "interactionErrors": [],
-        "rafBefore": 41,
-        "rafAfter": 675,
-        "frozen": false,
-        "returnAnchor": {
-          "text": "← 갤러리",
-          "href": "index.html"
-        },
-        "pageErrors": [],
-        "consoleErrors": [],
-        "failedRequests": [],
-        "httpErrors": [],
-        "durationMs": 9219
-      },
-      {
-        "file": "prototypes/proto_light.html",
-        "source": "prototype",
-        "scene": "prototypes",
-        "item": "proto_light.html",
-        "url": "http://localhost:8899/prototypes/proto_light.html",
-        "loaded": true,
-        "startButton": "시작하기",
-        "actionCount": 31,
-        "interactionErrors": [],
-        "rafBefore": 49,
-        "rafAfter": 689,
-        "frozen": false,
-        "returnAnchor": {
-          "text": "← 갤러리",
-          "href": "index.html"
-        },
-        "pageErrors": [],
-        "consoleErrors": [],
-        "failedRequests": [],
-        "httpErrors": [],
-        "durationMs": 9347
-      },
-      {
-        "file": "prototypes/proto_tornado.html",
-        "source": "prototype",
-        "scene": "prototypes",
-        "item": "proto_tornado.html",
-        "url": "http://localhost:8899/prototypes/proto_tornado.html",
-        "loaded": true,
-        "startButton": "시작하기",
-        "actionCount": 32,
+        "actionCount": 30,
         "interactionErrors": [],
         "rafBefore": 42,
         "rafAfter": 677,
@@ -3646,7 +3582,76 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9342
+        "durationMs": 9310
+      },
+      {
+        "file": "prototypes/proto_kart.html",
+        "source": "prototype",
+        "scene": "prototypes",
+        "item": "proto_kart.html",
+        "url": "http://localhost:8899/prototypes/proto_kart.html",
+        "loaded": true,
+        "startButton": "다시 시작",
+        "actionCount": 31,
+        "interactionErrors": [],
+        "rafBefore": 42,
+        "rafAfter": 684,
+        "frozen": false,
+        "returnAnchor": {
+          "text": "← 갤러리",
+          "href": "index.html"
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "failedRequests": [],
+        "httpErrors": [],
+        "durationMs": 9393
+      },
+      {
+        "file": "prototypes/proto_light.html",
+        "source": "prototype",
+        "scene": "prototypes",
+        "item": "proto_light.html",
+        "url": "http://localhost:8899/prototypes/proto_light.html",
+        "loaded": true,
+        "startButton": "시작하기",
+        "actionCount": 38,
+        "interactionErrors": [],
+        "rafBefore": 43,
+        "rafAfter": 697,
+        "frozen": false,
+        "returnAnchor": {
+          "text": "← 갤러리",
+          "href": "index.html"
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "failedRequests": [],
+        "httpErrors": [],
+        "durationMs": 9460
+      },
+      {
+        "file": "prototypes/proto_tornado.html",
+        "source": "prototype",
+        "scene": "prototypes",
+        "item": "proto_tornado.html",
+        "url": "http://localhost:8899/prototypes/proto_tornado.html",
+        "loaded": true,
+        "startButton": "시작하기",
+        "actionCount": 40,
+        "interactionErrors": [],
+        "rafBefore": 43,
+        "rafAfter": 679,
+        "frozen": false,
+        "returnAnchor": {
+          "text": "← 갤러리",
+          "href": "index.html"
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "failedRequests": [],
+        "httpErrors": [],
+        "durationMs": 9203
       },
       {
         "file": "prototypes/proto_vortex.html",
@@ -3658,8 +3663,8 @@
         "startButton": "다시 시작",
         "actionCount": 37,
         "interactionErrors": [],
-        "rafBefore": 44,
-        "rafAfter": 677,
+        "rafBefore": 40,
+        "rafAfter": 674,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -3669,7 +3674,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9357
+        "durationMs": 9179
       }
     ]
   },

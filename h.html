@@ -313,22 +313,22 @@ const FLOORS=[
    {name:"B전시실 입구 · 연결", kind:"door", room:"room_B", icon:"🪐", x:0.30,y:0.35, color:"#4a90e2"},
    {name:"Yy전시실 입구 · 공간", room:"Yy전시실", kind:"soon", icon:"🧩", x:0.56,y:0.34, color:"#f4c430"},
    {name:"천문대 입구 · 태양관측", kind:"door", room:"room_astro", icon:"🔭", x:0.80,y:0.40, color:"#2e3a6b"},
-   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.40,y:0.62, color:"#9aa"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.55,y:0.62, color:"#9aa"},
-   {name:"↓ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.13,y:0.70, color:"#b0a99a"},
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.70,y:0.51, color:"#9aa"}, // 도면 통일좌표(남중앙동측) — P2
+   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.08,y:0.55, color:"#9aa"}, // 도면: 서측 끝 — P2
+   {name:"↓ √2층 계단", kind:"stair", to:"SQRT2", icon:"🪜", x:0.13,y:0.72, color:"#b0a99a"},
  ]},
  {id:"PI", name:"π층", bg:"bg/f_pi_town.png", tint:"#7cb342", start:[0.47,0.66], spots:[
-   {name:"1교육실 입구 · 생물", room:"1교육실", kind:"soon", icon:"🧫", x:0.22,y:0.34, color:"#7cb342"},
-   {name:"2교육실 입구 · 화학", kind:"door", room:"room_chem", icon:"⚗️", x:0.50,y:0.34, color:"#9c6ade"},
-   {name:"3교육실 입구 · 지구과학", kind:"door", room:"room_earth", icon:"🌍", x:0.80,y:0.34, color:"#8d6e63"},
-   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.15,y:0.52, color:"#9aa"},
-   {name:"↓ 3층 계단", kind:"stair", to:"3F", icon:"🪜", x:0.47,y:0.80, color:"#b0a99a"},
+   {name:"1교육실 입구 · 생물", room:"1교육실", kind:"soon", icon:"🧫", x:0.50,y:0.34, color:"#7cb342"}, // P2: 교육실 날개=동측(도면)
+   {name:"2교육실 입구 · 화학", kind:"door", room:"room_chem", icon:"⚗️", x:0.70,y:0.34, color:"#9c6ade"},
+   {name:"3교육실 입구 · 지구과학", kind:"door", room:"room_earth", icon:"🌍", x:0.88,y:0.34, color:"#8d6e63"},
+   {name:"메인 엘리베이터", kind:"elevator", elev:"A", floors:["PI","2F","1F","B1"], icon:"🛗", x:0.70,y:0.51, color:"#9aa"}, // P2: 통일좌표(동측)
+   {name:"↓ 3층 계단", kind:"stair", to:"3F", icon:"🪜", x:0.85,y:0.62, color:"#b0a99a"}, // P2: 계단실#1 동측
  ]},
  {id:"3F", name:"3층", bg:"bg/f_3f_town.png", tint:"#90a4ae", start:[0.5,0.60], spots:[
-   {name:"X전시실 입구 · 기획전시", room:"X전시실", kind:"soon", icon:"🎨", x:0.50,y:0.40, color:"#90a4ae"},
-   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.82,y:0.52, color:"#9aa"},
-   {name:"↑ π층 계단", kind:"stair", to:"PI", icon:"🪜", x:0.47,y:0.82, color:"#b0a99a"},
-   {name:"↑ 옥상 계단", kind:"stair", to:"R", icon:"🪜", x:0.34,y:0.70, color:"#b0a99a"},
+   {name:"X전시실 입구 · 기획전시", room:"X전시실", kind:"soon", icon:"🎨", x:0.28,y:0.36, color:"#90a4ae"}, // P2: 북서 대형홀(도면)
+   {name:"화물 엘리베이터", kind:"elevator", elev:"B", floors:["3F","2F","SQRT2","HALF"], icon:"🛗", x:0.08,y:0.58, color:"#9aa"}, // P2: 도면 서측
+   {name:"↑ π층 계단", kind:"stair", to:"PI", icon:"🪜", x:0.80,y:0.48, color:"#b0a99a"}, // P2: 계단실#1 동측
+   {name:"↑ 옥상 계단", kind:"stair", to:"R", icon:"🪜", x:0.52,y:0.42, color:"#b0a99a"}, // P2: 도면 중앙(0.52,0.40)
  ]},
  {id:"R", name:"옥상", bg:"bg/f_rooftop_hq.png", tint:"#7ec8e3", start:[0.55,0.55], spots:[
    {name:"태양광 발전소", room:"옥상", kind:"soon", icon:"☀️", x:0.30,y:0.38, color:"#f6b93b"},
@@ -604,7 +604,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607281534";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607281542";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 const INTERACTION_V2=false; // P0-③ 골격: P4 UI 개편(탭 상호작용+walk-in) 상위 플래그 — false면 구 경로 그대로
 /* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
    구 숫자 키(ufo_floor)는 "마이그레이션 시점 순서 동결 테이블"로만 해석·기록 (codex R1: 현재 배열로 읽고 쓰면
