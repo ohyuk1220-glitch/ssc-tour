@@ -752,7 +752,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607292102";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607292118";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 const WALK_IN=true;         // P4-③: 문·게이트·출구(물리 포털 계단 포함) 근접 자동 실행
 const TAP_TO_MOVE=true;     // P4-④⑤: 대상 직접 탭 + 빈 바닥 탭 자동 이동
 /* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
@@ -788,6 +788,180 @@ let inRoom=null, roomStack=[];   // inRoom=현재 방 / roomStack=방→방 진�
 let lastFloorDoor=null;          // 층에서 마지막으로 통과한 door 스팟 — 문이 2개인 방(√2층 room_O)에서 들어온 문으로 복귀시키기 위함
 let doneCache={}, seenRenderCache={};
 function curScene(){ return inRoom ? ROOMS[inRoom] : FLOORS[floorIdx]; }
+
+/* ══════════ 낮밤·날씨: 로컬 시계 + 날짜 시드(실날씨 API는 공개 저장소 키 문제로 보류) ══════════ */
+const DAYNIGHT=true, WEATHER=true;
+const ENVIRONMENT=(()=>{
+  const TOD_KEYS=new Set(["morning","day","evening","night"]);
+  const WEATHER_KEYS=new Set(["clear","rain","snow"]);
+  const forcedTod=TOD_KEYS.has(_q.get("tod"))?_q.get("tod"):null;
+  const forcedWeather=WEATHER_KEYS.has(_q.get("wx"))?_q.get("wx"):null;
+  const TONES={
+    morning:{r:255,g:193,b:82,a:0.14,night:0},
+    day:{r:255,g:255,b:255,a:0,night:0},
+    evening:{r:232,g:96,b:36,a:0.20,night:0},
+    night:{r:12,g:28,b:72,a:0.34,night:1},
+  };
+  const tone={r:255,g:255,b:255,a:0,night:0,css:"rgb(255,255,255)"};
+  const WEATHER_MAX=60, RAIN_COUNT=52, SNOW_COUNT=34;
+  const weatherParts=Array.from({length:WEATHER_MAX},(_,i)=>{
+    const a=unitSeed(i,17), b=unitSeed(i,43), c=unitSeed(i,89);
+    return {x:a,y:b,vy:0.00065+c*0.00055,size:1+c*1.8,phase:a*Math.PI*2};
+  });
+  const windowLights=[
+    [0.463,0.276,5],[0.620,0.322,4],[0.715,0.360,5],[0.460,0.466,4],
+  ];
+  let weather="clear", weatherToastShown=false, navigationReady=false;
+  let dateKey="", lastClockSample=-Infinity;
+  try{weatherToastShown=sessionStorage.getItem("ssc_weather_toast")==="1";}catch(_){}
+
+  function unitSeed(index,salt){
+    let x=Math.imul(index+1,0x45d9f3b)^Math.imul(salt,0x27d4eb2d);
+    x=Math.imul(x^(x>>>16),0x45d9f3b);
+    return ((x^(x>>>16))>>>0)/4294967296;
+  }
+  /* 순수 함수: YYYYMMDD만으로 같은 날의 날씨를 결정한다. */
+  function hashDateSeed(yyyymmdd){
+    const text=String(yyyymmdd);
+    let hash=2166136261;
+    for(let i=0;i<text.length;i++){
+      hash^=text.charCodeAt(i);
+      hash=Math.imul(hash,16777619);
+    }
+    return hash>>>0;
+  }
+  function seededWeather(yyyymmdd,month){
+    const roll=hashDateSeed(yyyymmdd)%100;
+    if(roll<60)return "clear";
+    if(roll<85)return "rain";
+    return month>=6&&month<=9?"rain":"snow";
+  }
+  function copyTone(source){
+    tone.r=source.r; tone.g=source.g; tone.b=source.b;
+    tone.a=source.a; tone.night=source.night;
+  }
+  function mixTone(from,to,amount){
+    tone.r=from.r+(to.r-from.r)*amount;
+    tone.g=from.g+(to.g-from.g)*amount;
+    tone.b=from.b+(to.b-from.b)*amount;
+    tone.a=from.a+(to.a-from.a)*amount;
+    tone.night=from.night+(to.night-from.night)*amount;
+  }
+  function setToneForMinutes(minutes){
+    // 각 경계 전후 15분, 총 30분 동안 양쪽 톤을 선형 보간한다.
+    if(minutes>=345&&minutes<375)mixTone(TONES.night,TONES.morning,(minutes-345)/30);
+    else if(minutes>=375&&minutes<585)copyTone(TONES.morning);
+    else if(minutes>=585&&minutes<615)mixTone(TONES.morning,TONES.day,(minutes-585)/30);
+    else if(minutes>=615&&minutes<1005)copyTone(TONES.day);
+    else if(minutes>=1005&&minutes<1035)mixTone(TONES.day,TONES.evening,(minutes-1005)/30);
+    else if(minutes>=1035&&minutes<1185)copyTone(TONES.evening);
+    else if(minutes>=1185&&minutes<1215)mixTone(TONES.evening,TONES.night,(minutes-1185)/30);
+    else copyTone(TONES.night);
+    tone.css="rgb("+Math.round(tone.r)+","+Math.round(tone.g)+","+Math.round(tone.b)+")";
+  }
+  function sampleClock(force){
+    const nowTick=performance.now();
+    if(!force&&nowTick-lastClockSample<15000)return;
+    lastClockSample=nowTick;
+    // Date 접근은 이 기능 내부의 시계 샘플링에만 한정한다.
+    const now=new Date();
+    if(DAYNIGHT){
+      if(forcedTod){
+        copyTone(TONES[forcedTod]);
+        tone.css="rgb("+tone.r+","+tone.g+","+tone.b+")";
+      }else{
+        setToneForMinutes(now.getHours()*60+now.getMinutes()+now.getSeconds()/60);
+      }
+    }else{
+      copyTone(TONES.day); tone.css="rgb(255,255,255)";
+    }
+    if(WEATHER){
+      const month=now.getMonth()+1;
+      const nextDateKey=now.getFullYear()*10000+month*100+now.getDate();
+      if(nextDateKey!==dateKey){
+        dateKey=nextDateKey;
+        weather=forcedWeather||seededWeather(dateKey,month);
+      }
+    }else weather="clear";
+  }
+  function isOutside(){
+    return !inRoom&&FLOORS[floorIdx]&&FLOORS[floorIdx].id==="OUTSIDE";
+  }
+  function updateParticles(){
+    if(!WEATHER||!isOutside()||weather==="clear")return;
+    const count=weather==="rain"?RAIN_COUNT:SNOW_COUNT;
+    for(let i=0;i<count;i++){
+      const p=weatherParts[i];
+      if(weather==="rain"){
+        p.x-=0.0028; p.y+=0.012+p.vy*2;
+        if(p.y>1.06||p.x<-.08){p.y-=1.12;p.x+=1.10;}
+      }else{
+        p.x+=Math.sin(t*0.015+p.phase)*0.00018;
+        p.y+=p.vy;
+        if(p.y>1.04){p.y-=1.08;p.x=(p.x+0.37)%1.04;}
+        if(p.x<-.03)p.x=1.03; else if(p.x>1.03)p.x=-.03;
+      }
+    }
+  }
+  function drawWeather(){
+    if(!WEATHER||!isOutside()||weather==="clear")return;
+    ctx.save();
+    if(weather==="rain"){
+      ctx.beginPath();
+      for(let i=0;i<RAIN_COUNT;i++){
+        const p=weatherParts[i], x=p.x*W, y=p.y*H;
+        ctx.moveTo(x,y); ctx.lineTo(x-6-p.size,y+13+p.size*2);
+      }
+      ctx.globalAlpha=0.52; ctx.strokeStyle="#c6ddf2"; ctx.lineWidth=1.15; ctx.stroke();
+    }else{
+      ctx.fillStyle="#fff";
+      for(let i=0;i<SNOW_COUNT;i++){
+        const p=weatherParts[i];
+        ctx.globalAlpha=0.48+0.34*Math.sin(t*0.018+p.phase);
+        ctx.beginPath(); ctx.arc(p.x*W,p.y*H,p.size,0,Math.PI*2); ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+  function drawWindowLights(){
+    if(!DAYNIGHT||!isOutside()||tone.night<=0.02)return;
+    ctx.save(); ctx.fillStyle="#ffd47a";
+    for(let i=0;i<windowLights.length;i++){
+      const light=windowLights[i], size=light[2];
+      ctx.globalAlpha=tone.night*(0.42+Math.sin(t*0.025+i*1.7)*0.12);
+      ctx.fillRect(s2x(light[0])-size/2,s2y(light[1])-size/2,size,size);
+    }
+    ctx.restore();
+  }
+  function drawTone(){
+    if(!DAYNIGHT||inRoom)return;
+    const strength=isOutside()?1:0.30;
+    const alpha=tone.a*strength;
+    if(alpha<=0.001)return;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle=tone.css;
+    ctx.fillRect(0,0,W,H);   // 모바일 합성 비용을 피하고 알파 오버레이 1장만 사용한다.
+    ctx.restore();
+  }
+  function maybeToast(){
+    if(!navigationReady||weatherToastShown||!WEATHER||!isOutside())return;
+    weatherToastShown=true;
+    try{sessionStorage.setItem("ssc_weather_toast","1");}catch(_){}
+    toast(weather==="rain"?"오늘은 비가 오네요 ☔":weather==="snow"?"오늘은 눈이 내려요 ❄️":"오늘은 맑은 날이에요 ☀️");
+  }
+  function update(){
+    sampleClock(false);
+    updateParticles();
+  }
+
+  sampleClock(true);
+  return {
+    update, drawWeather, drawWindowLights, drawTone,
+    sceneEntered:maybeToast,
+    navigationReady(){navigationReady=true;maybeToast();},
+  };
+})();
 
 /* ══════════ Juice: 사운드(WebAudio 합성·저작권0) + 파티클 ══════════ */
 let _ac=null, sndOn=true;
@@ -905,6 +1079,7 @@ function boot(){
     roomStack=(Array.isArray(_ctx.s)?_ctx.s.filter(id=>ROOMS[id]):[]);   // 중첩 방 스택 복원 (지진→G실 나가기 보존)
     if(_ctx.d&&_ctx.d.room)lastFloorDoor=_ctx.d;           // 들어온 문 복원 (O실 서쪽 문 퇴장 보존)
   }
+  ENVIRONMENT.navigationReady();
   loop();
   if(_q.has("scan")){
     handleScanParam(scanQid,scanKey,scanEx).catch(e=>{console.warn("QR 인증 처리 실패:",e);toast("QR 인증을 처리할 수 없어요");});
@@ -946,6 +1121,7 @@ function enterFloor(idx,instant){
   nearSpot=null; nearNPC=null; updateFloorTag();
   resetWalkInArming();
   refreshMiniHud();
+  ENVIRONMENT.sceneEntered();
 }
 function enterRoom(roomId, fromStack){
   clearAutoMove();
@@ -1084,6 +1260,7 @@ function render(){
     ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.font="800 20px var(--font-sans)";
     ctx.fillText(f.name+" 준비 중",W/2,H/2);
   }
+  ENVIRONMENT.drawWindowLights();
   drawAmbientParticles();
   // 문·계단·엘리베이터 등 전환구의 바닥 매트: 배경 위, 모든 캐릭터 아래.
   // 60fps 기준 120프레임(약 2초) 주기로 알파만 펄스하며 shadowBlur는 쓰지 않는다.
@@ -1146,8 +1323,11 @@ function render(){
   // 파티클 (juice)
   drawParts();
   drawPops();
+  ENVIRONMENT.drawWeather();
   // 기존 FADE 상태 머신의 타이밍은 유지하고, 렌더만 7줄 세로 와이프로 바꾼다.
   drawTransitionWipe();
+  // 낮밤 톤은 렌더 마지막, 비네트 바로 직전에 한 장만 합성한다.
+  ENVIRONMENT.drawTone();
   // 전 씬 공통 마지막 오버레이(가장자리 최대 알파 .22).
   drawVignette();
 }
@@ -1598,6 +1778,7 @@ function update(){
   updateParts();
   updatePops();
   updateAmbientParticles();
+  ENVIRONMENT.update();
   computeBgRect();   // clamp가 현재 화면 배치를 알아야 함(cover 시 캐릭터 화면이탈 방지)
   let autoActivated=false;
   if(fadeState){ player.vx=player.vy=0; }

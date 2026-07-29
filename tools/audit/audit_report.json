@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-28T10:03:59.736Z",
+  "generatedAt": "2026-07-29T12:10:15.610Z",
   "repoRoot": "/Users/a55/ssc-tour",
   "baseUrl": "http://localhost:8899",
-  "durationMs": 56745,
+  "durationMs": 56522,
   "runtimeExport": {
     "ok": true,
     "counts": {
@@ -125,8 +125,7 @@
             0.05,
             0.97,
             0.95
-          ],
-          "_ok": true
+          ]
         },
         {
           "id": "1F",
@@ -583,6 +582,7 @@
               "name": "O전시실 입구 · 생존",
               "kind": "door",
               "room": "room_O",
+              "outLabel": "남동",
               "icon": "🧬",
               "x": 0.66,
               "y": 0.325,
@@ -592,6 +592,7 @@
               "name": "O전시실 서쪽 입구",
               "kind": "door",
               "room": "room_O",
+              "outLabel": "서측",
               "icon": "🧬",
               "x": 0.19,
               "y": 0.385,
@@ -648,7 +649,8 @@
               "y": 0.48,
               "color": "#b0a99a"
             }
-          ]
+          ],
+          "_ok": true
         },
         {
           "id": "2F",
@@ -801,8 +803,7 @@
             0.4,
             0.94,
             0.9
-          ],
-          "_ok": true
+          ]
         },
         {
           "id": "3F",
@@ -1041,15 +1042,6 @@
               "y": 0.62,
               "color": "#7cb342",
               "info": "G전시실 입구 옆 사물함이에요. 로커 하나하나가 He·Ne·F·Cl·Ar·Kr·I·Xe·At·Og·Ts 같은 원소 칸이고, 디지털 잠금장치로 여닫아요."
-            },
-            {
-              "name": "메이커 스튜디오 문",
-              "kind": "info",
-              "icon": "🚪",
-              "x": 0.095,
-              "y": 0.7,
-              "color": "#8d6e63",
-              "info": "메이커 스튜디오로 이어지는 문이에요. 운영 프로그램은 현장 안내를 확인해주세요."
             },
             {
               "name": "↓ ½층 에스컬레이터",
@@ -1369,13 +1361,22 @@
               "info": "눈에 안 보이는 작은 플라스틱 조각을 현미경으로 관찰해요. 우리 밥상까지 돌아온답니다."
             },
             {
-              "name": "지진 체험관",
+              "name": "지진체험관",
               "kind": "door",
               "room": "room_quake",
               "icon": "🌋",
-              "x": 0.51,
-              "y": 0.23,
+              "x": 0.31,
+              "y": 0.27,
               "color": "#8a7a6a"
+            },
+            {
+              "name": "아이디어 제작소",
+              "kind": "info",
+              "icon": "🪟",
+              "x": 0.92,
+              "y": 0.58,
+              "color": "#8d6e63",
+              "info": "유리창 너머로 아이디어제작소 내부를 볼 수 있어요."
             },
             {
               "name": "분리수거 챌린지",
@@ -1719,6 +1720,15 @@
               "x": 0.6,
               "y": 0.65,
               "color": "#ef8c3b"
+            },
+            {
+              "name": "나가기 · 반대편",
+              "kind": "exit",
+              "outDoor": "opposite",
+              "icon": "🚪",
+              "x": 0.53,
+              "y": 0.31,
+              "color": "#b0a99a"
             },
             {
               "name": "나가기",
@@ -2895,7 +2905,9 @@
           "y": 0.83,
           "lines": [
             "여긴 '공존'의 방이에요. 사람과 자연, 과거와 미래가 어떻게 얽혀 사는지 보여줘요.",
-            "저기 철망에 눌러 담은 쓰레기가 '인류세'예요. 플라스틱·콘크리트가 지층에 쌓여 먼 훗날 인류를 기억할 흔적이 된대요."
+            "저기 철망에 눌러 담은 쓰레기가 '인류세'예요. 플라스틱·콘크리트가 지층에 쌓여 먼 훗날 인류를 기억할 흔적이 된대요.",
+            "인류세라는 말은 1980년대 미국 생물학자 유진 스토머가 처음 사용했대요.",
+            "플라스틱은 2mm 두께로 지구를 덮을 수 있을 만큼 많은 양이 버려졌대요."
           ],
           "type": "guide",
           "_lineIdx": 0,
@@ -2908,7 +2920,9 @@
           "y": 0.85,
           "lines": [
             "여기는 지진 체험관이에요. 흔들리면 책상 아래로, 멈추면 계단으로 대피하세요.",
-            "지진과 화산은 땅속 판이 움직여 생겨요. 저 용암 균열존이 그 증거랍니다."
+            "지진과 화산은 땅속 판이 움직여 생겨요. 저 용암 균열존이 그 증거랍니다.",
+            "지진 실시간 모니터링 화면은 10분마다 자료가 갱신돼요.",
+            "지진으로 흔들릴 때는 탁자 아래로 들어가 다리를 꼭 잡아야 해요."
           ],
           "type": "guide",
           "_lineIdx": 0,
@@ -2921,7 +2935,9 @@
           "y": 0.85,
           "lines": [
             "생존의 방에 온 걸 환영해요. DNA 한 가닥에 나를 만든 설계도가 담겨 있어요.",
-            "지금 내 몸속엔 수많은 미생물이 함께 살아요. DNA 지문은 세상에 단 하나뿐이래요."
+            "지금 내 몸속엔 수많은 미생물이 함께 살아요. DNA 지문은 세상에 단 하나뿐이래요.",
+            "DNA의 4개 염기(A·T·C·G)는 유전자 언어의 글자와 같아요.",
+            "주기율표는 18개 세로줄, 7개 가로줄, 2개 특수줄로 구성돼요."
           ],
           "type": "guide",
           "_lineIdx": 0,
@@ -2934,7 +2950,8 @@
           "y": 0.85,
           "lines": [
             "연결의 방이에요. 아주 작은 원자부터 저 멀리 우주까지, 세상 모든 건 이어져 있어요.",
-            "저 프리즘 보이죠? 하얀 빛 속에 무지개가 숨어 있었대요."
+            "저 프리즘 보이죠? 하얀 빛 속에 무지개가 숨어 있었대요.",
+            "대뇌는 뇌 면적의 약 7/8을 차지한대요."
           ],
           "type": "guide",
           "_lineIdx": 0,
@@ -2969,8 +2986,8 @@
         {
           "scene": "room_earth",
           "name": "S.C",
-          "x": 0.42,
-          "y": 0.87,
+          "x": 0.36,
+          "y": 0.72,
           "lines": [
             "여긴 지구과학 실험실이에요. 편광현미경으로 암석 속 결정을 들여다볼 수 있어요.",
             "땅이 켜켜이 쌓아온 시간, 지층과 화석으로 지구의 역사를 읽어요."
@@ -2986,7 +3003,8 @@
           "y": 0.34,
           "lines": [
             "어서오세요! 서울시립과학관은 무료입장이에요.",
-            "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요."
+            "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요.",
+            "솔방울의 나선은 시계방향으로 8줄, 반시계방향으로 13줄이래요."
           ],
           "type": "guide",
           "_lineIdx": 0,
@@ -3148,8 +3166,8 @@
               0.6
             ],
             [
-              0.45,
-              0.75
+              0.3,
+              0.78
             ]
           ],
           "lines": [
@@ -3223,8 +3241,8 @@
         {
           "scene": "PI",
           "name": "미화주임님",
-          "x": 0.6,
-          "y": 0.65,
+          "x": 0.3,
+          "y": 0.45,
           "lines": [
             "교육실 복도는 실험 끝나면 바로 닦아요. 미끄럼 조심하세요!"
           ],
@@ -3891,7 +3909,7 @@
         "from": "room_G",
         "to": "room_quake",
         "kind": "door",
-        "item": "지진 체험관"
+        "item": "지진체험관"
       },
       {
         "from": "room_G",
@@ -3915,7 +3933,7 @@
         "from": "room_O",
         "to": "SQRT2",
         "kind": "exit",
-        "item": "나가기"
+        "item": "나가기 · 반대편"
       },
       {
         "from": "room_B",
@@ -3978,8 +3996,8 @@
     "gridStep": 0.01,
     "spotRadius": 0.06,
     "sceneCount": 24,
-    "spotCount": 114,
-    "reachableSpotCount": 114,
+    "spotCount": 115,
+    "reachableSpotCount": 115,
     "failures": [],
     "scenes": [
       {
@@ -4098,8 +4116,8 @@
         ],
         "startPassable": true,
         "visitedCellCount": 4494,
-        "spotCount": 7,
-        "reachableSpotCount": 7,
+        "spotCount": 6,
+        "reachableSpotCount": 6,
         "failures": []
       },
       {
@@ -4122,8 +4140,8 @@
         ],
         "startPassable": true,
         "visitedCellCount": 3813,
-        "spotCount": 8,
-        "reachableSpotCount": 8,
+        "spotCount": 9,
+        "reachableSpotCount": 9,
         "failures": []
       },
       {
@@ -4158,8 +4176,8 @@
         ],
         "startPassable": true,
         "visitedCellCount": 4211,
-        "spotCount": 5,
-        "reachableSpotCount": 5,
+        "spotCount": 6,
+        "reachableSpotCount": 6,
         "failures": []
       },
       {
@@ -4373,7 +4391,7 @@
     ]
   },
   "dataIntegrity": {
-    "checkedSpots": 114,
+    "checkedSpots": 115,
     "checkedNpcs": 18,
     "checkedGames": 7,
     "checkedExhibits": 25,
@@ -4392,11 +4410,11 @@
         "item": "분리수거 챌린지",
         "url": "http://localhost:8899/g.html",
         "loaded": true,
-        "startButton": "챌린지 시작",
-        "actionCount": 38,
+        "startButton": "매치 시작",
+        "actionCount": 40,
         "interactionErrors": [],
-        "rafBefore": 45,
-        "rafAfter": 683,
+        "rafBefore": 42,
+        "rafAfter": 691,
         "frozen": false,
         "returnAnchor": {
           "text": "← 허브",
@@ -4406,7 +4424,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9723
+        "durationMs": 9680
       },
       {
         "file": "q.html",
@@ -4418,18 +4436,18 @@
         "startButton": "훈련 시작",
         "actionCount": 38,
         "interactionErrors": [],
-        "rafBefore": 45,
-        "rafAfter": 683,
+        "rafBefore": 46,
+        "rafAfter": 682,
         "frozen": false,
         "returnAnchor": {
-          "text": "← 허브",
+          "text": "◀ 허브",
           "href": "h.html"
         },
         "pageErrors": [],
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9722
+        "durationMs": 9599
       },
       {
         "file": "d.html",
@@ -4438,10 +4456,10 @@
         "item": "DNA 짝 맞추기",
         "url": "http://localhost:8899/d.html",
         "loaded": true,
-        "startButton": "실험 시작",
+        "startButton": "복원 시작",
         "actionCount": 38,
         "interactionErrors": [],
-        "rafBefore": 45,
+        "rafBefore": 46,
         "rafAfter": 683,
         "frozen": false,
         "returnAnchor": {
@@ -4452,7 +4470,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9724
+        "durationMs": 9489
       },
       {
         "file": "m.html",
@@ -4462,10 +4480,10 @@
         "url": "http://localhost:8899/m.html",
         "loaded": true,
         "startButton": "실험 시작",
-        "actionCount": 34,
+        "actionCount": 35,
         "interactionErrors": [],
-        "rafBefore": 44,
-        "rafAfter": 692,
+        "rafBefore": 43,
+        "rafAfter": 674,
         "frozen": false,
         "returnAnchor": {
           "text": "← 허브",
@@ -4475,7 +4493,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9758
+        "durationMs": 9314
       },
       {
         "file": "s.html",
@@ -4487,8 +4505,8 @@
         "startButton": "관측 시작",
         "actionCount": 32,
         "interactionErrors": [],
-        "rafBefore": 42,
-        "rafAfter": 698,
+        "rafBefore": 43,
+        "rafAfter": 708,
         "frozen": false,
         "returnAnchor": {
           "text": "🏛 허브로 돌아가기",
@@ -4498,7 +4516,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9850
+        "durationMs": 9821
       },
       {
         "file": "c.html",
@@ -4507,11 +4525,11 @@
         "item": "화학 실험실",
         "url": "http://localhost:8899/c.html",
         "loaded": true,
-        "startButton": "실험 시작",
+        "startButton": "작업 시작",
         "actionCount": 49,
         "interactionErrors": [],
-        "rafBefore": 44,
-        "rafAfter": 681,
+        "rafBefore": 40,
+        "rafAfter": 671,
         "frozen": false,
         "returnAnchor": {
           "text": "🏛 허브로 돌아가기",
@@ -4521,7 +4539,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9589
+        "durationMs": 9103
       },
       {
         "file": "t.html",
@@ -4531,9 +4549,9 @@
         "url": "http://localhost:8899/t.html",
         "loaded": true,
         "startButton": "실험 시작",
-        "actionCount": 37,
+        "actionCount": 31,
         "interactionErrors": [],
-        "rafBefore": 43,
+        "rafBefore": 41,
         "rafAfter": 680,
         "frozen": false,
         "returnAnchor": {
@@ -4544,7 +4562,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9422
+        "durationMs": 9513
       },
       {
         "file": "prototypes/proto_bridge.html",
@@ -4556,8 +4574,8 @@
         "startButton": null,
         "actionCount": 37,
         "interactionErrors": [],
-        "rafBefore": 41,
-        "rafAfter": 676,
+        "rafBefore": 43,
+        "rafAfter": 673,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -4567,7 +4585,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9141
+        "durationMs": 9254
       },
       {
         "file": "prototypes/proto_caffeine.html",
@@ -4579,8 +4597,8 @@
         "startButton": "실험 시작",
         "actionCount": 50,
         "interactionErrors": [],
-        "rafBefore": 39,
-        "rafAfter": 676,
+        "rafBefore": 40,
+        "rafAfter": 689,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -4590,7 +4608,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9171
+        "durationMs": 9311
       },
       {
         "file": "prototypes/proto_doorlock.html",
@@ -4602,8 +4620,8 @@
         "startButton": null,
         "actionCount": 40,
         "interactionErrors": [],
-        "rafBefore": 38,
-        "rafAfter": 508,
+        "rafBefore": 36,
+        "rafAfter": 514,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -4613,7 +4631,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9216
+        "durationMs": 9265
       },
       {
         "file": "prototypes/proto_immune.html",
@@ -4623,10 +4641,10 @@
         "url": "http://localhost:8899/prototypes/proto_immune.html",
         "loaded": true,
         "startButton": "시작하기",
-        "actionCount": 31,
+        "actionCount": 32,
         "interactionErrors": [],
-        "rafBefore": 42,
-        "rafAfter": 683,
+        "rafBefore": 44,
+        "rafAfter": 700,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -4636,7 +4654,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9454
+        "durationMs": 9489
       },
       {
         "file": "prototypes/proto_kart.html",
@@ -4648,8 +4666,8 @@
         "startButton": "다시 시작",
         "actionCount": 31,
         "interactionErrors": [],
-        "rafBefore": 39,
-        "rafAfter": 676,
+        "rafBefore": 42,
+        "rafAfter": 682,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -4659,7 +4677,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9336
+        "durationMs": 9283
       },
       {
         "file": "prototypes/proto_light.html",
@@ -4669,10 +4687,10 @@
         "url": "http://localhost:8899/prototypes/proto_light.html",
         "loaded": true,
         "startButton": "시작하기",
-        "actionCount": 37,
+        "actionCount": 30,
         "interactionErrors": [],
-        "rafBefore": 42,
-        "rafAfter": 677,
+        "rafBefore": 47,
+        "rafAfter": 680,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -4682,7 +4700,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9166
+        "durationMs": 9229
       },
       {
         "file": "prototypes/proto_tornado.html",
@@ -4692,10 +4710,10 @@
         "url": "http://localhost:8899/prototypes/proto_tornado.html",
         "loaded": true,
         "startButton": "시작하기",
-        "actionCount": 40,
+        "actionCount": 32,
         "interactionErrors": [],
-        "rafBefore": 43,
-        "rafAfter": 689,
+        "rafBefore": 41,
+        "rafAfter": 675,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -4705,7 +4723,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9328
+        "durationMs": 9146
       },
       {
         "file": "prototypes/proto_vortex.html",
@@ -4717,8 +4735,8 @@
         "startButton": "다시 시작",
         "actionCount": 31,
         "interactionErrors": [],
-        "rafBefore": 40,
-        "rafAfter": 678,
+        "rafBefore": 42,
+        "rafAfter": 682,
         "frozen": false,
         "returnAnchor": {
           "text": "← 갤러리",
@@ -4728,7 +4746,7 @@
         "consoleErrors": [],
         "failedRequests": [],
         "httpErrors": [],
-        "durationMs": 9175
+        "durationMs": 9218
       }
     ]
   },
