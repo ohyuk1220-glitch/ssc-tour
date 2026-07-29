@@ -68,6 +68,8 @@
     pointer-events:auto;touch-action:manipulation;overflow:hidden}
   #miniHud:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   #miniHud.is-hidden{display:none}
+  #miniHud{transition:opacity .25s}
+  #miniHud.is-dodge{opacity:.22}
   @media (max-width:600px){#miniHud{top:92px}}
 
   /* ---- 조이스틱 ---- */
@@ -137,6 +139,14 @@
     color:#5a3d00;box-shadow:0 3px 0 rgba(0,0,0,.16)}
   #exhibitInfo.is-typing::after{content:"▌";display:inline-block;margin-left:2px;color:var(--o);
     animation:typeCaret .55s steps(1,end) infinite}
+  #exhibitExtra{font-size:14px;line-height:1.65;text-align:left}
+  #exhibitExtra .lore-progress{text-align:center;color:#8a8069;letter-spacing:5px;margin-top:12px}
+  #exhibitExtra .lore-fact{margin-top:14px;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:#fff7e6}
+  #exhibitExtra .lore-fact b{display:block;margin-bottom:4px}
+  #exhibitExtra .btn-primary{margin-top:10px}
+  #exhibitExtra .quiz-option{background:#fff}
+  #exhibitExtra .quiz-option:disabled{cursor:default;opacity:.78;transform:none}
+  #exhibitExtra .quiz-result{margin-top:12px;font-weight:800;text-align:center}
   @keyframes typeCaret{50%{opacity:0}}
   /* 축하 */
   #cheer .sheet{text-align:center;animation:pop .35s cubic-bezier(.2,1.3,.5,1)}
@@ -231,6 +241,7 @@
   <div id="exhibitIcon" style="font-size:56px;margin:8px 0 2px"></div>
   <h2 id="exhibitName" style="justify-content:center;display:block;margin-bottom:10px"></h2>
   <p id="exhibitInfo" style="font-size:15px;line-height:1.75;color:#5a5344;text-align:left"></p>
+  <div id="exhibitExtra"></div>
   <button class="btn-primary" data-close>닫기</button>
 </div></div>
 
@@ -386,7 +397,7 @@ const FLOORS=[
    {name:"G전시실 입구 · 공존", kind:"door", room:"room_G", icon:"🌿", x:0.40,y:0.305, color:"#4caf50"},
    {name:"원소 주기율표 사물함", kind:"info", icon:"🧪", x:0.28,y:0.62, color:"#7cb342",
     info:"G전시실 입구 옆 사물함이에요. 로커 하나하나가 He·Ne·F·Cl·Ar·Kr·I·Xe·At·Og·Ts 같은 원소 칸이고, 디지털 잠금장치로 여닫아요."},
-   {name:"↓ ½층 에스컬레이터", kind:"stair", to:"HALF", icon:"🪜", x:0.54,y:0.295, color:"#b0a99a"},
+   {name:"↓ ½층 에스컬레이터", kind:"stair", to:"HALF", icon:"🪜", x:0.54,y:0.295, color:"#b0a99a"}, // 앵커 스펙 실측값 — 시각패널 눈짐작 이동은 스펙 위반이라 회귀 (실측>육안)
    {name:"↓ ½층 계단", kind:"stair", to:"HALF", icon:"🪜", x:0.69,y:0.28, color:"#b0a99a"},
    {name:"다이나믹 토네이도 · 관통부", kind:"info", icon:"🌪️", x:0.73,y:0.63, color:"#7ec8e3",
     info:"½층에서 솟아오른 토네이도 기둥의 위쪽이에요. 소용돌이는 ½층에서 만들어져 이 유리 원통을 타고 올라온답니다. 라이브쇼는 ½층에서 만나요!"},
@@ -471,7 +482,7 @@ const ROOMS={
      info:"몸속 장기들을 볼 수 있어요. 심장·폐·위·장이 각자 하는 일이 달라요."},
     {name:"DNA 짝 맞추기", kind:"game", file:"d.html", best:"dna_best", label:"DNA 짝 맞추기",
      icon:"🧬", room:"O전시실", x:0.6,y:0.65, color:"#ef8c3b"},
-    {name:"나가기 · 반대편", kind:"exit", outDoor:"opposite", icon:"🚪", x:0.53,y:0.31, color:"#b0a99a"},
+    {name:"나가기 · 반대편", kind:"exit", outDoor:"opposite", icon:"🚪", x:0.53,y:0.31, color:"#b0a99a"}, // 감사-클린 원좌표 유지 — 미니맵 겹침은 HUD dodge(반투명)로 해결 (좌표 이동안 2회는 병목 유발이라 폐기)
     {name:"나가기", kind:"exit", icon:"🚪", x:0.5,y:0.9, color:"#b0a99a"},
   ]},
   room_B:{ name:"B전시실 · 연결", bg:"bg/room_B_iso.webp", tint:"#4a90e2", floorName:"2층", start:[0.45,0.85],
@@ -568,6 +579,21 @@ const ROOMS={
   ]},
 };
 
+/* 공식 검증본 전시 해설: exhibit_lore.json의 code가 있는 11건만 인라인 */
+const EXHIBIT_LORE={
+  "뒤틀림-토러스":{"code":"E01","summary":"위상수학의 개념을 바탕으로 우주 공간의 모습을 형상화한 서울시립과학관의 상징전시물이에요. 구리선과 LED 전구 5,000개 이상으로 만들어졌고, 김주현과 Our Labour가 2016년에 제작했어요.","science":["안과 밖이 엇갈린 그물망은 뫼비우스의 띠처럼 이어지고, 얇은 구리선의 연결은 피보나치 수열을 재해석한 토러스 구조예요. 구리선이 교차하는 자리마다 LED가 빛나 우주의 응집과 확산을 상상하게 해요.","위상수학은 물체를 붙이거나 찢지 않고 늘리거나 구부리는 변형으로 보존되는 성질을 다루는 수학이에요. 찰흙 도넛을 손잡이 있는 컵으로 빚어도 위상적으로는 같은 모양이랍니다.","피보나치 수열은 자연에서도 쉽게 찾을 수 있어요. 붓꽃은 꽃잎 3장, 채송화는 5장, 코스모스는 8장이고, 솔방울은 시계방향 8줄·반시계방향 13줄의 나선을 그려요.","작품 크기는 15,600×9,600×4,900mm, 재료는 구리선·기판·LED 전구 약 5,000개 이상이에요. 2015년 구상을 시작해 2016년 과학관에 설치됐어요."],"facts":["주변의 꽃잎을 세어보면 거의 모든 꽃잎이 3장, 5장, 8장 등이다.","솔방울의 나선은 시계방향으로 8줄, 반시계방향으로 13줄이다.","재료는 구리선·기판·LED 전구 약 5,000개 이상, 크기는 15,600×9,600×4,900mm다.","작가는 김주현과 Our Labour(이정형·오유미·장준호), 제작년도는 2016년이다."],"quiz":{"q":"뒤틀림-토러스에 쓰인 자연의 수 배열은 무엇일까요?","a":["피보나치 수열","소수 수열","등차수열","무리수"],"correct":0}},
+  "지질 단면":{"code":"G29","summary":"미래에 남을지도 모를 화석(플라스틱, 닭뼈, 콘크리트, 방사성 물질)을 층층이 쌓인 벽면 모형으로 보여주는 '3030년의 지질학자' 코너예요. 3030년의 지질학자가 되어 인류세의 흔적을 관찰해봐요.","science":["층을 이루어 벽면을 채운 퇴적물과 화석 모형을 관찰하며 인류세의 뜻을 알아봐요. 어떤 것이, 무슨 이유로 인류세의 흔적으로 남을지 생각해보는 코너예요.","인류 문명은 짧은 시간 동안 지구에 수많은 흔적을 남기고 있어요. 콘크리트는 자연에 없던 환경을 만들었고, 숲과 초원은 농경지로 바뀌었어요.","'인류의 흔적이 새롭게 나타나는 시기'라는 뜻의 인류세는 1980년대 미국 생물학자 유진 스토머가 처음 사용한 말이에요."],"facts":["전시된 미래 화석 후보는 플라스틱, 닭뼈, 콘크리트, 방사성 물질이다.","인류세라는 말은 1980년대 미국 생물학자 유진 스토머가 처음 사용했다."],"quiz":{"q":"미래의 지질학자가 발견할 '인류세 화석' 후보로 공식 자료에 없는 것은?","a":["닭뼈","콘크리트","공룡 뼈","방사성 물질"],"correct":2}},
+  "인류세 철망":{"code":"G30","summary":"인류세의 대표 화석이 될 후보 4가지(플라스틱, 닭뼈, 콘크리트, 방사성 물질) 중 어떤 것이 진짜 대표 화석이 될지, 후보 연설을 듣고 투표하는 코너예요.","science":["잘 썩지 않는 플라스틱은 한번 쓰고 버려도 모이고 모여 인류세의 대표 화석으로 남을 수 있어요. 잘게 부서져 물속에도 존재하고, 2mm 두께로 지구를 덮을 만큼 엄청난 양이 만들어졌어요.","닭은 동시대에 200억 마리가 사육되고 있어 미래에 가장 흔한 화석 후보 중 하나로 꼽혀요.","방사성 물질은 낙진의 형태로 지층에 흔적을 남길 수 있어요."],"facts":["닭은 동시대에 약 200억 마리가 사육되고 있다.","플라스틱은 2mm 두께로 지구를 덮을 수 있을 만큼 많은 양이 버려졌다.","인류세 대표화석 후보는 플라스틱, 닭뼈, 콘크리트, 방사성 물질 4가지다."],"quiz":{"q":"다음 중 인류세 대표화석 후보로 꼽히지 않는 것은?","a":["플라스틱","닭뼈","산호초","방사성 물질"],"correct":2}},
+  "과학책 서가":{"code":"E04","summary":"과학 관련 도서가 구비된 도서 공간이에요. 원하는 책을 골라 그 자리에서 바로 읽을 수 있어요.","science":[],"facts":[]},
+  "지진파 모니터":{"code":"G18","summary":"지구에서 실제로 일어나는 지진 현황을 실시간으로 보여주는 모니터예요. 화면 속 숫자로 지진의 규모를 확인할 수 있어요.","science":["지진 실시간 모니터링 화면은 10분마다 서버에서 새 자료를 받아 갱신돼요. 화면에 표시된 숫자가 그 지진의 규모를 나타내요.","링 색이 흰색에 가까울수록 새로 일어난 지진이고, 붉을수록 오래된 지진이에요. 가장 최근 지진은 규모 숫자 상자가 초록색으로 표시돼요."],"facts":["지진 실시간 모니터링 화면은 10분마다 자료가 갱신된다.","화면 속 링 색이 흰색에 가까울수록 최근에 일어난 지진이다.","가장 최근 발생한 지진은 규모 숫자 상자가 초록색으로 표시된다."],"quiz":{"q":"지진 실시간 모니터링 화면에서 가장 최근 지진은 어떤 색으로 표시될까요?","a":["빨간색","초록색","흰색","파란색"],"correct":1}},
+  "지진 시뮬레이터":{"code":"G28","summary":"지진판 위에 직접 구조물을 쌓고 흔들어보며, 어떤 구조가 지진에 잘 견디는지 체험하는 코너예요. 지진의 세기와 흔들리는 방향도 바꿔볼 수 있어요.","science":["지진판 위에 구조물을 쌓은 뒤 지진의 규모를 선택해 작동시켜 봐요. 전후·좌우 진동을 골라 흔들리는 방향도 바꿀 수 있어요.","구조물이 무너지면 구조를 바꿔 다시 도전해볼 수 있어요. 버스가 갑자기 서거나 출발할 때 몸이 휘청이는 것과 비슷한 원리예요.","흔들릴 때는 탁자 아래에서 몸을 보호하고 탁자 다리를 꼭 잡아요. 흔들림이 멈추면 떨어지는 물건에 유의하며 넓은 공간으로 대피해요."],"facts":["지진판은 세기와 방향(전후·좌우·대각선·원 진동)을 바꿔 작동할 수 있다.","지진으로 흔들릴 때는 탁자 아래로 들어가 다리를 꼭 잡아야 한다.","흔들림이 멈추면 떨어지는 물건에 주의하며 넓은 공간으로 대피한다."],"quiz":{"q":"지진으로 건물이 흔들릴 때 가장 먼저 해야 할 행동은?","a":["엘리베이터를 탄다","탁자 아래로 들어가 다리를 잡는다","창문을 연다","밖으로 뛰어나간다"],"correct":1}},
+  "DNA 이중나선":{"code":"O03","summary":"부모의 유전 형질이 자손에게 어떻게 전달되는지, DNA의 이중나선 구조를 통해 알아보는 코너예요. DNA 지문으로 개인을 식별하는 원리도 함께 만나요.","science":["DNA의 4개 염기(아데닌·티민·시토신·구아닌)는 유전자 언어의 글자와 같아요. 유전 정보는 복제→전사→번역 순서로 흘러가는데, 이를 센트럴 도그마라고 해요.","1953년 제임스 왓슨과 프랜시스 크릭이 DNA 이중나선 구조를 밝혔을 때, 왓슨의 나이는 불과 25세였어요. 로절린드 프랭클린이 찍은 X선 회절사진이 결정적 단서가 됐어요.","사람마다 DNA 배열 순서가 달라 지문처럼 개인을 식별할 수 있어요. 이 원리는 범인을 찾거나 친자를 확인하는 데도 활용돼요."],"facts":["DNA의 4개 염기(A·T·C·G)는 유전자 언어의 글자와 같다.","DNA 이중나선 구조는 1953년 왓슨과 크릭이 밝혔고, 당시 왓슨은 25세였다.","지문은 태아가 10~16주 되었을 때 형성된다.","1987년 알렉 제프리스가 DNA 지문 분석을 최초로 범죄수사에 적용했다."],"quiz":{"q":"DNA 이중나선 구조를 처음 밝힌 두 과학자는 누구일까요?","a":["왓슨과 크릭","아인슈타인과 보어","다윈과 멘델","퀴리와 뢴트겐"],"correct":0}},
+  "주기율표":{"code":"O12","summary":"물질을 이루는 원소를 종류와 특징에 따라 규칙적으로 배열한 주기율표의 원리를 알아보는 코너예요. 원소 블록을 직접 배열해 나만의 주기율표를 만들어볼 수 있어요.","science":["주기율표는 18개의 세로줄(족)과 7개의 가로줄(주기), 2개의 특수줄로 이루어져 있어요. 같은 세로줄의 원소는 성질이 비슷해요.","멘델레예프는 원소들을 표 형태로 정리해 발표한 최초의 인물로, 아직 발견되지 않은 원소의 성질까지 예측했어요. 하지만 정작 노벨상은 받지 못했어요.","1913년 모즐리는 원자번호 순서대로 원소를 배열해 지금 우리가 쓰는 주기율표 체계를 완성했어요."],"facts":["주기율표는 18개 세로줄, 7개 가로줄, 2개 특수줄로 구성된다.","1913년 모즐리가 원자번호 순서로 배열한 것이 지금의 주기율표 체계다.","멘델레예프는 1906년 노벨 화학상 후보였지만 앙리 무아상에게 1표 차로 밀려 수상하지 못했다.","101번 원소 멘델레븀(Md)은 멘델레예프의 이름에서 따왔다."],"quiz":{"q":"원자번호 순서로 원소를 배열해 지금 쓰는 주기율표 체계를 만든 사람은?","a":["모즐리","멘델레예프","되베라이너","뉼랜즈"],"correct":0}},
+  "인체 모형":{"code":"O06","summary":"피부와 두피를 확대경으로 관찰하고, 인체 내부 기관을 3D 영상으로 살펴보는 코너예요. 심장·폐·위·장 등 몸속 기관들이 저마다 다른 일을 해요.","science":["건강한 피부는 28일을 주기로 표피 세포가 새로 태어나요. 표피는 자외선과 유해물질로부터 피부를 보호해요.","뇌는 대뇌·소뇌·뇌간 3부분으로 이뤄져 있고, 뇌간은 다시 중간뇌·뇌교·연수·간뇌로 나뉘어요.","심장은 좌심방·우심방·좌심실·우심실 4개의 방과 판막으로 이뤄져 온몸으로 피를 순환시켜요.","갈비뼈 12쌍은 활처럼 휘어 가슴통을 만들고, 폐를 팽창·수축시켜 숨쉴 수 있게 해줘요."],"facts":["건강한 피부는 28일 주기로 표피 세포가 재생된다.","갈비뼈는 12쌍으로, 폐를 팽창·수축시켜 호흡을 가능하게 한다.","사람의 허리뼈는 5개의 척추뼈로 이뤄져 있다.","심장은 4개의 방(좌심방·우심방·좌심실·우심실)으로 구성된다."],"quiz":{"q":"심장은 몇 개의 방으로 이루어져 있을까요?","a":["2개","3개","4개","5개"],"correct":2}},
+  "태양계":{"code":"B20","summary":"우주와 태양계를 직접 여행하는 듯한 3D 입체 영상을 관람하는 코너예요. 태양계를 이루는 여러 행성의 모습을 실제처럼 느껴볼 수 있어요.","science":[],"facts":[]},
+  "뇌 모형":{"code":"B13","summary":"뇌의 구조를 모형으로 살펴보고, 의사결정·운동·소화 등 상황마다 뇌의 어느 부분이 활성화되는지 알아보는 코너예요.","science":["대뇌는 뇌 면적의 약 7/8을 차지하며, 가장 바깥의 대뇌겉질과 그 안쪽 변연계로 나뉘어요. 대뇌겉질에는 신경세포가 무려 140억 개나 모여 있어요.","체온을 조절하는 간뇌, 기억·판단을 담당하는 대뇌, 몸의 균형을 잡는 소뇌, 심장박동과 호흡을 조절하는 연수, 눈의 초점을 맞추는 중뇌까지 — 부위마다 맡은 일이 달라요.","화려한 스케이팅 기술에는 소뇌의 역할이 매우 중요해요. 소뇌는 몸의 평형과 운동 기억을 담당해서, 한번 배운 자전거 타기를 오래 잊지 않게 해줘요."],"facts":["대뇌는 뇌 면적의 약 7/8을 차지한다.","대뇌겉질에는 신경세포가 약 140억 개 모여 있다.","체온 조절은 간뇌, 몸의 균형은 소뇌, 심장박동·호흡 조절은 연수가 담당한다."],"quiz":{"q":"몸의 균형을 잡고 운동 기억을 담당하는 뇌 부위는?","a":["대뇌","소뇌","간뇌","연수"],"correct":1}}
+};
+
 /* 걸을 수 있는 영역 + 장애물(벽·전시물). 명시 안 된 실내 방은 공통 프로파일(전시물 좌우 배치 가정) */
 Object.values(ROOMS).forEach(r=>{
   if(!r.obstacles) r.obstacles=[[0.10,0.13,0.44,0.50],[0.56,0.13,0.94,0.50]];   // 전시물 좌·우
@@ -611,16 +637,23 @@ function hitObs(obs,px,py){ if(!obs)return false; for(let i=0;i<obs.length;i++){
 const GUIDE_NPCS=[
   {scene:"room_G", name:"S.C", x:0.35,y:0.83, lines:[
     "여긴 '공존'의 방이에요. 사람과 자연, 과거와 미래가 어떻게 얽혀 사는지 보여줘요.",
-    "저기 철망에 눌러 담은 쓰레기가 '인류세'예요. 플라스틱·콘크리트가 지층에 쌓여 먼 훗날 인류를 기억할 흔적이 된대요."]},
+    "저기 철망에 눌러 담은 쓰레기가 '인류세'예요. 플라스틱·콘크리트가 지층에 쌓여 먼 훗날 인류를 기억할 흔적이 된대요.",
+    "인류세라는 말은 1980년대 미국 생물학자 유진 스토머가 처음 사용했대요.",
+    "플라스틱은 2mm 두께로 지구를 덮을 수 있을 만큼 많은 양이 버려졌대요."]},
   {scene:"room_quake", name:"S.C", x:0.47,y:0.85, lines:[
     "여기는 지진 체험관이에요. 흔들리면 책상 아래로, 멈추면 계단으로 대피하세요.",
-    "지진과 화산은 땅속 판이 움직여 생겨요. 저 용암 균열존이 그 증거랍니다."]},
+    "지진과 화산은 땅속 판이 움직여 생겨요. 저 용암 균열존이 그 증거랍니다.",
+    "지진 실시간 모니터링 화면은 10분마다 자료가 갱신돼요.",
+    "지진으로 흔들릴 때는 탁자 아래로 들어가 다리를 꼭 잡아야 해요."]},
   {scene:"room_O", name:"S.C", x:0.50,y:0.85, lines:[
     "생존의 방에 온 걸 환영해요. DNA 한 가닥에 나를 만든 설계도가 담겨 있어요.",
-    "지금 내 몸속엔 수많은 미생물이 함께 살아요. DNA 지문은 세상에 단 하나뿐이래요."]},
+    "지금 내 몸속엔 수많은 미생물이 함께 살아요. DNA 지문은 세상에 단 하나뿐이래요.",
+    "DNA의 4개 염기(A·T·C·G)는 유전자 언어의 글자와 같아요.",
+    "주기율표는 18개 세로줄, 7개 가로줄, 2개 특수줄로 구성돼요."]},
   {scene:"room_B", name:"S.C", x:0.20,y:0.85, lines:[
     "연결의 방이에요. 아주 작은 원자부터 저 멀리 우주까지, 세상 모든 건 이어져 있어요.",
-    "저 프리즘 보이죠? 하얀 빛 속에 무지개가 숨어 있었대요."]},
+    "저 프리즘 보이죠? 하얀 빛 속에 무지개가 숨어 있었대요.",
+    "대뇌는 뇌 면적의 약 7/8을 차지한대요."]},
   {scene:"room_astro", name:"S.C", x:0.50,y:0.85, lines:[
     "천문대 BOOT에 오신 걸 환영해요. 금·토엔 진짜 별을 볼 수 있어요.",
     "지구가 우주에서 얼마나 작은 점인지, 망원경으로 보면 느껴져요."]},
@@ -632,7 +665,8 @@ const GUIDE_NPCS=[
     "땅이 켜켜이 쌓아온 시간, 지층과 화석으로 지구의 역사를 읽어요."]},
   {scene:"LOBBY_E", name:"S.C", x:0.30,y:0.34, lines:[   // 2026-07-28 P1: 데스크 안쪽 모서리(통행셀). 데스크 스팟과 ~106px — npcWins() 최근접 우선이 가림 방지
     "어서오세요! 서울시립과학관은 무료입장이에요.",
-    "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요."]},
+    "G·O·B·Y 네 색깔로 서울의 일상 속 과학을 나눠 보여드려요. 궁금하면 언제든 찾아주세요.",
+    "솔방울의 나선은 시계방향으로 8줄, 반시계방향으로 13줄이래요."]},
 ];
 const SECURITY_NPCS=[
   {scene:"B1", name:"보안", waypoints:[[0.15,0.75],[0.85,0.75],[0.85,0.20]], lines:[
@@ -645,7 +679,7 @@ const SECURITY_NPCS=[
     "√2층이에요. 전시실 통로에서는 뛰지 말아주세요!"]},
   {scene:"2F", name:"보안", waypoints:[[0.20,0.60],[0.70,0.60],[0.45,0.75]], lines:[
     "2층 순찰 중입니다. 천문대 BOOT는 예약이 필요해요, 참고하세요!"]},
-  {scene:"PI", name:"보안", waypoints:[[0.20,0.60],[0.70,0.60],[0.45,0.75]], lines:[
+  {scene:"PI", name:"보안", waypoints:[[0.20,0.60],[0.70,0.60],[0.30,0.78]], lines:[  // 시각패널: 중앙 밀집(플레이어 start 0.47,0.66 인접) → 순찰점 분산
     "π층 순찰이에요. 교육실 실험 도구는 조심히 다뤄주세요."]},
   {scene:"3F", name:"보안", waypoints:[[0.30,0.65],[0.70,0.65]], lines:[
     "3층 순찰 중. 지금 기획전시 '지구의 맥박' 놓치지 마세요!"]},
@@ -657,7 +691,7 @@ const CLEANING_NPCS=[
     "이 넓은 로비가 반짝이는 건 매일 아침 부지런히 닦아서예요."]},
   {scene:"SQRT2", name:"미화주임님", x:0.22,y:0.55, lines:[   // 2026-07-28 재구성: 서측 통로 중간, 전 스팟과 250px+ 이격(문·엘베 가림 방지 실측)
     "√2층 담당이에요. 다 본 안내지는 분리수거함에 부탁해요!"]},
-  {scene:"PI", name:"미화주임님", x:0.60,y:0.65, lines:[
+  {scene:"PI", name:"미화주임님", x:0.30,y:0.45, lines:[  // 시각패널: start 인접 3인 밀집 → 서측으로 분산
     "교육실 복도는 실험 끝나면 바로 닦아요. 미끄럼 조심하세요!"]},
 ];
 GUIDE_NPCS.forEach(n=>{n.type="guide"; n._lineIdx=0; n.dir="down";});
@@ -704,6 +738,7 @@ function updateNearNPC(){
 }
 function npcDialogue(npc){
   const line=npc.lines[npc._lineIdx%npc.lines.length]; npc._lineIdx++;
+  resetExhibitExtras();
   document.getElementById("exhibitIcon").textContent=npc.type==="guide"?"🧑‍🏫":npc.type==="cleaning"?"🧹":"👮";
   const _nEl=document.getElementById("exhibitName");
   _nEl.classList.add("dialog-speaker");
@@ -717,7 +752,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607291947";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607292026";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 const INTERACTION_V2=false; // P0-③ 골격: P4 UI 개편(탭 상호작용+walk-in) 상위 플래그 — false면 구 경로 그대로
 /* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
    구 숫자 키(ufo_floor)는 "마이그레이션 시점 순서 동결 테이블"로만 해석·기록 (codex R1: 현재 배열로 읽고 쓰면
@@ -1440,7 +1475,15 @@ function markScanned(qid){
   if(!safeSet("ssc_scan",JSON.stringify(s)))return "failed";
   return isScanned(qid)?"saved":"failed";
 }
-function getScore(){ return gotCount()*10 + seenCount()*5 + scanCount()*20; }   // 스탬프 10점 · 전시물 5점 · 현장 인증 20점
+function quizMap(){ try{const o=JSON.parse(safeGet("ssc_quiz")||"{}"); return (o&&typeof o==="object"&&!Array.isArray(o))?o:{};}catch(e){return {};} }
+function quizCount(){ const q=quizMap(); return ALL_EXHIBITS.filter(e=>Object.hasOwn(EXHIBIT_LORE,e.name)&&q[e.name]===1).length; }
+function awardQuiz(name){
+  const q=quizMap();
+  if(q[name]===1)return "dup";
+  q[name]=1;
+  return safeSet("ssc_quiz",JSON.stringify(q))?"ok":"failed";  // 저장 실패(프라이빗 모드)와 중복을 구분 — markScanned 패턴
+}
+function getScore(){ return gotCount()*10 + seenCount()*5 + scanCount()*20 + quizCount()*10; }   // 스탬프 10점 · 전시물 5점 · 현장 인증 20점 · 퀴즈 10점
 function getLevel(){
   const scans=scanCount(), score=getScore();
   if(scans>=8)return {lv:5,name:"과학관 마스터"};
@@ -1565,6 +1608,17 @@ function refreshMiniHud(){
   const blocked=miniHudBlocked();
   mh.classList.toggle("is-hidden",blocked);
   if(!blocked&&!document.hidden)drawMiniMap(mh);
+  // 말풍선·플레이어가 미니맵 영역에 들어오면 반투명 (겹침 공통 규칙 — 시각패널 권고, 좌표 이동 대신 HUD가 비킴)
+  let dodge=false;
+  if(!blocked&&bgRect&&bgRect.w){
+    computeBgRect();  // 씬 전환 직후 호출 시 이전 씬 rect로 오판 방지 (codex R1 P2 — 멱등·저비용)
+    const r=mh.getBoundingClientRect(), pad=10;
+    const pts=curScene().spots.map(s=>({x:s2x(s.x),y:s2y(s.y)-46}));
+    pts.push({x:s2x(player.px),y:s2y(player.py)-30});
+    sceneNPCs().forEach(n=>pts.push({x:s2x(n.x),y:s2y(n.y)-52}));
+    dodge=pts.some(p=>p.x>r.left-pad&&p.x<r.right+pad&&p.y>r.top-pad&&p.y<r.bottom+pad+34);
+  }
+  mh.classList.toggle("is-dodge",dodge);
 }
 setInterval(refreshMiniHud,500);   // 폰 성능 보호: 매 프레임이 아닌 0.5초 간격
 const miniHudModalObserver=new MutationObserver(refreshMiniHud);
@@ -1666,6 +1720,7 @@ function showCert(){
 /* ══════════ 모달 닫기 ══════════ */
 function closeModals(){
   cancelDialogueTyping();
+  resetExhibitExtras();
   document.querySelectorAll(".modal").forEach(m=>m.classList.remove("show"));
 }
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeModals);
@@ -1699,16 +1754,114 @@ function startDialogueTyping(text){
     if(dialogueIndex>=dialogueChars.length)cancelDialogueTyping();
   },DIALOG_CHAR_MS);
 }
+let activeExhibitLore=null;
+function resetExhibitExtras(){
+  activeExhibitLore=null;
+  const extra=document.getElementById("exhibitExtra");
+  if(extra)extra.textContent="";
+}
+function appendLoreButton(parent,label,onclick,className){
+  const button=document.createElement("button");
+  button.type="button";
+  button.className="btn-primary"+(className?" "+className:"");
+  button.textContent=label;
+  button.onclick=onclick;
+  parent.appendChild(button);
+  return button;
+}
+function renderLoreScience(index){
+  if(!activeExhibitLore)return;
+  const lore=activeExhibitLore.lore, extra=document.getElementById("exhibitExtra");
+  activeExhibitLore.scienceIndex=index;
+  startDialogueTyping(lore.science[index]);
+  extra.textContent="";
+  const progress=document.createElement("div");
+  progress.className="lore-progress";
+  progress.textContent=lore.science.map((_,i)=>i===index?"●":"○").join("");
+  progress.setAttribute("aria-label",(index+1)+" / "+lore.science.length+" 문단");
+  extra.appendChild(progress);
+  appendLoreButton(extra,"다음 →",()=>{
+    if(index+1<lore.science.length)renderLoreScience(index+1);
+    else renderLoreFact();
+  });
+}
+function renderLoreFact(){
+  if(!activeExhibitLore)return;
+  const lore=activeExhibitLore.lore, extra=document.getElementById("exhibitExtra");
+  extra.textContent="";
+  if(lore.facts.length){
+    if(!activeExhibitLore.fact)activeExhibitLore.fact=lore.facts[Math.floor(Math.random()*lore.facts.length)];
+    const box=document.createElement("div"), title=document.createElement("b"), fact=document.createElement("p");
+    box.className="lore-fact";
+    title.textContent="💡 알고 계셨나요?";
+    fact.textContent=activeExhibitLore.fact;
+    box.append(title,fact);
+    extra.appendChild(box);
+  }
+  if(lore.quiz)appendLoreButton(extra,"❓ 퀴즈 도전",renderLoreQuiz);
+}
+function renderLoreQuiz(){
+  if(!activeExhibitLore||!activeExhibitLore.lore.quiz)return;
+  const quiz=activeExhibitLore.lore.quiz, extra=document.getElementById("exhibitExtra");
+  startDialogueTyping(quiz.q);
+  extra.textContent="";
+  const choices=quiz.a.map((text,index)=>({text,index}));
+  for(let i=choices.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [choices[i],choices[j]]=[choices[j],choices[i]];
+  }
+  choices.forEach(choice=>{
+    const button=appendLoreButton(extra,choice.text,()=>answerLoreQuiz(choice,button),"quiz-option");
+    button.dataset.answerIndex=String(choice.index);
+  });
+}
+function answerLoreQuiz(choice,selected){
+  if(!activeExhibitLore||!activeExhibitLore.lore.quiz)return;
+  const lore=activeExhibitLore.lore, quiz=lore.quiz, extra=document.getElementById("exhibitExtra");
+  const buttons=Array.from(extra.querySelectorAll(".quiz-option"));
+  buttons.forEach(button=>{
+    button.disabled=true;
+    if(+button.dataset.answerIndex===quiz.correct)button.style.background="#eefbf0";
+  });
+  const result=document.createElement("div");
+  result.className="quiz-result";
+  if(choice.index===quiz.correct){
+    selected.style.background="#eefbf0";
+    const award=awardQuiz(activeExhibitLore.name);
+    if(award==="ok"){
+      result.textContent="정답입니다!";
+      popScore("+10 퀴즈");
+    }else if(award==="failed"){
+      result.textContent="정답입니다! (저장 공간이 막혀 점수 기록은 못 했어요)";
+    }else{
+      result.textContent="정답입니다! 이미 점수를 받았어요.";
+      updateScore();
+    }
+  }else{
+    selected.style.background="#fff0ec";
+    result.textContent="오답입니다. 정답: "+quiz.a[quiz.correct];
+  }
+  extra.appendChild(result);
+}
 document.getElementById("exhibit").addEventListener("click",e=>{
-  if(e.target.closest("[data-close]"))return;  // 닫기 버튼은 타이핑 중에도 즉시 동작 (code-reviewer 🟡: 캡처가 첫 탭을 삼키던 버그)
+  if(e.target.closest("button"))return;  // 버튼(닫기·다음·퀴즈 보기)은 타이핑 중에도 즉시 동작 — 빈 영역 탭만 타이핑 스킵 (캡처가 버튼 첫 탭을 삼키던 클래스 수리)
   if(finishDialogueTyping()){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function showExhibit(sp){
   if(sp.kind==="exhibit") markSeen(sp.name);   // 도감 기록 + 점수(+5)
+  resetExhibitExtras();
   document.getElementById("exhibitIcon").textContent=sp.icon||"🔍";
   const nameEl=document.getElementById("exhibitName");
   nameEl.classList.remove("dialog-speaker"); nameEl.textContent=sp.name;
-  startDialogueTyping(sp.info||"");
+  const lore=Object.hasOwn(EXHIBIT_LORE,sp.name)?EXHIBIT_LORE[sp.name]:null;
+  startDialogueTyping(lore?lore.summary:(sp.info||""));
+  if(lore&&(lore.science.length||lore.facts.length||lore.quiz)){
+    activeExhibitLore={name:sp.name,lore,scienceIndex:-1,fact:""};
+    appendLoreButton(document.getElementById("exhibitExtra"),"📖 더 알아보기",()=>{
+      if(lore.science.length)renderLoreScience(0);
+      else renderLoreFact();
+    });
+  }
   document.getElementById("exhibit").classList.add("show");
 }
 
