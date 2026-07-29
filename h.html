@@ -59,6 +59,13 @@
     font-weight:800;font-size:14px;letter-spacing:.3px;white-space:nowrap;
     border:1.5px solid rgba(255,255,255,.25)}
   #floortag .rm{color:var(--gold);margin-left:6px}
+  #miniHud{position:fixed;top:64px;right:12px;width:128px;height:72px;z-index:41;  /* 72=128÷(16/9) — drawMiniMap 버퍼(640×360)와 비율 일치, 왜곡 방지 (code-reviewer 🟡1) */
+    display:block;background:rgba(20,16,10,.78);border:1px solid rgba(255,255,255,.55);
+    border-radius:12px;box-shadow:0 3px 10px rgba(0,0,0,.28);cursor:pointer;
+    pointer-events:auto;touch-action:manipulation;overflow:hidden}
+  #miniHud:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  #miniHud.is-hidden{display:none}
+  @media (max-width:600px){#miniHud{top:92px}}
 
   /* ---- 조이스틱 ---- */
   #stick{position:fixed;left:22px;bottom:26px;width:120px;height:120px;z-index:45;
@@ -105,6 +112,11 @@
   .room-chip.done{background:#fff7e6;border-color:var(--gold);color:#8a6d00}
   .room-chip.scanned{background:#eefbf0;border-color:#4caf50;color:#287a2e}
   .room-chip.soon{opacity:.5}
+  .quick-travel{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+  .travel-chip{border:1.5px solid #cdbf9f;border-radius:999px;background:#fff;
+    color:#4e4638;padding:6px 10px;font:800 12px var(--font-sans);cursor:pointer}
+  .travel-chip:active:not(:disabled){transform:translateY(1px)}
+  .travel-chip:disabled{background:#e8dfcb;color:#8a8069;border-color:#d8caa8;cursor:default;opacity:.75}
   /* 수료증 */
   #cert .sheet{text-align:center;background:linear-gradient(160deg,#fffdf7,#fff4dd)}
   .cert-seal{font-size:60px;margin:6px 0}
@@ -157,6 +169,7 @@
   </div>
 </div>
 <div id="floortag">1층<span class="rm">로비</span></div>
+<canvas id="miniHud" width="128" height="72" role="button" tabindex="0" aria-label="현재 위치 미니맵 — 나의 도감 지도 열기" title="나의 도감 지도 열기"></canvas>
 
 <div id="stick"><div class="nub" id="nub"></div></div>
 <div id="abtn"><span class="ai">🚪</span><span id="alabel">입장</span></div>
@@ -563,6 +576,17 @@ function safeSet(k,v){
   try{ const stored=String(v); localStorage.setItem(k,stored); return localStorage.getItem(k)===stored; }
   catch(e){ return false; }
 }
+function visitedMap(){
+  try{ const o=JSON.parse(safeGet("ssc_visited")||"{}"); return (o&&typeof o==="object"&&!Array.isArray(o))?o:{}; }
+  catch(e){ return {}; }
+}
+function markVisited(sceneId){
+  if(!sceneId)return;
+  const visited=visitedMap();
+  if(Object.hasOwn(visited,sceneId))return;
+  visited[sceneId]=1;
+  safeSet("ssc_visited",JSON.stringify(visited));
+}
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 // 장애물(전시물·벽) 충돌: 점(px,py)이 어떤 obstacle rect 안이면 true
 function hitObs(obs,px,py){ if(!obs)return false; for(let i=0;i<obs.length;i++){const o=obs[i];
@@ -679,7 +703,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607281918";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607291910";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 const INTERACTION_V2=false; // P0-③ 골격: P4 UI 개편(탭 상호작용+walk-in) 상위 플래그 — false면 구 경로 그대로
 /* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
    구 숫자 키(ufo_floor)는 "마이그레이션 시점 순서 동결 테이블"로만 해석·기록 (codex R1: 현재 배열로 읽고 쓰면
@@ -708,11 +732,11 @@ const CHAR={};   // 캐릭터 4방향 스프라이트(codex)
 const CHARWALK={}; // 걷기 프레임(방향별 반대발) — 이동 중 CHAR와 토글
 let DESKIMG=null;  // 전시실 안내데스크 스프라이트
 const NPCSPR={}; // 전시실별 과학커뮤니케이터 전용 스프라이트
-const GUIDE_SPR={room_G:"npc_G",room_quake:"npc_quake",room_O:"npc_O",room_B:"npc_B",room_astro:"npc_astro",room_chem:"npc_chem",room_earth:"npc_earth"};
+const GUIDE_SPR={room_G:"npc_G",room_quake:"npc_quake",room_O:"npc_O",room_B:"npc_B",room_astro:"npc_astro",room_chem:"npc_chem",room_earth:"npc_earth",LOBBY_E:"npc_desk"};  // LOBBY_E = 메인데스크 S.C 전용 스프라이트 (2026-07-29 — 폴백 틴트로 그려지던 버그 수리)
 let nearSpot=null;
 let inRoom=null, roomStack=[];   // inRoom=현재 방 / roomStack=방→방 진입 히스토리(나가기=이전 방)
 let lastFloorDoor=null;          // 층에서 마지막으로 통과한 door 스팟 — 문이 2개인 방(√2층 room_O)에서 들어온 문으로 복귀시키기 위함
-let doneCache={};
+let doneCache={}, seenRenderCache={};
 function curScene(){ return inRoom ? ROOMS[inRoom] : FLOORS[floorIdx]; }
 
 /* ══════════ Juice: 사운드(WebAudio 합성·저작권0) + 파티클 ══════════ */
@@ -761,7 +785,7 @@ function preload(){
   });
   ["down","up","left","right"].forEach(d=>{ const im=new Image(); pending++;
     im.onload=done; im.onerror=done; im.src="character/"+d+".png?v="+VER; CHAR[d]=im; });
-  ["npc_G","npc_quake","npc_O","npc_B","npc_astro","npc_chem","npc_earth","npc_guardA","npc_clean"].forEach(n=>{ const im=new Image(); pending++;
+  ["npc_G","npc_quake","npc_O","npc_B","npc_astro","npc_chem","npc_earth","npc_guardA","npc_clean","npc_desk"].forEach(n=>{ const im=new Image(); pending++;
     im.onload=done; im.onerror=done; im.src="character/"+n+".png?v="+VER; NPCSPR[n]=im; });
   ["down","up","left","right"].forEach(d=>{ const im=new Image(); pending++;
     im.onload=done; im.onerror=done; im.src="character/walk_"+d+".png?v="+VER; CHARWALK[d]=im; });
@@ -825,20 +849,25 @@ function enterFloor(idx,instant){
   inRoom=null; roomStack=[];
   floorIdx=idx; saveFloor(idx);
   const f=FLOORS[idx];
+  markVisited(f.id);
   curImg=(f._ok?images[f.id]:null);
   const st=f.start||[0.5,0.5];
   player.px=st[0]; player.py=st[1]; player.vx=player.vy=0;
   camX=player.px; camY=player.py;
   nearSpot=null; nearNPC=null; updateFloorTag();
+  refreshMiniHud();
 }
 function enterRoom(roomId, fromStack){
   if(inRoom && !fromStack) roomStack.push(inRoom);   // 방→방 진입이면 이전 방 저장
   inRoom=roomId; shake=7; const r=ROOMS[roomId];
+  markVisited(roomId);
+  if(FLOORS[floorIdx]) markVisited(FLOORS[floorIdx].id);  // 딥링크로 방 직행 시 층 미기록 → 빠른이동 누락 방지 (code-reviewer 🟡2)
   curImg=(r._ok?images[roomId]:null);
   const st=r.start||[0.5,0.7];
   player.px=st[0]; player.py=st[1]; player.vx=player.vy=0;
   camX=player.px; camY=player.py;
   nearSpot=null; nearNPC=null; updateFloorTag();
+  refreshMiniHud();
 }
 /* 전시실에서 나올 때 문 앞 좌표가 장애물 안이면 캐릭터가 영구히 갇힌다(모든 축 이동이 hitObs에 거부됨).
    → 목표 지점이 막혀 있으면 주변을 나선형으로 훑어 walkable하고 장애물 아닌 첫 지점을 찾는다.
@@ -863,12 +892,14 @@ function exitRoom(){
   if(roomStack.length){ enterRoom(roomStack.pop(), true); return; }   // 이전 방(예: 지진→G전시실)으로 복귀
   const back=inRoom; inRoom=null;
   const f=curScene();
+  markVisited(f.id);
   curImg=(f._ok?images[f.id]:null);
   const d=(lastFloorDoor&&lastFloorDoor.room===back)?lastFloorDoor
         :f.spots.find(s=>s.kind==="door"&&s.room===back);   // 들어온 문 기억 우선(문 2개 방 대응), 딥링크 등 기억 없으면 첫 문
   if(d){ const sp=safeSpawn(f,d.x,Math.min(0.9,d.y+0.08)); player.px=sp[0]; player.py=sp[1]; }
   else { const st=f.start||[0.5,0.5]; player.px=st[0]; player.py=st[1]; }
   player.vx=player.vy=0; camX=player.px; camY=player.py; nearSpot=null; nearNPC=null; updateFloorTag();
+  refreshMiniHud();
 }
 function updateFloorTag(){
   const s=curScene();
@@ -893,6 +924,8 @@ function computeBgRect(){
 function s2x(px){return bgRect.x+px*bgRect.w;}
 function s2y(py){return bgRect.y+py*bgRect.h;}
 
+const TRANSITION_KINDS=new Set(["door","stair","elevator","gate","exit"]);
+const GLOW_KINDS=new Set(["exhibit","game","info"]);
 let t=0;
 function render(){
   if(document.hidden){return;}   // 숨김 탭만 스킵(세로에서도 화면 꽉 렌더)
@@ -909,31 +942,59 @@ function render(){
     ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.font="800 20px var(--font-sans)";
     ctx.fillText(f.name+" 준비 중",W/2,H/2);
   }
+  // 문·계단·엘리베이터 등 전환구의 바닥 매트: 배경 위, 모든 캐릭터 아래.
+  // 60fps 기준 120프레임(약 2초) 주기로 알파만 펄스하며 shadowBlur는 쓰지 않는다.
+  const matPulse=(Math.sin(t*Math.PI/60)+1)/2;
+  f.spots.forEach(sp=>{
+    if(!TRANSITION_KINDS.has(sp.kind))return;
+    const x=s2x(sp.x), y=s2y(sp.y)+9;
+    roundRect(x-25,y-9,50,18,7);
+    ctx.fillStyle="rgba(18,14,10,"+(0.26+matPulse*0.14)+")"; ctx.fill();
+    ctx.lineWidth=1;
+    ctx.strokeStyle="rgba(255,255,255,"+(0.38+matPulse*0.25)+")"; ctx.stroke();
+  });
   // 핫스팟 마커 — 바닥 원 제거(배경 오염 방지), 아이콘 말풍선이 표지판 역할.
   // 근접 표시 = 말풍선 확대 + 통통 튀기 + 테두리 색 강조 (2026-07-26 마스터 지적: 발밑 타원 겹침 정리)
   f.spots.forEach(sp=>{
     const x=s2x(sp.x), y=s2y(sp.y);
-    const done=(sp.kind==="game"&&isDone(sp.best));
+    const done=(sp.kind==="game"&&isDone(sp.best))||(sp.kind==="exhibit"&&!!seenRenderCache[sp.name]);
     const isNear=(sp===nearSpot);
     const s=isNear?1.28:1;
     const hop=isNear?Math.abs(Math.sin(t*0.12))*5:0;
     const edge=done?"#f6b93b":(isNear?(sp.color||"#f6b93b"):"#2a2620"); // 완료 금색이 근접 강조보다 우선
     // 아이콘 버블
     const by=y-30+Math.sin(t*0.06)*3-hop;
+    ctx.save();
+    if(isNear&&GLOW_KINDS.has(sp.kind)){
+      ctx.shadowColor=sp.color||"#f6b93b";
+      ctx.shadowBlur=12;   // 최근접 nearSpot 하나의 상호작용 말풍선에만 허용
+    }
     roundRect(x-18*s,by-18*s,36*s,34*s,9*s);
     ctx.fillStyle=done?"#fff7e6":"#fffdf7"; ctx.fill();
     ctx.lineWidth=isNear?3.5:2.5; ctx.strokeStyle=edge; ctx.stroke();
+    ctx.restore();
     ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.font=Math.round(19*s)+"px var(--font-sans)"; ctx.fillText(sp.icon,x,by-2*s);
     // 상태 배지
-    if(sp.kind==="game"){
+    if(sp.kind==="game"||(sp.kind==="exhibit"&&done)){
       ctx.font="800 "+Math.round(11*s)+"px var(--font-sans)";
       ctx.fillStyle=done?"#c9930a":"#2a2620";
-      ctx.fillText(done?"⭐":"▶",x+13*s,by-24*s);
+      ctx.fillText(sp.kind==="exhibit"?"✓":(done?"⭐":"▶"),x+13*s,by-24*s);
     }
     // 삼각 꼬리
     ctx.beginPath(); ctx.moveTo(x-5*s,by+15*s);ctx.lineTo(x+5*s,by+15*s);ctx.lineTo(x,by+21*s);ctx.closePath();
     ctx.fillStyle=done?"#fff7e6":"#fffdf7"; ctx.fill(); ctx.strokeStyle=edge;ctx.stroke();
+    // 전환 목적지 라벨: name의 기존 방향 화살표를 그대로 보존한다.
+    if(TRANSITION_KINDS.has(sp.kind)){
+      const label=sp.name||"이동";
+      ctx.font="800 10px var(--font-sans)";
+      const lw=Math.ceil(ctx.measureText(label).width)+12, ly=by+26*s;
+      roundRect(x-lw/2,ly,lw,15,6);
+      ctx.fillStyle="rgba(16,13,10,.78)"; ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle="rgba(255,255,255,.35)"; ctx.stroke();
+      ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(label,x,ly+7.5);
+    }
   });
   // NPC(안내·보안)
   sceneNPCs().forEach(drawNPC);
@@ -1035,11 +1096,20 @@ function drawNPC(npc){
     ctx.font="15px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.fillText(npc.type==="cleaning"?"🧹":"🧑‍🏫", x, y-40-bob);
   }
+  // NPC 이름표는 스프라이트 위, 근접 💬는 이름표보다 더 위에 둔다.
+  const npcLabel=npc.name||(npc.type==="guide"?"S.C":npc.type==="cleaning"?"미화":"보안");
+  const nameY=y-55-bob;
+  ctx.font="800 10px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  const nameW=Math.ceil(ctx.measureText(npcLabel).width)+12;
+  roundRect(x-nameW/2,nameY-8,nameW,16,6);
+  ctx.fillStyle="rgba(16,13,10,.78)"; ctx.fill();
+  ctx.lineWidth=1; ctx.strokeStyle="rgba(255,255,255,.32)"; ctx.stroke();
+  ctx.fillStyle="#fff"; ctx.fillText(npcLabel,x,nameY);
   if(npc===nearNPC){
     // 근접 표시: 발밑 링 대신 머리 위 말풍선 (발밑 그림자·타원 겹침 정리, 2026-07-26)
     const hop=Math.abs(Math.sin(t*0.12))*4;
     ctx.font="17px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText("💬", x, y-46-bob-hop);
+    ctx.fillText("💬", x, nameY-18-hop);
   }
 }
 
@@ -1253,8 +1323,9 @@ checkExhibitQids();
 function seenMap(){ try{const o=JSON.parse(safeGet("ssc_seen")||"{}"); return (o&&typeof o==="object"&&!Array.isArray(o))?o:{};}catch(e){return {};} }
 function isSeen(name){ return !!seenMap()[name]; }
 function seenCount(){ const s=seenMap(); return ALL_EXHIBITS.filter(e=>s[e.name]).length; }
+function refreshSeenRenderCache(){ seenRenderCache=seenMap(); }
 // silent=true면 점수 팝업을 띄우지 않는다(현장 QR 인증처럼 자체 팝업이 따로 있는 경우)
-function markSeen(name,silent){ const s=seenMap(); if(!s[name]){ s[name]=1; safeSet("ssc_seen",JSON.stringify(s)); if(silent)updateScore(); else popScore("+5 관람"); } }
+function markSeen(name,silent){ const s=seenMap(); if(!s[name]){ s[name]=1; safeSet("ssc_seen",JSON.stringify(s)); seenRenderCache=s; if(silent)updateScore(); else popScore("+5 관람"); } }
 function scanMap(){ try{const o=JSON.parse(safeGet("ssc_scan")||"{}"); return (o&&typeof o==="object"&&!Array.isArray(o))?o:{};}catch(e){return {};} }
 // hasOwn 가드: ?scan=__proto__ · ?scan=constructor 같은 값이 프로토타입 체인에 걸려 오탐되는 것 방지
 function isScanned(qid){ return Object.hasOwn(scanMap(),qid); }
@@ -1364,6 +1435,7 @@ function drawMiniMap(mc){
   const sc=curScene(); if(!mc||!sc)return;
   const W2=640,H2=360; mc.width=W2; mc.height=H2;   // 배경 비율(16:9)과 동일 좌표계
   const g=mc.getContext("2d");
+  if(!g)return;
   g.fillStyle="#241f1a"; g.fillRect(0,0,W2,H2);
   const wa=sc.walkable||[0.02,0.02,0.98,0.98];
   g.fillStyle="#efe7d2"; g.fillRect(wa[0]*W2,wa[1]*H2,(wa[2]-wa[0])*W2,(wa[3]-wa[1])*H2);
@@ -1378,10 +1450,48 @@ function drawMiniMap(mc){
   g.beginPath(); g.arc(player.px*W2,player.py*H2,9,0,Math.PI*2); g.fill(); g.stroke();
 }
 
+function miniHudBlocked(){
+  if(anyModalOpen())return true;
+  return Array.from(document.querySelectorAll("iframe")).some(frame=>{
+    const style=getComputedStyle(frame);
+    return style.display!=="none"&&style.visibility!=="hidden"&&frame.getClientRects().length>0;
+  });
+}
+function refreshMiniHud(){
+  const mh=document.getElementById("miniHud"); if(!mh)return;
+  const blocked=miniHudBlocked();
+  mh.classList.toggle("is-hidden",blocked);
+  if(!blocked&&!document.hidden)drawMiniMap(mh);
+}
+setInterval(refreshMiniHud,500);   // 폰 성능 보호: 매 프레임이 아닌 0.5초 간격
+const miniHudModalObserver=new MutationObserver(refreshMiniHud);
+document.querySelectorAll(".modal").forEach(m=>miniHudModalObserver.observe(m,{attributes:true,attributeFilter:["class"]}));
+
+function appendQuickTravel(body){
+  const visited=visitedMap();
+  const floors=FLOORS.map((f,i)=>({f,i})).filter(({f})=>Object.hasOwn(visited,f.id));
+  if(!floors.length)return;
+  const section=document.createElement("div");
+  section.style.margin="0 0 16px";
+  section.innerHTML='<div style="font-size:13px;font-weight:800;color:#5a5244">⚡ 빠른 이동</div>';
+  const chips=document.createElement("div"); chips.className="quick-travel";
+  floors.forEach(({f,i})=>{
+    const chip=document.createElement("button");
+    chip.type="button"; chip.className="travel-chip"; chip.textContent=(i===floorIdx?"📍 ":"")+f.name;
+    chip.disabled=i===floorIdx;
+    if(i===floorIdx)chip.setAttribute("aria-current","location");
+    chip.onclick=()=>{ closeModals(); startFade(()=>enterFloor(i)); };
+    chips.appendChild(chip);
+  });
+  section.appendChild(chips);
+  body.appendChild(section);
+}
+
 /* ══════════ 지도 ══════════ */
-document.getElementById("mapBtn").onclick=()=>{
+function openCatalogMap(focusMap){
   if(fadeState)return;
   refreshDone();
+  refreshSeenRenderCache();
   document.querySelector("#map h2").textContent="📖 나의 도감";
   document.querySelector("#map .sub").textContent="🎫 스탬프 "+gotCount()+"/"+STAMP_TOTAL+"  ·  👀 전시물 "+seenCount()+"/"+EXHIBIT_TOTAL+"  ·  📍 현장 인증 "+scanCount()+"/"+EXHIBIT_TOTAL+"  ·  ⭐ "+getScore()+"점";
   const body=document.getElementById("mapBody"); body.innerHTML="";
@@ -1397,8 +1507,9 @@ document.getElementById("mapBtn").onclick=()=>{
     '<div style="height:100%;width:'+scanPct+'%;background:linear-gradient(90deg,#4caf50,#287a2e);transition:width .4s"></div></div>'+
     '<div style="text-align:right;font-size:12px;font-weight:700;color:#287a2e;margin-top:3px">'+scanPct+'% 현장 완주</div></div>';
   // 미니맵 (2026-07-28 P3, 마스터 요청): 충돌 데이터를 그대로 그린다 — 지도=동선 데이터 그 자체라 그림-동선 불일치가 원리적으로 불가능
-  body.insertAdjacentHTML("beforeend",'<div style="margin:0 0 14px"><div style="font-size:13px;font-weight:800;color:#5a5244;margin-bottom:6px">🗺️ 현재 위치 — '+(inRoom?ROOMS[inRoom].name:FLOORS[floorIdx].name)+'</div><canvas id="miniMap" style="width:100%;height:auto;border-radius:12px;border:1.5px solid var(--line);display:block"></canvas></div>');
+  body.insertAdjacentHTML("beforeend",'<div id="catalogMapSection" style="margin:0 0 14px"><div style="font-size:13px;font-weight:800;color:#5a5244;margin-bottom:6px">🗺️ 현재 위치 — '+(inRoom?ROOMS[inRoom].name:FLOORS[floorIdx].name)+'</div><canvas id="miniMap" style="width:100%;height:auto;border-radius:12px;border:1.5px solid var(--line);display:block"></canvas></div>');
   drawMiniMap(document.getElementById("miniMap"));
+  appendQuickTravel(body);
   // 씬별: 미니게임 + 전시물 관람 여부
   const s=seenMap(), scans=scanMap();
   const appendCatalogScene=(scene,title)=>{
@@ -1417,7 +1528,17 @@ document.getElementById("mapBtn").onclick=()=>{
   FLOORS.forEach(f=>appendCatalogScene(f,f.name));
   Object.values(ROOMS).forEach(r=>appendCatalogScene(r,r.floorName+' · '+r.name));
   document.getElementById("map").classList.add("show");
-};
+  if(focusMap)requestAnimationFrame(()=>{
+    const section=document.getElementById("catalogMapSection");
+    if(section)section.scrollIntoView({block:"start"});
+  });
+}
+document.getElementById("mapBtn").onclick=()=>openCatalogMap(false);
+const miniHud=document.getElementById("miniHud");
+if(miniHud){
+  miniHud.onclick=()=>openCatalogMap(true);
+  miniHud.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();openCatalogMap(true);} };
+}
 
 /* ══════════ 수료증 ══════════ */
 document.getElementById("certBtn").onclick=()=>{ if(fadeState)return; showCert(); };
@@ -1461,8 +1582,8 @@ function toast(msg){
 }
 
 /* ══════════ 복귀(BFCache 포함) ══════════ */
-window.addEventListener("pageshow",e=>{ refreshDone(); updateScore(); setTimeout(checkNewStamps,200); });
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden){refreshDone();updateScore();} });
+window.addEventListener("pageshow",e=>{ refreshDone(); refreshSeenRenderCache(); updateScore(); refreshMiniHud(); setTimeout(checkNewStamps,200); });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){refreshDone();refreshSeenRenderCache();updateScore();refreshMiniHud();} });
 
 /* ══════════ 시작 ══════════ */
 /* ══════════ 홈 화면 추가(전체화면) 자동 안내 ══════════ */
@@ -1484,7 +1605,7 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden){refreshD
   if(isIOS && !standalone && !safeGet("a2hs_seen")) setTimeout(()=>show("ios"),1800);
 })();
 
-refreshDone(); updateScore();
+refreshDone(); refreshSeenRenderCache(); updateScore(); refreshMiniHud();
 preload();
 console.log("과학관 탐방 "+HUB_VERSION+" · 스탬프 "+STAMP_TOTAL+"개");
 </script>
