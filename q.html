@@ -5,113 +5,147 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>지진 대피 훈련 — 지진체험관</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0c1024; --bg2:#141833; --line:#2b3158;
-    --ink:#f2f4ff; --muted:#9aa3cf;
-    --amber:#ffcc33; --amber-d:#d9a915;
-    --red:#ff4757; --orange:#ff9a3c;
-    --num:"Baloo 2","Pretendard",sans-serif;
+    --bg:#150f0d; --bg2:#231613; --bg3:#2d1a16; --line:#4a2b23;
+    --ink:#f7ece4; --muted:#b6897c;
+    --alert:#ff3b30; --alert-d:#9c231a;
+    --warn:#ffab2e; --warn-d:#c97815;
+    --num:"Oswald","Pretendard",sans-serif;
     --kr:"Pretendard",-apple-system,sans-serif;
   }
   *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;word-break:keep-all;overflow-wrap:break-word;overflow:hidden}
   /* position:fixed = 모바일 스크롤/바운스 완전 잠금 */
-  body{background:var(--bg);color:var(--ink);font-family:var(--kr);
+  body{background:var(--bg);color:var(--ink);font-family:var(--kr);line-height:1.6;
     display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
     position:fixed;inset:0;height:100dvh;
     padding:calc(8px + env(safe-area-inset-top)) 8px calc(10px + env(safe-area-inset-bottom));gap:7px;
     user-select:none;-webkit-user-select:none;touch-action:none}
 
-  .backBtn{position:fixed;left:calc(8px + env(safe-area-inset-left));top:calc(8px + env(safe-area-inset-top));
-    z-index:30;background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
-    border-radius:11px;height:32px;padding:0 12px;font-size:12.5px;font-weight:700;
-    cursor:pointer;font-family:var(--kr);text-decoration:none;display:flex;align-items:center;gap:4px}
+  /* 경보등 헤드 스트립 — 다른 미니게임에 없는 시각 시그니처 */
+  .hazard-top{position:fixed;top:0;left:0;right:0;height:6px;z-index:25;
+    background:repeating-linear-gradient(135deg,var(--alert) 0 10px,#170f0d 10px 20px);
+    box-shadow:0 0 10px rgba(255,59,48,.5)}
 
-  .hud{width:min(94vw,430px,calc((100dvh - 195px)*0.706));display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:36px}
+  .backBtn{position:fixed;left:calc(8px + env(safe-area-inset-left));top:calc(12px + env(safe-area-inset-top));
+    z-index:30;background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
+    clip-path:polygon(8px 0,100% 0,100% 100%,0 100%,0 8px);
+    height:32px;padding:0 14px 0 10px;font-size:12px;font-weight:700;letter-spacing:.03em;
+    cursor:pointer;font-family:var(--num);text-transform:uppercase;text-decoration:none;display:flex;align-items:center;gap:4px}
+
+  .hud{width:min(94vw,430px,calc((100dvh - 195px)*0.706));display:flex;align-items:stretch;justify-content:space-between;gap:8px;margin-top:36px}
+  .score-panel{flex:1;background:var(--bg2);border:1.5px solid var(--line);
+    clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%);
+    padding:5px 14px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+  .panel-label{font-family:var(--num);font-size:9.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
   .score-box{display:flex;align-items:baseline;gap:8px}
-  .score{font-family:var(--num);font-weight:800;font-size:30px;line-height:1;color:var(--ink)}
-  .best{font-family:var(--num);font-weight:600;font-size:13px;color:var(--muted)}
+  .score{font-family:var(--num);font-weight:700;font-size:28px;line-height:1.15;color:var(--ink)}
+  .best{font-family:var(--num);font-weight:600;font-size:12px;color:var(--muted)}
   .btn-ic{background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
-    border-radius:12px;height:38px;padding:0 12px;font-size:13px;font-weight:700;
-    cursor:pointer;font-family:var(--kr);white-space:nowrap}
-  .timer{font-family:var(--num);font-weight:800;font-size:26px;line-height:1;
-    background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;
-    padding:6px 14px;color:var(--ink);min-width:64px;text-align:center}
-  .timer.low{color:var(--red);border-color:var(--red);animation:pulse .5s infinite alternate}
-  @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.1)}}
+    clip-path:polygon(8px 0,100% 0,100% 100%,0 100%,0 8px);
+    height:38px;padding:0 14px;font-size:15px;font-weight:700;
+    cursor:pointer;font-family:var(--num);white-space:nowrap}
+  .timer{font-family:var(--num);font-weight:700;font-size:26px;line-height:1;
+    background:var(--bg2);border:1.5px solid var(--alert);position:relative;
+    clip-path:polygon(10px 0,100% 0,100% 100%,0 100%,0 10px);
+    padding:9px 16px 4px;color:var(--alert);min-width:56px;text-align:center}
+  .timer::before{content:"TIME";position:absolute;top:2px;left:0;right:0;text-align:center;
+    font-size:8px;letter-spacing:.16em;color:var(--muted)}
+  .timer.low{color:#fff;background:var(--alert);border-color:#fff;animation:pulse .5s infinite alternate}
+  @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.06)}}
 
   /* 하트 + 음소거 줄 */
   .subhud{width:min(94vw,430px,calc((100dvh - 195px)*0.706));display:flex;justify-content:space-between;align-items:center;
-    gap:8px;background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;padding:8px 12px}
+    gap:8px;background:var(--bg2);border:1.5px solid var(--line);
+    clip-path:polygon(0 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%);
+    padding:8px 12px}
+  .hearts-wrap{display:flex;align-items:center;gap:8px}
+  .hearts-label{font-family:var(--num);font-size:9px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
   .hearts{display:flex;gap:6px}
-  .heart{font-size:19px;line-height:1;color:var(--line);transition:color .2s,transform .2s}
-  .heart.filled{color:var(--red)}
+  .heart{font-size:18px;line-height:1;color:var(--line);transition:color .2s,transform .2s}
+  .heart.filled{color:var(--alert);text-shadow:0 0 6px rgba(255,59,48,.6)}
+  .hint-txt{font-size:11px;color:var(--muted);font-family:var(--num);letter-spacing:.02em}
 
   .stage{position:relative}
-  canvas#game{display:block;background:radial-gradient(ellipse at 50% 0%, #171c3d 0%, var(--bg) 62%);
-    border:2px solid var(--line);border-radius:18px;width:min(94vw,430px,calc((100dvh - 195px)*0.706));height:auto;touch-action:none}
+  canvas#game{display:block;background:radial-gradient(ellipse at 50% 0%, #2d1a16 0%, var(--bg) 62%);
+    border:2px solid var(--alert-d);
+    clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
+    width:min(94vw,430px,calc((100dvh - 195px)*0.706));height:auto;touch-action:none}
 
   /* 팩트 토스트 */
   .toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(90px);
-    width:calc(100% - 28px);max-width:390px;background:rgba(20,24,50,.94);
-    border:1.5px solid var(--amber);border-radius:14px;padding:11px 14px;
-    display:flex;gap:11px;align-items:center;opacity:0;visibility:hidden;
+    width:calc(100% - 28px);max-width:390px;background:rgba(26,16,13,.95);
+    border:1.5px solid var(--warn);border-left:6px solid var(--warn);
+    clip-path:polygon(0 0,100% 0,100% 100%,10px 100%,0 calc(100% - 10px));
+    padding:11px 14px;display:flex;gap:11px;align-items:center;opacity:0;visibility:hidden;
     transition:transform .35s cubic-bezier(.2,.9,.3,1.2),opacity .3s,visibility .3s;
     pointer-events:none;z-index:5}
   .toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
-  .toast .dot{width:34px;height:34px;border-radius:50%;flex-shrink:0}
-  .toast b{font-size:13.5px;display:block;color:var(--amber)}
-  .toast p{font-size:12.5px;color:#d9def5;line-height:1.45;margin-top:1px}
+  .toast .dot{width:10px;height:34px;flex-shrink:0}
+  .toast b{font-size:13px;display:block;color:var(--warn);font-family:var(--num);letter-spacing:.02em}
+  .toast p{font-size:12.5px;color:#ecd9d0;line-height:1.5;margin-top:2px}
 
   /* 오버레이 */
-  .ov{position:fixed;inset:0;background:rgba(9,11,26,.86);backdrop-filter:blur(5px);
+  .ov{position:fixed;inset:0;background:rgba(10,6,5,.9);backdrop-filter:blur(5px);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;padding:28px;z-index:20;transition:opacity .25s;overflow-y:auto}
   .ov.hide{opacity:0;pointer-events:none}
-  .ov h1{font-size:27px;font-weight:900;letter-spacing:-.02em;line-height:1.35}
-  .ov h1 em{font-style:normal;color:var(--amber)}
-  .ov .sub{font-size:12.5px;color:var(--muted);margin-top:10px}
-  .go{margin-top:22px;font-family:var(--kr);font-weight:800;font-size:17px;
-    background:var(--amber);color:#2a1e04;border:none;border-radius:16px;
-    padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 var(--amber-d);transition:transform .08s}
-  .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--amber-d)}
-  .howto{display:flex;align-items:center;gap:8px;margin:20px 0 6px;flex-wrap:wrap;justify-content:center}
-  .step{background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;
-    padding:12px 10px;width:100px}
-  .step-ic{font-size:24px;margin-bottom:6px}
-  .step p{font-size:11.5px;color:#d9def5;line-height:1.45}
-  .step p b{color:var(--amber)}
-  .step-arrow{color:var(--muted);font-size:15px;font-weight:800}
-  .hint{margin-top:6px;font-size:11.5px;color:var(--muted)}
-  .backlink{margin-top:16px;font-size:13px;color:var(--muted);text-decoration:none}
+  .alert-banner{display:inline-flex;align-items:center;gap:6px;background:var(--alert);color:#1a0806;
+    font-family:var(--num);font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    padding:5px 14px;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);margin-bottom:14px}
+  .ov h1{font-size:25px;font-weight:800;letter-spacing:-.01em;line-height:1.4}
+  .ov h1 em{font-style:normal;color:var(--alert)}
+  .ov .sub{font-size:12px;color:var(--muted);margin-top:10px}
+  .go{margin-top:22px;font-family:var(--num);font-weight:700;font-size:16px;letter-spacing:.04em;text-transform:uppercase;
+    background:var(--alert);color:#fff;border:none;
+    clip-path:polygon(14px 0,100% 0,100% 100%,0 100%,0 14px);
+    padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 var(--alert-d);transition:transform .08s}
+  .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--alert-d)}
+  .howto{display:flex;align-items:stretch;gap:6px;margin:20px 0 6px;flex-wrap:wrap;justify-content:center}
+  .step{position:relative;background:var(--bg2);border:1.5px solid var(--line);border-left:3px solid var(--alert);
+    padding:14px 10px 10px;width:100px;text-align:left}
+  .step-tag{position:absolute;top:4px;right:8px;font-family:var(--num);font-size:9px;color:var(--muted);letter-spacing:.05em}
+  .step-ic{font-size:22px;margin-bottom:6px}
+  .step p{font-size:11px;color:#ecd9d0;line-height:1.5}
+  .step p b{color:var(--warn)}
+  .step-arrow{color:var(--muted);font-size:14px;font-weight:700;align-self:center}
+  .hint{margin-top:8px;font-size:11px;color:var(--muted);font-family:var(--num);letter-spacing:.02em}
+  .backlink{margin-top:16px;font-size:12.5px;color:var(--muted);text-decoration:none;font-family:var(--num);letter-spacing:.02em}
   @media (max-height:760px){
-    .ov h1{font-size:21px}
+    .ov h1{font-size:20px}
     .howto{margin:12px 0 4px}
-    .step{padding:9px 8px;width:90px}
-    .step-ic{font-size:20px;margin-bottom:4px}
+    .step{padding:11px 8px 8px;width:90px}
+    .step-ic{font-size:19px;margin-bottom:4px}
     .go{margin-top:14px;padding:12px 38px}
     .ov .sub{margin-top:5px}
   }
-  .ov .final-score{font-family:var(--num);font-weight:800;font-size:52px;color:var(--amber);line-height:1.1}
-  .ov .final-label{font-size:13px;color:var(--muted);letter-spacing:.08em}
-  .ov .final-grade{margin-top:8px;font-family:var(--num);font-weight:800;font-size:20px;color:var(--ink)}
-  .ov .final-max{margin-top:10px;font-size:14.5px;color:#d9def5}
+  .ov .final-score{font-family:var(--num);font-weight:700;font-size:50px;color:var(--alert);line-height:1.1}
+  .ov .final-label{font-size:12px;color:var(--muted);letter-spacing:.1em;font-family:var(--num);text-transform:uppercase}
+  .ov .final-grade{margin-top:8px;font-family:var(--num);font-weight:700;font-size:19px;color:var(--ink)}
+  .ov .final-max{margin-top:10px;font-size:14px;color:#ecd9d0}
 </style>
 </head>
 <body>
 
-<a class="backBtn" href="h.html">← 허브</a>
+<div class="hazard-top"></div>
+<a class="backBtn" href="h.html">◀ 허브</a>
 
 <div class="hud">
-  <div class="score-box"><div class="score" id="score">0</div><div class="best" id="best">최고 0</div></div>
+  <div class="score-panel">
+    <div class="panel-label">Score</div>
+    <div class="score-box"><div class="score" id="score">0</div><div class="best" id="best">최고 0</div></div>
+  </div>
   <div class="timer" id="timer">90</div>
   <button class="btn-ic" id="muteBtn" aria-label="효과음 켜기/끄기">🔊 소리</button>
 </div>
 <div class="subhud">
-  <div class="hearts" id="hearts"></div>
-  <span style="font-size:11.5px;color:var(--muted)">경보가 뜨면 옆 레인으로!</span>
+  <div class="hearts-wrap">
+    <span class="hearts-label">LIFE</span>
+    <div class="hearts" id="hearts"></div>
+  </div>
+  <span class="hint-txt">경보가 뜨면 옆 레인으로!</span>
 </div>
 <div class="stage">
   <canvas id="game"></canvas>
@@ -119,13 +153,14 @@
 </div>
 
 <div class="ov" id="intro">
+  <div class="alert-banner">🚨 지진 경보 발령</div>
   <h1>지진 대피 훈련<br><em>흔들리기 전, 그 몇 초</em></h1>
   <div class="howto">
-    <div class="step"><div class="step-ic">⚠️</div><p><b>노란 경보</b>가<br>깜빡이면</p></div>
+    <div class="step"><span class="step-tag">01</span><div class="step-ic">⚠️</div><p><b>노란 경보</b>가<br>깜빡이면</p></div>
     <div class="step-arrow">→</div>
-    <div class="step"><div class="step-ic">🏃</div><p><b>옆 레인</b>으로<br>피하고</p></div>
+    <div class="step"><span class="step-tag">02</span><div class="step-ic">🏃</div><p><b>옆 레인</b>으로<br>피하고</p></div>
     <div class="step-arrow">→</div>
-    <div class="step"><div class="step-ic">⏱</div><p><b>90초</b> 동안<br>생존!</p></div>
+    <div class="step"><span class="step-tag">03</span><div class="step-ic">⏱</div><p><b>90초</b> 동안<br>생존!</p></div>
   </div>
   <p class="hint">화면 좌/우 탭 또는 ← → 키로 이동</p>
   <p class="sub">경보와 흔들림 사이, 그 짧은 틈이 지진 조기경보의 원리예요</p>
@@ -145,7 +180,7 @@
 "use strict";
 
 // ===== 상수 =====
-const VERSION="v1.0";
+const VERSION="v1.0-rework";
 const W=480,H=680;
 const LANES=3, LANE_W=W/LANES;
 const LANE_X=[LANE_W*0.5,LANE_W*1.5,LANE_W*2.5];
@@ -156,9 +191,9 @@ const FALL_TIME=500;      // 경보 종료 후 물체가 떨어지는 시간(ms)
 const START_HEARTS=3;
 const MAX_COMBO_MULT=8;
 const FACTS=[
-  {c:"#ffd24a",t:"P파가 먼저 와요",b:"P파는 초속 약 6~8km, S파는 약 3~4km로 P파가 훨씬 빨라요. 그래서 흔들림보다 경보가 먼저 도착해요."},
-  {c:"#ff9a3c",t:"이게 지진 조기경보예요",b:"P파와 S파의 속도 차이 덕분에, 진짜 흔들림(S파)이 오기 전 몇 초의 여유가 생겨요. 그 틈에 대피하는 거예요."},
-  {c:"#ff4757",t:"몸을 낮추고 머리를 보호해요",b:"지진이 나면 책상 아래로 들어가 다리를 잡고, 머리와 목을 보호하는 게 먼저예요."}
+  {c:"#ffab2e",t:"P파가 먼저 와요",b:"P파는 초속 약 6~8km, S파는 약 3~4km로 P파가 훨씬 빨라요. 그래서 흔들림보다 경보가 먼저 도착해요."},
+  {c:"#ff6a3c",t:"이게 지진 조기경보예요",b:"P파와 S파의 속도 차이 덕분에, 진짜 흔들림(S파)이 오기 전 몇 초의 여유가 생겨요. 그 틈에 대피하는 거예요."},
+  {c:"#ff3b30",t:"몸을 낮추고 머리를 보호해요",b:"지진이 나면 책상 아래로 들어가 다리를 잡고, 머리와 목을 보호하는 게 먼저예요."}
 ];
 
 // ===== 상태 =====
@@ -244,30 +279,30 @@ function drawFallObject(x,y,type,scale){
   ctx.restore();
 }
 
-// ===== 플레이어 캐릭터 (플랫 2톤 + 얼굴, m.html 톤 이식) =====
+// ===== 플레이어 캐릭터 (플랫 2톤 + 얼굴, m.html 톤 이식 + 비상대응 슈트 리스킨) =====
 function drawPlayer(x,y){
   ctx.save();ctx.translate(x,y);
   // 그림자
   ctx.fillStyle="rgba(0,0,0,.28)";ctx.beginPath();ctx.ellipse(0,34,26,7,0,0,6.283);ctx.fill();
-  // 몸통 (주황 우주복)
-  ctx.fillStyle="#ff9a3c";
+  // 몸통 (비상대응 슈트)
+  ctx.fillStyle="#c9342a";
   ctx.beginPath();
   ctx.moveTo(-20,30);ctx.lineTo(-22,-4);ctx.quadraticCurveTo(-22,-18,0,-18);
   ctx.quadraticCurveTo(22,-18,22,-4);ctx.lineTo(20,30);ctx.closePath();ctx.fill();
-  ctx.fillStyle="#e07f22";
+  ctx.fillStyle="#8f2019";
   ctx.beginPath();ctx.moveTo(2,-14);ctx.lineTo(20,-2);ctx.lineTo(18,30);ctx.lineTo(4,30);ctx.closePath();ctx.fill();
   // 다리
-  ctx.fillStyle="#e0703f";
+  ctx.fillStyle="#2a1a17";
   ctx.fillRect(-16,28,12,14);ctx.fillRect(4,28,12,14);
   // 헬멧
-  ctx.fillStyle="#d9def5";ctx.beginPath();ctx.arc(0,-24,17,0,6.283);ctx.fill();
-  ctx.fillStyle="#aeb6e0";ctx.beginPath();ctx.arc(4,-21,15,0,6.283);ctx.fill();
-  ctx.fillStyle="#d9def5";ctx.beginPath();ctx.arc(-3,-27,12,0,6.283);ctx.fill();
+  ctx.fillStyle="#f2e9e4";ctx.beginPath();ctx.arc(0,-24,17,0,6.283);ctx.fill();
+  ctx.fillStyle="#cbb9b2";ctx.beginPath();ctx.arc(4,-21,15,0,6.283);ctx.fill();
+  ctx.fillStyle="#f2e9e4";ctx.beginPath();ctx.arc(-3,-27,12,0,6.283);ctx.fill();
   // 얼굴
-  ctx.fillStyle="#2a2e4a";
+  ctx.fillStyle="#241512";
   ctx.beginPath();ctx.arc(-6,-25,2.4,0,6.283);ctx.fill();
   ctx.beginPath();ctx.arc(3,-25,2.4,0,6.283);ctx.fill();
-  ctx.strokeStyle="#2a2e4a";ctx.lineWidth=2;ctx.lineCap="round";
+  ctx.strokeStyle="#241512";ctx.lineWidth=2;ctx.lineCap="round";
   ctx.beginPath();ctx.arc(-1.5,-20,3.4,0.15*Math.PI,0.85*Math.PI);ctx.stroke();
   ctx.restore();
 }
@@ -453,13 +488,13 @@ function frame(now){
   if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;if(shake<.4)shake=0;}
 
   // 배경 격자(레인 구분선)
-  ctx.strokeStyle="rgba(154,163,207,.16)";ctx.lineWidth=2;
+  ctx.strokeStyle="rgba(182,137,124,.18)";ctx.lineWidth=2;
   for(let i=1;i<LANES;i++){
     ctx.beginPath();ctx.moveTo(LANE_W*i,TOP_Y);ctx.lineTo(LANE_W*i,H);ctx.stroke();
   }
   // 바닥대
-  ctx.fillStyle="#171c3d";ctx.fillRect(0,FLOOR_TOP,W,H-FLOOR_TOP);
-  ctx.strokeStyle="rgba(154,163,207,.25)";ctx.lineWidth=2;
+  ctx.fillStyle="#231613";ctx.fillRect(0,FLOOR_TOP,W,H-FLOOR_TOP);
+  ctx.strokeStyle="rgba(182,137,124,.28)";ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(0,FLOOR_TOP);ctx.lineTo(W,FLOOR_TOP);ctx.stroke();
 
   // 레인별 경보 플래시 + 낙하물
@@ -467,7 +502,7 @@ function frame(now){
     const warnPulse=0.35+Math.sin(now/60)*0.25;
     if(now<ev.fallStart){
       for(const lane of ev.lanes){
-        ctx.fillStyle=`rgba(255,204,51,${Math.max(0,warnPulse)})`;
+        ctx.fillStyle=`rgba(255,171,46,${Math.max(0,warnPulse)})`;
         ctx.fillRect(LANE_W*lane+4,FLOOR_TOP,LANE_W-8,H-FLOOR_TOP);
       }
     } else if(now<ev.landTime){
@@ -487,14 +522,14 @@ function frame(now){
     f.y-=dt*46;f.life-=dt*1.1;
     if(f.life<=0){floats.splice(i,1);continue;}
     ctx.globalAlpha=Math.min(f.life,1);
-    ctx.font=(f.big?"800 20px":"600 15px")+" 'Baloo 2',sans-serif";
-    ctx.fillStyle=f.big?"#ffcc33":"#f2f4ff";ctx.textAlign="center";
+    ctx.font=(f.big?"800 20px":"600 15px")+" 'Oswald',sans-serif";
+    ctx.fillStyle=f.big?"#ffab2e":"#f7ece4";ctx.textAlign="center";
     ctx.fillText(f.txt,f.x,f.y);}
   ctx.globalAlpha=1;
 
   // 피격 레드 플래시
   if(flashRed>0){
-    ctx.fillStyle=`rgba(255,71,87,${flashRed*0.35})`;
+    ctx.fillStyle=`rgba(255,59,48,${flashRed*0.35})`;
     ctx.fillRect(0,0,W,H);
     flashRed=Math.max(0,flashRed-dt*3);
   }
@@ -507,7 +542,7 @@ document.getElementById("best").textContent="최고 "+best;
 renderHearts();
 const vTag=document.createElement("div");
 vTag.textContent=VERSION;
-vTag.style.cssText="position:fixed;right:8px;bottom:6px;font-size:10px;color:#4a5180;font-family:var(--num);z-index:50";
+vTag.style.cssText="position:fixed;right:8px;bottom:6px;font-size:10px;color:#5a3a30;font-family:var(--num);z-index:50";
 document.body.appendChild(vTag);
 
 document.getElementById("muteBtn").onclick=function(){muted=!muted;this.textContent=muted?"🔇 무음":"🔊 소리";};

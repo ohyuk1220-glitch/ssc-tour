@@ -5,14 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>지구과학 실험실 — 모래 상자</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0c1024; --bg2:#171c38; --line:#2b3158;
-    --ink:#f2f4ff; --muted:#9aa3cf;
-    --orange:#ff9a3c; --orange-d:#e07f22;
-    --lava:#ff5a2e; --lava-d:#c93f18; --earth:#a9784a;
-    --num:"Baloo 2","Pretendard",sans-serif;
+    --bg:#161d20; --bg2:#212b2c; --bg3:#293535; --line:#3a4948;
+    --ink:#eef5f2; --muted:#87a19b;
+    --mint:#2ee6ac; --mint-d:#159c74;
+    --num:"IBM Plex Mono","Pretendard",monospace;
     --kr:"Pretendard",-apple-system,sans-serif;
   }
   *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
@@ -23,74 +22,97 @@
     padding:calc(8px + env(safe-area-inset-top)) 8px calc(10px + env(safe-area-inset-bottom));gap:7px;
     user-select:none;-webkit-user-select:none;touch-action:none;line-height:1.6}
 
-  .hud{width:min(94vw,430px);display:flex;align-items:center;justify-content:space-between;gap:8px}
+  /* 지층 단면 헤드 스트립 — 다른 미니게임에 없는 시각 시그니처 */
+  .strata-top{position:fixed;top:0;left:0;right:0;height:6px;z-index:5;opacity:.6;
+    background:repeating-linear-gradient(90deg,var(--mint) 0 18%,var(--bg3) 18% 36%,var(--muted) 36% 54%,var(--bg2) 54% 72%,var(--mint-d) 72% 100%)}
+
+  .hud{width:min(94vw,430px);display:flex;flex-direction:column;gap:7px;
+    background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;padding:8px 10px 9px;margin-top:6px}
+  .hud-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .left-group{display:flex;align-items:center;gap:8px;min-width:0}
-  .btn-ic{background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
-    border-radius:12px;height:36px;padding:0 12px;font-size:13px;font-weight:700;
-    cursor:pointer;font-family:var(--kr);white-space:nowrap}
-  .disc-count{font-family:var(--num);font-weight:800;font-size:17px;color:var(--ink);white-space:nowrap}
-  .disc-best{font-size:11px;color:var(--muted);margin-top:1px}
+  .btn-ic{background:var(--bg3);border:1.5px solid var(--line);color:var(--muted);
+    border-radius:9px;height:34px;padding:0 12px;font-size:12.5px;font-weight:600;
+    cursor:pointer;font-family:var(--num);white-space:nowrap}
+  .disc-count{font-family:var(--num);font-weight:700;font-size:16px;color:var(--ink);white-space:nowrap}
+  .disc-best{font-size:10.5px;color:var(--muted);margin-top:1px;font-family:var(--num)}
+  .goal-badge{display:flex;align-items:center;gap:8px;padding-top:7px;border-top:1px dashed var(--line);
+    font-size:12px;color:var(--ink)}
+  .goal-badge b{color:var(--mint)}
+  .goal-badge.done{color:var(--mint);font-weight:700}
+  .goal-ic{width:13px;height:13px;border-radius:4px;flex-shrink:0;box-shadow:0 0 6px currentColor}
 
   .ladder{width:min(94vw,430px);display:flex;justify-content:space-between;align-items:flex-end;
-    gap:2px;background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;padding:8px 8px 6px}
+    gap:2px;background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;padding:8px 8px 6px}
   .lad{display:flex;flex-direction:column;align-items:center;
     gap:3px;cursor:pointer;flex:1;transition:transform .15s;min-width:0}
-  .lad:active{transform:scale(1.12)}
-  .lad .orb-box{height:28px;display:flex;align-items:center;justify-content:center}
-  .lad i{border-radius:50%;display:block;flex-shrink:0;transition:opacity .3s,box-shadow .3s}
-  .lad.got i{box-shadow:0 0 8px rgba(255,255,255,.25)}
-  .lad .nm{font-size:8.5px;color:var(--muted);white-space:nowrap;line-height:1.2}
+  .lad:active{transform:scale(1.1)}
+  .lad .orb-box{height:26px;display:flex;align-items:center;justify-content:center}
+  .lad i{border-radius:3px;display:block;flex-shrink:0;width:9px;height:22px;transition:opacity .3s,box-shadow .3s}
+  .lad.got i{box-shadow:0 0 7px rgba(46,230,172,.4)}
+  .lad .nm{font-size:8.2px;color:var(--muted);white-space:nowrap;line-height:1.2;font-family:var(--num)}
   .lad.got .nm{color:var(--ink);font-weight:700}
 
   .stage{position:relative}
   canvas#game{display:block;
-    background:linear-gradient(to bottom,#1a2044 0%,#232a4d 55%,#171c38 100%);
-    border:2px solid var(--line);border-radius:16px;width:min(94vw,430px);height:auto;
-    touch-action:none;image-rendering:pixelated;image-rendering:crisp-edges}
+    background:linear-gradient(to bottom,#232f2f 0%,#293636 55%,#161d20 100%);
+    border:2px solid var(--mint-d);border-radius:18px;width:min(94vw,430px);height:auto;
+    touch-action:none;image-rendering:pixelated;image-rendering:crisp-edges;
+    box-shadow:inset 0 0 0 3px rgba(46,230,172,.12)}
   canvas#game.flash{animation:flashPulse .5s ease-out}
-  @keyframes flashPulse{0%{box-shadow:0 0 0 0 rgba(255,90,46,.55)}100%{box-shadow:0 0 0 16px rgba(255,90,46,0)}}
+  @keyframes flashPulse{0%{box-shadow:inset 0 0 0 3px rgba(46,230,172,.12),0 0 0 0 rgba(46,230,172,.55)}
+    100%{box-shadow:inset 0 0 0 3px rgba(46,230,172,.12),0 0 0 16px rgba(46,230,172,0)}}
 
   .palette{width:min(94vw,430px);display:flex;justify-content:space-between;gap:4px;
-    background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;padding:8px 6px}
-  .pal-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;
-    cursor:pointer;padding:5px 2px;border-radius:10px;border:1.5px solid transparent;
+    background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;padding:8px 6px}
+  .pal-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;position:relative;
+    cursor:pointer;padding:6px 2px 5px;border-radius:9px;border:1.5px solid transparent;
     transition:transform .12s,background .15s,border-color .15s}
   .pal-item:active{transform:scale(.92)}
-  .pal-item.active{background:rgba(255,90,46,.14);border-color:var(--lava)}
-  .pal-ic{font-size:19px;line-height:1}
-  .pal-nm{font-size:9.5px;color:var(--muted);white-space:nowrap}
+  .pal-item.active{background:rgba(46,230,172,.13);border-color:var(--mint)}
+  .pal-item.depleted .pal-ic{opacity:.3}
+  .pal-ic{font-size:18px;line-height:1}
+  .pal-nm{font-size:9px;color:var(--muted);white-space:nowrap;font-family:var(--num)}
   .pal-item.active .pal-nm{color:var(--ink);font-weight:700}
+  .pal-count{position:absolute;top:-3px;right:1px;background:var(--bg3);border:1px solid var(--line);
+    border-radius:7px;min-width:14px;height:14px;font-size:8.5px;font-family:var(--num);font-weight:700;
+    color:var(--mint);display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1}
+  .pal-item.refill{border-left:1px dashed var(--line)}
+  .pal-item.refill .pal-ic{font-size:16px}
 
   /* 팩트 토스트 */
   .toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(90px);
-    width:calc(100% - 28px);max-width:390px;background:rgba(20,24,50,.94);
-    border:1.5px solid var(--lava);border-radius:14px;padding:11px 14px;
+    width:calc(100% - 28px);max-width:390px;background:rgba(22,29,32,.95);
+    border:1.5px solid var(--line);border-left:6px solid var(--mint);border-radius:14px;
+    padding:11px 14px;
     display:flex;gap:11px;align-items:center;opacity:0;visibility:hidden;
-    transition:transform .35s cubic-bezier(.2,.9,.3,1.2),opacity .3s,visibility .3s;
+    transition:transform .35s cubic-bezier(.2,.9,.3,1.2),opacity .3s,visibility .3s,box-shadow .2s;
     pointer-events:none;z-index:5}
   .toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
+  .toast.goal-hit{border-color:var(--mint);box-shadow:0 0 0 2px rgba(46,230,172,.35)}
   .toast .dot{width:34px;height:34px;border-radius:50%;flex-shrink:0}
-  .toast b{font-size:13.5px;display:block;color:var(--orange)}
-  .toast p{font-size:12.5px;color:#d9def5;line-height:1.45;margin-top:1px}
+  .toast b{font-size:13.5px;display:block;color:var(--mint)}
+  .toast p{font-size:12.5px;color:#d8e6e2;line-height:1.45;margin-top:1px}
 
   /* 오버레이 */
-  .ov{position:fixed;inset:0;background:rgba(9,11,26,.86);backdrop-filter:blur(5px);
+  .ov{position:fixed;inset:0;background:rgba(9,13,14,.88);backdrop-filter:blur(5px);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;padding:28px;z-index:20;transition:opacity .25s}
   .ov.hide{opacity:0;pointer-events:none}
-  .ov h1{font-size:27px;font-weight:900;letter-spacing:-.02em;line-height:1.3}
-  .ov h1 em{font-style:normal;color:var(--lava)}
+  .lab-tag{font-family:var(--num);font-size:11px;letter-spacing:.16em;color:var(--mint);
+    text-transform:uppercase;margin-bottom:10px}
+  .ov h1{font-size:26px;font-weight:900;letter-spacing:-.02em;line-height:1.3}
+  .ov h1 em{font-style:normal;color:var(--mint)}
   .ov .sub{font-size:12.5px;color:var(--muted);margin-top:8px}
   .go{margin-top:22px;font-family:var(--kr);font-weight:800;font-size:17px;
-    background:var(--orange);color:#2a1804;border:none;border-radius:16px;
-    padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 var(--orange-d);transition:transform .08s}
-  .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--orange-d)}
+    background:var(--mint);color:#062018;border:none;border-radius:16px;
+    padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 var(--mint-d);transition:transform .08s}
+  .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--mint-d)}
   .howto{display:flex;align-items:center;gap:8px;margin:18px 0 6px}
-  .step{background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;
+  .step{background:var(--bg2);border:1.5px solid var(--line);border-left:3px solid var(--mint);border-radius:12px;
     padding:12px 9px;width:96px}
   .step-ic{font-size:26px;margin-bottom:6px}
-  .step p{font-size:11.5px;color:#d9def5;line-height:1.45}
-  .step p b{color:var(--lava)}
+  .step p{font-size:11.5px;color:#d8e6e2;line-height:1.45}
+  .step p b{color:var(--mint)}
   .step-arrow{color:var(--muted);font-size:15px;font-weight:800}
   @media (max-height:760px){
     .ov h1{font-size:22px}
@@ -100,22 +122,27 @@
     .go{margin-top:14px;padding:12px 38px}
   }
   .ov .final-label{font-size:15px;color:var(--muted);letter-spacing:.04em}
-  .ov .final-score{font-family:var(--num);font-weight:800;font-size:46px;color:var(--lava);line-height:1.15;margin-top:4px}
-  .ov .final-max{margin-top:10px;font-size:14.5px;color:#d9def5}
+  .ov .final-score{font-family:var(--num);font-weight:800;font-size:44px;color:var(--mint);line-height:1.15;margin-top:4px}
+  .ov .final-max{margin-top:10px;font-size:14.5px;color:#d8e6e2}
   .hub-link{margin-top:16px;font-size:13px;color:var(--muted);text-decoration:none}
 </style>
 </head>
 <body>
 
+<div class="strata-top"></div>
+
 <div class="hud">
-  <div class="left-group">
-    <button class="btn-ic" id="backBtn" aria-label="허브로 돌아가기">← 뒤로</button>
-    <div>
-      <div class="disc-count" id="discCount">0 / 6</div>
-      <div class="disc-best" id="discBest">최고 0</div>
+  <div class="hud-row">
+    <div class="left-group">
+      <button class="btn-ic" id="backBtn" aria-label="허브로 돌아가기">← 뒤로</button>
+      <div>
+        <div class="disc-count" id="discCount">0 / 6</div>
+        <div class="disc-best" id="discBest">최고 0</div>
+      </div>
     </div>
+    <button class="btn-ic" id="muteBtn" aria-label="효과음 켜기/끄기">🔊 소리</button>
   </div>
-  <button class="btn-ic" id="muteBtn" aria-label="효과음 켜기/끄기">🔊 소리</button>
+  <div class="goal-badge" id="goalBadge"></div>
 </div>
 
 <div class="ladder" id="discbar"></div>
@@ -128,15 +155,16 @@
 <div class="palette" id="palette"></div>
 
 <div class="ov" id="intro">
+  <div class="lab-tag">Sediment Lab</div>
   <h1>지구과학 실험실<br><em>모래 상자</em></h1>
   <div class="howto">
     <div class="step"><div class="step-ic">👆</div><p><b>재료</b>를<br>골라</p></div>
     <div class="step-arrow">→</div>
     <div class="step"><div class="step-ic">🖐</div><p><b>문질러</b><br>쏟고</p></div>
     <div class="step-arrow">→</div>
-    <div class="step"><div class="step-ic">🌋</div><p><b>섞이는 현상</b>을<br>발견!</p></div>
+    <div class="step"><div class="step-ic">🎯</div><p><b>목표 현상</b>을<br>만들기!</p></div>
   </div>
-  <p class="sub">타이머 없어요, 마음껏 실험하세요</p>
+  <p class="sub">재료는 3~5회로 한정 — 다 쓰면 팔레트에서 리필하세요</p>
   <button class="go" id="startBtn">실험 시작</button>
 </div>
 
@@ -150,7 +178,7 @@
 
 <script>
 "use strict";
-const VERSION="v1.0";
+const VERSION="v1.0-rework";
 
 // ===== 재료 상수 =====
 const EMPTY=0,SAND=1,WATER=2,LAVA=3,SEED=4,STONE=5,GRASS=6,SANDSTONE=7,STEAM=8,GLASS=9;
@@ -186,6 +214,45 @@ const PALETTE=[
   {mat:-1, ic:"🧹", nm:"지우개"}
 ];
 let selectedMat=SAND;
+
+// ===== 목표 챌린지 + 재료 사용 제한 (rework 신규 기능) =====
+// 재료별 사용 가능 횟수(3~5회, 무작위 부여) — 스트로크(pointerdown) 1회당 1회 소모.
+// 지우개는 무제한(도구로 취급, "재료"가 아님). 소진 시 팔레트의 🔄 리필로 전체 재충전.
+const LIMITED_MATS=[SAND,WATER,LAVA,SEED,STONE];
+let matUses={};
+function initMatUses(){
+  matUses={};
+  LIMITED_MATS.forEach(m=>{
+    const cap=3+Math.floor(Math.random()*3); // 3~5
+    matUses[m]={cap,left:cap};
+  });
+}
+function refillAll(){
+  Object.keys(matUses).forEach(k=>{matUses[k].left=matUses[k].cap;});
+  renderPalette();
+  showToast("#2ee6ac","재료 리필 완료!","모든 재료가 다시 가득 찼어요.");
+}
+// 이번 판 목표 현상 — 미발견 현상 중 무작위 1개. 달성하면 새 목표로 교체.
+let currentGoal=null;
+function pickNewGoal(){
+  const remain=[];
+  for(let i=0;i<TOTAL;i++) if(!discoveredSet.has(i)) remain.push(i);
+  if(remain.length===0){ currentGoal=null; renderGoal(); return; }
+  currentGoal=remain[Math.floor(Math.random()*remain.length)];
+  renderGoal();
+}
+function renderGoal(){
+  const el=document.getElementById("goalBadge");
+  if(!el)return;
+  if(currentGoal===null){
+    el.classList.add("done");
+    el.innerHTML=`<span class="goal-ic" style="background:var(--mint)"></span><span>🏆 모든 목표 완료!</span>`;
+    return;
+  }
+  el.classList.remove("done");
+  const d=DISCOVERIES[currentGoal];
+  el.innerHTML=`<span class="goal-ic" style="background:${d.color}"></span><span>🎯 이번 목표 · <b>${d.name}</b></span>`;
+}
 
 // ===== 격자 데이터 (Uint8Array — 성능) =====
 const grid=new Uint8Array(GRID_W*GRID_H);
@@ -379,7 +446,17 @@ function discover(id,x,y){
   if(discoveredSet.size>=HALF&&discoveredSet.size>prevBest)localStorage.setItem("earth_best",String(discoveredSet.size));
   renderDiscBar();
   updateHUD();
-  showFact(id);
+  const isGoal=(id===currentGoal);
+  if(isGoal){
+    const d=DISCOVERIES[id];
+    const toastEl=document.getElementById("toast");
+    toastEl.classList.add("goal-hit");
+    showToast(d.color,"🎯 목표 달성! "+d.name,d.fact);
+    setTimeout(()=>toastEl.classList.remove("goal-hit"),3300);
+    pickNewGoal();
+  } else {
+    showFact(id);
+  }
   flashStage();
   sDiscover();
   if(!halfShown&&discoveredSet.size>=HALF){
@@ -387,7 +464,7 @@ function discover(id,x,y){
     setTimeout(showClearOverlay,700);
   }
   if(discoveredSet.size===TOTAL){
-    setTimeout(()=>showToast("#ffd24a","🎉 모든 현상 발견!","지구과학 실험실의 현상을 모두 찾았어요 — 진짜 지구과학자!"),900);
+    setTimeout(()=>showToast("#2ee6ac","🎉 모든 현상 발견!","지구과학 실험실의 현상을 모두 찾았어요 — 진짜 지구과학자!"),900);
   }
 }
 function updateHUD(){
@@ -415,7 +492,7 @@ function renderDiscBar(){
     const nm=document.createElement("span");nm.className="nm";nm.textContent=got?d.name:"???";
     if(!got)nm.style.opacity=".45";
     item.appendChild(box);item.appendChild(nm);
-    item.onclick=()=>{ if(got)showFact(i); else showToast("#4a5180","??? 미발견 현상","재료를 섞어서 직접 찾아보세요!"); };
+    item.onclick=()=>{ if(got)showFact(i); else showToast("#4a5c59","??? 미발견 현상","재료를 섞어서 직접 찾아보세요!"); };
     el.appendChild(item);
   });
 }
@@ -435,18 +512,32 @@ function flashStage(){cv.classList.add("flash");setTimeout(()=>cv.classList.remo
 function renderPalette(){
   const el=document.getElementById("palette");el.innerHTML="";
   PALETTE.forEach(p=>{
+    const limited=matUses[p.mat];
+    const depleted=!!(limited&&limited.left<=0);
     const item=document.createElement("div");
-    item.className="pal-item"+(p.mat===selectedMat?" active":"");
+    item.className="pal-item"+(p.mat===selectedMat?" active":"")+(depleted?" depleted":"");
     const ic=document.createElement("div");ic.className="pal-ic";ic.textContent=p.ic;
     const nm=document.createElement("div");nm.className="pal-nm";nm.textContent=p.nm;
     item.appendChild(ic);item.appendChild(nm);
+    if(limited){
+      const cnt=document.createElement("div");cnt.className="pal-count";cnt.textContent=limited.left;
+      item.appendChild(cnt);
+    }
     item.onclick=()=>{selectedMat=p.mat;renderPalette();};
     el.appendChild(item);
   });
+  const refill=document.createElement("div");
+  refill.className="pal-item refill";
+  const ric=document.createElement("div");ric.className="pal-ic";ric.textContent="🔄";
+  const rnm=document.createElement("div");rnm.className="pal-nm";rnm.textContent="리필";
+  refill.appendChild(ric);refill.appendChild(rnm);
+  refill.onclick=refillAll;
+  el.appendChild(refill);
 }
 
 // ===== 브러시 입력 (Pointer Events = 터치+마우스 통합) =====
-let started=false,overFlag=false,painting=false,lastGX=0,lastGY=0;
+// 한 손가락 원칙 게임 — activePointerId로 첫 포인터만 인정, 다른 포인터의 down/move/up/cancel은 전부 무시
+let started=false,overFlag=false,painting=false,lastGX=0,lastGY=0,activePointerId=null;
 function brushRadius(mat){ if(mat===-1)return 3; if(mat===SEED||mat===STONE)return 1; return 2; }
 function pxToGrid(e){
   const r=cv.getBoundingClientRect();
@@ -476,14 +567,28 @@ function paintLine(x0,y0,x1,y1){
 cv.addEventListener("pointerdown",e=>{
   e.preventDefault();ac()&&AC.resume&&AC.resume();
   if(!started||overFlag)return;
+  if(activePointerId!==null&&e.pointerId!==activePointerId)return; // 두 번째 이상 손가락은 무시
+  const limited=matUses[selectedMat];
+  if(limited&&limited.left<=0){
+    showToast("#8fa39d","재료가 다 떨어졌어요","팔레트의 🔄 리필을 눌러 다시 채워보세요.");
+    return;
+  }
+  if(limited){limited.left--;renderPalette();}
+  activePointerId=e.pointerId;
   painting=true;const [gx,gy]=pxToGrid(e);lastGX=gx;lastGY=gy;paintAt(gx,gy);sPaint();
 });
 cv.addEventListener("pointermove",e=>{
-  if(!painting)return;
+  if(!painting||e.pointerId!==activePointerId)return;
   const [gx,gy]=pxToGrid(e);paintLine(lastGX,lastGY,gx,gy);lastGX=gx;lastGY=gy;
 });
-cv.addEventListener("pointerup",()=>painting=false);
-cv.addEventListener("pointercancel",()=>painting=false);
+cv.addEventListener("pointerup",e=>{
+  if(e.pointerId!==activePointerId)return;
+  painting=false;activePointerId=null;
+});
+cv.addEventListener("pointercancel",e=>{
+  if(e.pointerId!==activePointerId)return;
+  painting=false;activePointerId=null;
+});
 
 // ===== 레이아웃 실측 맞춤 (m.html v1.1 fitLayout 이식) =====
 function fitLayout(){
@@ -528,9 +633,10 @@ document.getElementById("continueBtn").onclick=()=>{
 };
 const vTag=document.createElement("div");
 vTag.textContent=VERSION;
-vTag.style.cssText="position:fixed;right:8px;bottom:6px;font-size:10px;color:#4a5180;font-family:var(--num);z-index:50";
+vTag.style.cssText="position:fixed;right:8px;bottom:6px;font-size:10px;color:#3a4948;font-family:var(--num);z-index:50";
 document.body.appendChild(vTag);
 
+initMatUses();pickNewGoal();
 renderDiscBar();renderPalette();updateHUD();fitLayout();
 requestAnimationFrame(frame);
 </script>

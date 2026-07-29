@@ -3,187 +3,284 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>DNA 짝 맞추기 — 서울시립과학관</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<title>DNA 코드 추리 — 서울시립과학관</title>
 <style>
   :root{
-    --bg:#0c1024; --bg2:#171c38; --line:#2b3158;
-    --ink:#f2f4ff; --muted:#9aa3cf;
-    --orange:#ff9a3c; --orange-d:#e07f22;
-    --cyan:#4dd8e6; --cyan-d:#2fa9b6;
-    --green:#6be08a; --green-d:#49b568;
-    --pink:#ff6fae; --pink-d:#d94b8a;
-    --bad:#ff5f5f;
-    --num:"Baloo 2","Pretendard",sans-serif;
-    --kr:"Pretendard",-apple-system,sans-serif;
+    --bg:#03211d; --bg2:#062f2a; --bg3:#0a3934; --line:#12534c; --line2:#1c6b62;
+    --ink:#eafdf7; --muted:#5fa89c;
+    --magenta:#ff2f8f; --magenta-d:#c81f70;
+    --teal:#1fe3c9; --teal-d:#149e8e;
+    --amber:#ffb238; --jade:#4be08a;
+    --bad:#ff4d6d;
+    --peg-exact:#54ffa8; --peg-partial:#ffe066; --peg-none:#2f5c54;
+    --kr:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    --mono:"SF Mono",Consolas,Menlo,monospace;
   }
   *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;word-break:keep-all;overflow-wrap:break-word;overflow:hidden}
   body{background:var(--bg);color:var(--ink);font-family:var(--kr);line-height:1.6;
-    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
-    position:fixed;inset:0;height:100dvh;
-    padding:calc(8px + env(safe-area-inset-top)) 8px calc(10px + env(safe-area-inset-bottom));gap:7px;
+    position:fixed;inset:0;height:100dvh;width:100vw;
+    display:flex;align-items:flex-start;justify-content:center;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     user-select:none;-webkit-user-select:none;touch-action:none}
 
+  .app{width:min(94vw,430px);height:100%;display:flex;flex-direction:column;
+    padding:8px 6px 10px;gap:7px}
+
+  /* 허브 복귀 — d.html과 동일한 위치/방식(class·id·href 그대로), 색만 재배색 */
   .backBtn{position:fixed;left:calc(8px + env(safe-area-inset-left));top:calc(8px + env(safe-area-inset-top));
-    z-index:25;background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
+    z-index:25;background:var(--bg2);border:1.5px solid var(--line2);color:var(--muted);
     border-radius:11px;height:32px;padding:0 12px;font-size:12.5px;font-weight:700;
     cursor:pointer;font-family:var(--kr)}
 
-  .hud{width:min(94vw,430px,calc((100dvh - 185px)*0.706));display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:26px}
-  .score-box{display:flex;align-items:baseline;gap:8px}
-  .score{font-family:var(--num);font-weight:800;font-size:28px;line-height:1;color:var(--ink)}
-  .best{font-family:var(--num);font-weight:600;font-size:12px;color:var(--muted)}
-  .rungs{font-family:var(--num);font-weight:800;font-size:15px;
-    background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;
-    padding:6px 12px;color:var(--orange);white-space:nowrap}
-  .rungs b{color:var(--ink);font-size:19px;margin-right:2px}
-  .btn-ic{background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
-    border-radius:12px;height:38px;padding:0 10px;font-size:13px;font-weight:700;
-    cursor:pointer;font-family:var(--kr);white-space:nowrap}
-  .timer{font-family:var(--num);font-weight:800;font-size:24px;line-height:1;
-    background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;
-    padding:6px 12px;color:var(--ink);min-width:56px;text-align:center}
-  .timer.low{color:var(--bad);border-color:var(--bad);animation:pulse .5s infinite alternate}
-  @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.1)}}
+  .titleRow{margin-top:28px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .gameTitle{font-family:var(--mono);font-weight:800;font-size:14.5px;letter-spacing:.02em;color:var(--teal);
+    text-shadow:0 0 10px rgba(31,227,201,.45)}
+  .muteBtn{background:var(--bg2);border:1.5px solid var(--line2);color:var(--muted);border-radius:10px;
+    height:30px;width:36px;font-size:13px;cursor:pointer;flex-shrink:0}
 
-  /* 짝 규칙 미니 바 (fitLayout 2번째 실측 요소) */
-  .legend{width:min(94vw,430px,calc((100dvh - 185px)*0.706));display:flex;justify-content:center;
-    align-items:center;gap:18px;background:var(--bg2);border:1.5px solid var(--line);
-    border-radius:14px;padding:8px 10px}
-  .legend .pair{display:flex;align-items:center;gap:5px;font-family:var(--num);font-weight:800;font-size:14px}
-  .legend .chip{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;
-    font-size:11px;color:#0c1024;flex-shrink:0}
-  .legend .arrow{color:var(--muted);font-size:11px;font-weight:700}
-  .legend .bonds{font-size:9.5px;color:var(--muted);font-family:var(--kr);font-weight:500}
+  /* 육각 HUD 칩 — 기존 미니게임들의 둥근 필 배지와 다른 뼈대 */
+  .hudRow{display:flex;gap:7px}
+  .hexChip{flex:1;background:var(--bg2);border:1.5px solid var(--line2);
+    clip-path:polygon(7% 0,93% 0,100% 50%,93% 100%,7% 100%,0 50%);
+    padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:1px}
+  .hexChip .hx-label{font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.03em}
+  .hexChip .hx-val{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--ink)}
+  .hexChip .hx-val b{color:var(--teal);font-size:17px}
+  .hexChip.best .hx-val b{color:var(--magenta)}
+  .hexChip .hx-sub{font-size:8px;color:var(--muted);margin-top:1px}
 
-  .stage{position:relative}
-  canvas#game{display:block;background:radial-gradient(ellipse at 50% 0%, #17203c 0%, var(--bg) 62%);
-    border:2px solid var(--line);border-radius:18px;width:min(94vw,430px,calc((100dvh - 185px)*0.706));height:auto;touch-action:none}
+  /* 상보결합 규칙 바 (d.html 팩트 그대로, 재배색) */
+  .bondBar{display:flex;justify-content:center;gap:16px;background:var(--bg2);border:1.5px solid var(--line2);
+    border-radius:12px;padding:7px 10px}
+  .bondPair{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-weight:800;font-size:12.5px}
+  .baseTag{width:19px;height:19px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-size:10.5px;color:#04211d;flex-shrink:0}
+  .baseTag.a{background:var(--amber)} .baseTag.t{background:var(--teal)}
+  .baseTag.g{background:var(--jade)} .baseTag.c{background:var(--magenta)}
+  .bondLine{font-size:9px;color:var(--muted);font-family:var(--kr);font-weight:600}
 
-  /* 팩트 토스트 */
-  .toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(90px);
-    width:calc(100% - 28px);max-width:390px;background:rgba(20,24,50,.94);
-    border:1.5px solid var(--orange);border-radius:14px;padding:11px 14px;
-    display:flex;gap:11px;align-items:center;opacity:0;visibility:hidden;
-    transition:transform .35s cubic-bezier(.2,.9,.3,1.2),opacity .3s,visibility .3s;
-    pointer-events:none;z-index:5}
-  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
-  .toast .dot{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-    font-family:var(--num);font-weight:800;font-size:15px;color:#0c1024}
-  .toast b{font-size:13.5px;display:block;color:var(--orange)}
-  .toast p{font-size:12.5px;color:#d9def5;line-height:1.45;margin-top:1px}
+  /* 이중나선 LED 패널 — 위: 주형 가닥(공개분) / 가운데: 상보 연결 표시 / 아래: 내가 채우는 상보 슬롯 */
+  .helixPanel{position:relative;flex:0 0 auto;height:158px;
+    background:radial-gradient(ellipse at 50% 50%,var(--bg3) 0%,var(--bg) 78%);
+    border:1.5px solid var(--line2);border-radius:16px;overflow:hidden}
+  canvas#helixCv{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .strandStack{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:5px;pointer-events:none}
+  .templateRow,.slotRow{display:flex;align-items:center;justify-content:center;gap:9px}
+  .pairArrowRow{font-size:10.5px;color:var(--teal);letter-spacing:.02em;opacity:.9}
+  .tSlot{width:38px;height:38px;border-radius:50%;border:2px dashed var(--line2);
+    display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;
+    font-size:15px;color:var(--muted);background:rgba(3,20,17,.4);transition:transform .12s}
+  .tSlot.revealed{border-style:solid;color:#04211d}
+  .tSlot.pop{animation:slotGlow .5s ease}
+  .slot{width:42px;height:42px;border-radius:50%;border:2px dashed var(--line2);
+    display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:800;
+    font-size:17px;color:var(--ink);background:rgba(3,20,17,.6);transition:transform .12s}
+  .slot.filled{border-style:solid}
+  .slot.glow{animation:slotGlow .5s ease}
+  @keyframes slotGlow{0%{transform:scale(1)}50%{transform:scale(1.22)}100%{transform:scale(1)}}
+  .helixPanel.shake{animation:panelShake .35s}
+  @keyframes panelShake{
+    0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}
+    60%{transform:translateX(-4px)}80%{transform:translateX(4px)}
+  }
 
-  /* 하단 4버튼 (엄지 탭용) */
-  .btnrow{width:min(94vw,430px,calc((100dvh - 185px)*0.706));display:flex;gap:8px}
-  .basebtn{flex:1;height:64px;border-radius:14px;border:none;cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-    font-family:var(--num);color:#0c1024;box-shadow:0 4px 0 rgba(0,0,0,.25);
-    transition:transform .07s;touch-action:manipulation}
-  .basebtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
-  .basebtn .lt{font-size:24px;font-weight:800;line-height:1}
-  .basebtn .nm{font-size:9.5px;font-weight:600;font-family:var(--kr);opacity:.85}
-  .basebtn.a{background:var(--orange)}
-  .basebtn.t{background:var(--cyan)}
-  .basebtn.g{background:var(--green)}
-  .basebtn.c{background:var(--pink)}
-  .basebtn:disabled{opacity:.4;cursor:default}
+  .statusLine{font-size:11px;color:var(--muted);text-align:center;min-height:15px;padding:0 4px}
+  .statusLine.err{color:var(--bad);font-weight:700}
+  .statusLine.win{color:var(--peg-exact);font-weight:700}
+
+  /* 시도 기록 로그 */
+  .logPane{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column-reverse;gap:6px;
+    padding:2px 2px 2px 0;-webkit-overflow-scrolling:touch}
+  .logRow{display:flex;align-items:center;gap:7px;background:var(--bg2);border:1.5px solid var(--line);
+    border-radius:10px;padding:6px 9px;font-size:12px;animation:rowIn .2s ease;flex-shrink:0}
+  @keyframes rowIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .logRow .no{color:var(--muted);font-weight:700;min-width:15px;font-family:var(--mono);font-size:11px}
+  .logRow .seq{display:flex;gap:3px;flex:1}
+  .logRow .seq span{width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:800;color:#04211d}
+  .logRow .pegs{display:flex;gap:3px;flex-shrink:0}
+  .pegDot{width:13px;height:13px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:8px;font-weight:800;color:#04211d;flex-shrink:0}
+  .pegDot.ex{background:var(--peg-exact)}
+  .pegDot.pa{background:var(--peg-partial)}
+  .pegDot.no{background:var(--peg-none);color:#c9ede6}
+
+  /* 키패드 */
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;flex:0 0 auto}
+  .baseKey{height:56px;border:none;border-radius:14px;font-family:var(--mono);font-weight:800;font-size:18px;
+    color:#04211d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    box-shadow:0 4px 0 rgba(0,0,0,.3);transition:transform .07s;cursor:pointer;touch-action:manipulation}
+  .baseKey:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+  .baseKey small{font-size:8.5px;font-weight:600;opacity:.85;font-family:var(--kr)}
+  .baseKey.a{background:var(--amber)} .baseKey.t{background:var(--teal)}
+  .baseKey.g{background:var(--jade)} .baseKey.c{background:var(--magenta)}
+  .fnKey{height:56px;border-radius:14px;border:1.5px solid var(--line2);background:var(--bg2);color:var(--muted);
+    font-weight:800;font-size:13.5px;cursor:pointer;font-family:var(--kr);touch-action:manipulation}
+  .fnKey:active{transform:translateY(2px)}
+  .fnKey.ok{background:rgba(31,227,201,.15);border-color:var(--teal);color:var(--teal)}
+  .fnKey.del{color:var(--bad)}
+  .baseKey:disabled,.fnKey:disabled{opacity:.4;cursor:default}
 
   /* 오버레이 */
-  .ov{position:fixed;inset:0;background:rgba(9,11,26,.86);backdrop-filter:blur(5px);
+  .ov{position:fixed;inset:0;background:rgba(3,15,13,.9);backdrop-filter:blur(5px);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;padding:24px;z-index:20;transition:opacity .25s;overflow-y:auto}
+    text-align:center;padding:22px;z-index:20;transition:opacity .25s;overflow-y:auto}
   .ov.hide{opacity:0;pointer-events:none}
-  .ov h1{font-size:27px;font-weight:900;letter-spacing:-.02em;line-height:1.35}
-  .ov h1 em{font-style:normal;color:var(--orange)}
-  .go{margin-top:22px;font-family:var(--kr);font-weight:800;font-size:17px;
-    background:var(--orange);color:#2a1804;border:none;border-radius:16px;
-    padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 var(--orange-d);transition:transform .08s}
-  .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--orange-d)}
-  .howto{display:flex;align-items:center;gap:6px;margin:18px 0 6px}
-  .step{background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;
-    padding:11px 8px;width:92px}
-  .step-ic{font-size:24px;margin-bottom:5px}
-  .step p{font-size:11px;color:#d9def5;line-height:1.4}
-  .step p b{color:var(--orange)}
-  .step-arrow{color:var(--muted);font-size:14px;font-weight:800}
-  .rule-box{margin-top:14px;background:var(--bg2);border:1.5px solid var(--line);
-    border-radius:14px;padding:12px 16px;width:min(88vw,340px)}
-  .rule-title{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
+  .ov h1{font-size:24px;font-weight:900;letter-spacing:-.02em;line-height:1.35}
+  .ov h1 em{font-style:normal;color:var(--magenta)}
+  .go{margin-top:18px;font-family:var(--kr);font-weight:800;font-size:16px;
+    background:var(--magenta);color:#2a0416;border:none;border-radius:16px;
+    padding:14px 40px;cursor:pointer;box-shadow:0 5px 0 var(--magenta-d);transition:transform .08s}
+  .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--magenta-d)}
+
+  .termBox{margin-top:14px;background:#02150f;border:1.5px solid var(--line2);border-radius:12px;
+    overflow:hidden;width:min(88vw,340px);text-align:left}
+  .termHead{display:flex;gap:5px;padding:7px 10px;background:var(--bg2);border-bottom:1px solid var(--line)}
+  .termHead span{width:8px;height:8px;border-radius:50%;background:var(--line2);display:inline-block}
+  .termHead span:nth-child(1){background:var(--bad)}
+  .termHead span:nth-child(2){background:var(--amber)}
+  .termHead span:nth-child(3){background:var(--peg-exact)}
+  .termBody{padding:10px 13px;font-family:var(--mono);font-size:11px;color:#bdf5e8;line-height:1.55}
+  .termBody b{color:var(--teal)}
+  .termBody p+p{margin-top:6px}
+
+  .pegLegend{display:flex;flex-direction:column;gap:6px;margin-top:12px;font-size:10.5px;color:var(--muted);
+    text-align:left;width:min(88vw,340px)}
+  .pegLegend span{display:flex;align-items:center;gap:7px}
+  .pegLegend i{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:9px;font-weight:800;color:#04211d;font-style:normal;flex-shrink:0}
+  .pegLegend i.ex{background:var(--peg-exact)}
+  .pegLegend i.pa{background:var(--peg-partial)}
+  .pegLegend i.no{background:var(--peg-none);color:#c9ede6}
+
+  .rule-box{margin-top:12px;background:var(--bg2);border:1.5px solid var(--line2);
+    border-radius:14px;padding:11px 16px;width:min(88vw,340px)}
+  .rule-title{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--muted);margin-bottom:9px}
   .rule-rows{display:flex;flex-direction:column;gap:8px}
   .rule-row{display:flex;align-items:center;justify-content:center;gap:10px}
-  .rule-row .chip{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
-    font-family:var(--num);font-weight:800;font-size:15px;color:#0c1024}
-  .rule-row .bl{font-size:10.5px;color:var(--muted)}
-  .sub{font-size:12px;color:var(--muted);margin-top:10px}
+  .rule-row .bl{font-size:10px;color:var(--muted)}
+  .rule-note{font-size:9.5px;color:var(--teal);margin-top:9px;text-align:center}
+  .sub{font-size:11.5px;color:var(--muted);margin-top:10px}
   @media (max-height:760px){
-    .ov h1{font-size:22px}
-    .howto{margin:12px 0 4px}
-    .step{padding:8px 6px;width:84px}
-    .step-ic{font-size:20px;margin-bottom:3px}
-    .rule-box{padding:9px 14px;margin-top:10px}
-    .go{margin-top:14px;padding:12px 38px}
+    .ov h1{font-size:20px}
+    .termBox{margin-top:10px}
+    .go{margin-top:12px;padding:12px 34px}
   }
-  .ov .final-score{font-family:var(--num);font-weight:800;font-size:50px;color:var(--orange);line-height:1.1}
-  .ov .final-label{font-size:13px;color:var(--muted);letter-spacing:.08em}
-  .ov .final-grade{margin-top:10px;font-family:var(--num);font-weight:800;font-size:21px;color:var(--ink)}
-  .ov .final-max{margin-top:6px;font-size:13.5px;color:#d9def5}
+
+  .final-label{font-size:13px;color:var(--muted);letter-spacing:.06em}
+  .final-tmpl-label{font-size:10px;color:var(--muted);margin-top:10px}
+  .final-arrow{font-size:10.5px;color:var(--teal);margin:4px 0}
+  .final-secret{display:flex;gap:6px;justify-content:center;margin:6px 0;flex-wrap:wrap}
+  .final-secret span{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-weight:800;font-size:14px;color:#04211d}
+  .final-secret.dim span{opacity:.55;filter:grayscale(.3)}
+  .final-grade{margin-top:8px;font-family:var(--mono);font-weight:800;font-size:19px;color:var(--ink)}
+  .final-max{margin-top:6px;font-size:13px;color:#d9fff5}
+
+  .stars{font-size:28px;letter-spacing:5px;margin:12px 0;color:var(--line2)}
+  .stars .on{color:var(--peg-partial);text-shadow:0 0 10px rgba(255,224,102,.6)}
+  .factBox{margin-top:12px;background:var(--bg2);border:1.5px solid var(--teal);border-radius:14px;
+    padding:11px 14px;width:min(88vw,340px);text-align:left;font-size:12px;color:#d9fff5;line-height:1.5}
+  .factBox b{color:var(--teal);display:block;font-size:12.5px;margin-bottom:3px}
 </style>
 </head>
 <body>
 
 <button class="backBtn" id="backBtn">← 허브</button>
 
-<div class="hud">
-  <div class="score-box"><div class="score" id="score">0</div><div class="best" id="best">최고 0</div></div>
-  <div class="rungs" id="rungsBox"><b id="rungCount">0</b>칸</div>
-  <div class="timer" id="timer">90</div>
-  <button class="btn-ic" id="muteBtn" aria-label="효과음 켜기/끄기">🔊</button>
-</div>
+<div class="app">
+  <div class="titleRow">
+    <div class="gameTitle">🧬 DNA 코드 추리</div>
+    <button class="muteBtn" id="muteBtn" aria-label="효과음 켜기/끄기">🔊</button>
+  </div>
 
-<div class="legend">
-  <div class="pair"><span class="chip" style="background:var(--orange)">A</span><span class="arrow">↔</span><span class="chip" style="background:var(--cyan)">T</span></div>
-  <div class="bonds">수소결합 2개</div>
-  <div class="pair"><span class="chip" style="background:var(--green)">G</span><span class="arrow">↔</span><span class="chip" style="background:var(--pink)">C</span></div>
-  <div class="bonds">수소결합 3개</div>
-</div>
+  <div class="hudRow">
+    <div class="hexChip">
+      <span class="hx-label">시도</span>
+      <span class="hx-val"><b id="atCur">0</b>/<span id="atMax">8</span></span>
+    </div>
+    <div class="hexChip">
+      <span class="hx-label">라운드</span>
+      <span class="hx-val">R<b id="roundVal">1</b></span>
+      <span class="hx-sub" id="roundLenTxt">3자리</span>
+    </div>
+    <div class="hexChip best">
+      <span class="hx-label">최고</span>
+      <span class="hx-val"><b id="bestVal">0</b>R</span>
+    </div>
+  </div>
 
-<div class="stage">
-  <canvas id="game"></canvas>
-  <div class="toast" id="toast"><div class="dot" id="toastDot"></div><div><b id="toastTitle"></b><p id="toastBody"></p></div></div>
-</div>
+  <div class="bondBar">
+    <div class="bondPair"><span class="baseTag a">A</span><span class="bondLine">2결합</span><span class="baseTag t">T</span></div>
+    <div class="bondPair"><span class="baseTag g">G</span><span class="bondLine">3결합</span><span class="baseTag c">C</span></div>
+  </div>
 
-<div class="btnrow" id="btnrow">
-  <button class="basebtn a" data-base="A"><span class="lt">A</span><span class="nm">아데닌</span></button>
-  <button class="basebtn t" data-base="T"><span class="lt">T</span><span class="nm">티민</span></button>
-  <button class="basebtn g" data-base="G"><span class="lt">G</span><span class="nm">구아닌</span></button>
-  <button class="basebtn c" data-base="C"><span class="lt">C</span><span class="nm">사이토신</span></button>
+  <div class="helixPanel" id="helixPanel">
+    <canvas id="helixCv"></canvas>
+    <div class="strandStack">
+      <div class="templateRow" id="templateRow"></div>
+      <div class="pairArrowRow" id="pairArrowRow">↕ 상보결합 (A↔T · G↔C)</div>
+      <div class="slotRow" id="slotRow"></div>
+    </div>
+  </div>
+
+  <div class="statusLine" id="statusLine">A/T/G/C 로 상보 염기를 입력하고 확인을 누르세요</div>
+
+  <div class="logPane" id="logPane"></div>
+
+  <div class="keypad">
+    <button class="baseKey a" data-base="A">A<small>아데닌</small></button>
+    <button class="baseKey t" data-base="T">T<small>티민</small></button>
+    <button class="baseKey g" data-base="G">G<small>구아닌</small></button>
+    <button class="baseKey c" data-base="C">C<small>사이토신</small></button>
+    <button class="fnKey del" id="delBtn">⌫ 지우기</button>
+    <button class="fnKey ok" id="okBtn">확인</button>
+  </div>
 </div>
 
 <div class="ov" id="intro">
-  <h1>DNA 짝 맞추기<br><em>— 상보결합 실험실</em></h1>
-  <div class="howto">
-    <div class="step"><div class="step-ic">🧬</div><p>위에 나온<br><b>염기</b>를 보고</p></div>
-    <div class="step-arrow">→</div>
-    <div class="step"><div class="step-ic">👆</div><p>아래에서<br><b>짝</b>을 탭!</p></div>
-    <div class="step-arrow">→</div>
-    <div class="step"><div class="step-ic">⏱</div><p><b>90초</b> 안에<br>사다리를 높이</p></div>
+  <h1>DNA 코드 추리<br><em>— 염기서열 해독실</em></h1>
+  <div class="termBox">
+    <div class="termHead"><span></span><span></span><span></span></div>
+    <div class="termBody">
+      <p>DNA 두 가닥은 <b>상보결합</b>으로 마주보는데, 한쪽 <b>주형 가닥</b>만 남고 나머지는 사라졌어요.</p>
+      <p>남은 가닥과 짝을 이루는 염기(A↔T, G↔C)를 추리해 <b>8회 안에</b> 채우면 복원 성공!</p>
+    </div>
+  </div>
+  <div class="pegLegend">
+    <span><i class="ex">✓</i>내가 넣은 상보 염기·위치가 정확해요</span>
+    <span><i class="pa">~</i>그 염기는 상보 가닥에 있는데 위치가 달라요</span>
+    <span><i class="no">✕</i>그 염기는 상보 가닥에 없어요</span>
   </div>
   <div class="rule-box">
     <p class="rule-title">염기는 정해진 짝하고만 결합해요</p>
     <div class="rule-rows">
-      <div class="rule-row"><span class="chip" style="background:var(--orange)">A</span><span class="bl">2개 결합</span><span class="chip" style="background:var(--cyan)">T</span></div>
-      <div class="rule-row"><span class="chip" style="background:var(--green)">G</span><span class="bl">3개 결합</span><span class="chip" style="background:var(--pink)">C</span></div>
+      <div class="rule-row"><span class="baseTag a">A</span><span class="bl">2개 결합</span><span class="baseTag t">T</span></div>
+      <div class="rule-row"><span class="baseTag g">G</span><span class="bl">3개 결합</span><span class="baseTag c">C</span></div>
     </div>
+    <p class="rule-note">→ 이 짝 규칙 그대로 정답(상보 가닥)이 정해져요</p>
   </div>
-  <p class="sub">틀리면 돌연변이! 사다리가 흔들리고 시간이 줄어요</p>
-  <button class="go" id="startBtn">실험 시작</button>
+  <p class="sub">복원에 성공할수록 가닥이 길어져요 (3→4→5자리)</p>
+  <button class="go" id="startBtn">복원 시작</button>
+</div>
+
+<div class="ov hide" id="roundClear">
+  <div class="final-label">🧬 상보 가닥 복원 성공!</div>
+  <div class="stars" id="rcStars">★★★</div>
+  <p id="rcDesc" style="font-size:13.5px;color:#d9fff5"></p>
+  <div class="factBox" id="rcFact"></div>
+  <button class="go" id="nextBtn">다음 라운드</button>
 </div>
 
 <div class="ov hide" id="over">
-  <div class="final-label" id="overTitle">실험 종료!</div>
-  <div class="final-score" id="finalScore">0</div>
+  <div class="final-label" id="overTitle">복원 실패…</div>
+  <div class="final-tmpl-label">주형 가닥 (남아있던 원본)</div>
+  <div class="final-secret dim" id="finalTemplate"></div>
+  <div class="final-arrow">↓ 상보결합 A↔T · G↔C</div>
+  <div class="final-tmpl-label">정답 (내가 채웠어야 할 상보 가닥)</div>
+  <div class="final-secret" id="finalAnswer"></div>
   <div class="final-grade" id="finalGrade"></div>
   <div class="final-max" id="finalMax"></div>
   <button class="go" id="retryBtn">다시 도전</button>
@@ -192,323 +289,414 @@
 
 <script>
 "use strict";
-const VERSION="v1.0"; // DNA 짝 맞추기 — O전시실(생존) 미니게임
+const VERSION="v1.0"; // DNA 코드 추리 — d.html 리워크(장르 전면 교체: 짝맞추기→코드브레이킹)
 
-// ===== 염기 규칙 =====
+// ===== 염기 규칙 (d.html에 있던 값 그대로 재사용 — 새 수치 없음) =====
 const BASES=["A","T","G","C"];
 const PAIR={A:"T",T:"A",G:"C",C:"G"};
-const BOND={A:2,T:2,G:3,C:3}; // 이 염기의 짝과 맺는 수소결합 개수
-const COLOR={A:"#ff9a3c",T:"#4dd8e6",G:"#6be08a",C:"#ff6fae"};
+const BOND={A:2,T:2,G:3,C:3};
+const COLOR={A:"#ffb238",T:"#1fe3c9",G:"#4be08a",C:"#ff2f8f"};
 const NAME={A:"아데닌",T:"티민",G:"구아닌",C:"사이토신"};
-
 const FACTS=[
-  {b:"G", t:"결합의 힘", body:"A-T는 수소결합 2개, G-C는 수소결합 3개예요 — 그래서 G-C가 더 단단하게 붙어있어요."},
-  {b:"A", t:"30억 쌍", body:"사람 DNA는 약 30억 쌍의 염기로 되어 있어요."},
-  {b:"C", t:"복제의 원리", body:"짝이 정해져 있어서 반쪽만 있어도 나머지를 복원할 수 있어요 — 이게 DNA 복제의 원리예요."}
+  {t:"결합의 힘", body:"A-T는 수소결합 2개, G-C는 수소결합 3개예요 — 그래서 G-C가 더 단단하게 붙어있어요."},
+  {t:"30억 쌍", body:"사람 DNA는 약 30억 쌍의 염기로 되어 있어요."},
+  {t:"복제의 원리", body:"짝이 정해져 있어서 반쪽만 있어도 나머지를 복원할 수 있어요 — 이게 DNA 복제의 원리예요."}
 ];
-const MILESTONES=[5,10,20,35,55,80,110,150];
-
-// ===== 레이아웃 상수 =====
-const W=480,H=680,SPAWN_Y=100,RUNG_H=44,AMPL=68,TWIST_FREQ=.5,CX=W/2;
-const TIME_LIMIT=90;
+const MAX_ATTEMPTS=8;
+const BEST_KEY="dna_best";  // 허브 스탬프 키 — h.html이 dna_best>0으로 스탬프 판정 (임의 변경 금지)
 
 addEventListener("load",()=>scrollTo(0,0));
 addEventListener("resize",()=>scrollTo(0,0));
 
-// ===== fitLayout: HUD·legend·버튼줄 실측 높이를 재서 캔버스 폭 역산 (m.html v1.1 기법 이식, 하단 버튼줄 추가 반영) =====
-function fitLayout(){
-  const hud=document.querySelector(".hud"),lgd=document.querySelector(".legend"),
-        btnrow=document.getElementById("btnrow"),cvEl=document.getElementById("game");
-  if(!hud||!lgd||!btnrow||!cvEl)return;
-  for(let pass=0;pass<2;pass++){
-    const bs=getComputedStyle(document.body);
-    const padV=parseFloat(bs.paddingTop)+parseFloat(bs.paddingBottom);
-    const gaps=7*3; // hud/legend/stage/btnrow 사이 3개 gap(각 7px)
-    const availH=window.innerHeight-hud.offsetHeight-lgd.offsetHeight-btnrow.offsetHeight-padV-gaps-4/*border*/-8/*여유*/;
-    const w=Math.min(window.innerWidth*0.94,430,Math.max(220,availH*0.706));
-    const wpx=Math.round(w)+"px";
-    hud.style.width=wpx;lgd.style.width=wpx;cvEl.style.width=wpx;btnrow.style.width=wpx;
-  }
-}
-addEventListener("resize",fitLayout);
-addEventListener("orientationchange",()=>setTimeout(fitLayout,120));
-if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitLayout);
-addEventListener("load",fitLayout);
-fitLayout();
-
 // ===== 상태 =====
-let score=0,best=+(localStorage.getItem("dna_best")||0),
-    timeLeft=TIME_LIMIT,combo=1,ladderCount=0,history=[],
-    pendingBase="A",started=false,overFlag=false,muted=false,
-    shake=0,flashAmt=0,flashColor="#ffffff",particles=[],floats=[],
-    milestonesShown=new Set();
+// template = 숨겨진 주형 가닥(랜덤 생성) · answer = template에 PAIR를 적용해 얻는 상보 가닥(= 실제 정답)
+let round=1, len=3, template=[], answer=[], current=[], attempts=[], over=false, muted=false;
+let bestRound=+(localStorage.getItem(BEST_KEY)||0), roundsCleared=0;
+if(bestRound>30) bestRound=0;  // 구버전 dna_best는 "점수"(수백 단위) — 라운드 표기 오염 방지(스탬프 판정은 저장값 그대로라 무해)
 
-// ===== 캔버스 =====
-const cv=document.getElementById("game"),ctx=cv.getContext("2d");
-const DPR=Math.min(window.devicePixelRatio||1,2);
-cv.width=W*DPR; cv.height=H*DPR;
+// 주형 가닥 공개 상태 — 시작 시 1자리, 오답마다 1자리씩 무작위 순서로 추가 공개 (상보결합 규칙을 실제 풀이 도구로 만드는 핵심)
+let revealed=[], revealOrder=[], revealCount=0;
+
+function baseLenForRound(r){ return Math.min(r+2,5); } // 1→3, 2→4, 3→5, 이후 5 유지
+
+function shuffleIdx(n){
+  const a=[...Array(n).keys()];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
 
 // ===== 사운드 (WebAudio 합성 — 에셋 0개) =====
 let AC=null;
 function ac(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return AC; }
-function beep(f0,f1,dur,type,vol){
+function beep(f0,f1,dur,type,vol,delay){
   if(muted)return; const a=ac(); if(!a)return;
+  const t0=a.currentTime+(delay||0);
   const o=a.createOscillator(),g=a.createGain();
-  o.type=type||"sine"; o.frequency.setValueAtTime(f0,a.currentTime);
-  o.frequency.exponentialRampToValueAtTime(Math.max(f1,1),a.currentTime+dur);
-  g.gain.setValueAtTime(vol||.15,a.currentTime);
-  g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);
-  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur);
+  o.type=type||"sine"; o.frequency.setValueAtTime(f0,t0);
+  o.frequency.exponentialRampToValueAtTime(Math.max(f1,1),t0+dur);
+  g.gain.setValueAtTime(vol||.13,t0);
+  g.gain.exponentialRampToValueAtTime(.001,t0+dur);
+  o.connect(g);g.connect(a.destination);o.start(t0);o.stop(t0+dur+.02);
 }
-const sGood=combo2=>beep(420+combo2*20,760+combo2*30,.14,"triangle",.15);
-const sBonus=()=>{beep(500,1000,.22,"triangle",.16);beep(700,1300,.18,"sine",.1);};
-const sBad=()=>beep(260,90,.28,"sawtooth",.14);
-const sOver=()=>beep(400,80,.7,"sawtooth",.1);
+const sClick=()=>beep(560,720,.06,"square",.06);
+const sDel=()=>beep(300,220,.06,"square",.05);
+const sErr=()=>beep(260,90,.28,"sawtooth",.13);
+const sPeg=(exact)=>beep(exact?720:420,exact?1080:520,.12,"triangle",.12);
+const sWin=()=>{beep(523,659,.14,"sine",.14,0);beep(659,784,.14,"sine",.14,.13);beep(784,1046,.2,"sine",.15,.26);};
+const sLose=()=>{beep(220,140,.3,"sawtooth",.11,0);beep(160,90,.4,"sawtooth",.12,.28);};
 
-// ===== 점수/토스트 유틸 =====
-function addScore(v,x,y,label){
-  score+=v; document.getElementById("score").textContent=score;
-  floats.push({x,y,txt:`+${v}`,life:1,big:!!label});
-  if(label)floats.push({x,y:y-30,txt:label,life:1.2,big:true});
-  if(score>best){best=score;localStorage.setItem("dna_best",best);
-    document.getElementById("best").textContent="최고 "+best;}
+// ===== 헬퍼 =====
+const $=id=>document.getElementById(id);
+const els={
+  atCur:$("atCur"), roundVal:$("roundVal"), roundLenTxt:$("roundLenTxt"), bestVal:$("bestVal"),
+  helixPanel:$("helixPanel"), templateRow:$("templateRow"), slotRow:$("slotRow"), statusLine:$("statusLine"), logPane:$("logPane"),
+  intro:$("intro"), startBtn:$("startBtn"), roundClear:$("roundClear"), rcStars:$("rcStars"),
+  rcDesc:$("rcDesc"), rcFact:$("rcFact"), nextBtn:$("nextBtn"),
+  over:$("over"), overTitle:$("overTitle"), finalTemplate:$("finalTemplate"), finalAnswer:$("finalAnswer"), finalGrade:$("finalGrade"),
+  finalMax:$("finalMax"), retryBtn:$("retryBtn"), backBtn:$("backBtn"), muteBtn:$("muteBtn"),
+  delBtn:$("delBtn"), okBtn:$("okBtn")
+};
+
+// 숨겨진 주형 가닥을 생성 (플레이어에게 보이지 않음 — 정답은 이 가닥의 상보 가닥)
+function genTemplate(n){
+  if(n<=4){
+    const pool=BASES.slice();
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    return pool.slice(0,n);
+  }
+  const arr=[];
+  for(let i=0;i<n;i++) arr.push(BASES[Math.floor(Math.random()*4)]);
+  return arr;
 }
-function burst(x,y,color,n,sp){
-  for(let i=0;i<n;i++){const a=Math.random()*6.283,s=(.4+Math.random())*sp;
-    particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,c:color,r:2+Math.random()*4});}
-}
-let toastTimer=null;
-function showToast(color,letter,title,body){
-  const el=document.getElementById("toast");
-  const dot=document.getElementById("toastDot");
-  dot.style.background=color; dot.textContent=letter||"";
-  document.getElementById("toastTitle").textContent=title;
-  document.getElementById("toastBody").textContent=body;
-  el.classList.add("show");
-  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),3200);
-}
-function checkMilestone(){
-  for(const m of MILESTONES){
-    if(ladderCount>=m && !milestonesShown.has(m)){
-      milestonesShown.add(m);
-      const f=FACTS[(milestonesShown.size-1)%FACTS.length];
-      showToast(COLOR[f.b],f.b,`${ladderCount}칸 달성! ${f.t}`,f.body);
-      return;
+
+// 표준 마스터마인드 채점(자리+염기 정확 / 염기만 존재 / 없음) — DNA 코드용으로 새로 작성
+// ans 인자에는 항상 answer(=template을 PAIR로 변환한 상보 가닥)가 들어온다 — 판정이 상보결합 규칙을 실제로 통과하도록
+function checkGuess(guess,ans){
+  const n=guess.length; let exact=0;
+  const ansLeft=[],gLeft=[];
+  for(let i=0;i<n;i++){
+    if(guess[i]===ans[i])exact++;
+    else{ansLeft.push(ans[i]);gLeft.push(guess[i]);}
+  }
+  const used=new Array(ansLeft.length).fill(false); let partial=0;
+  for(const g of gLeft){
+    for(let s=0;s<ansLeft.length;s++){
+      if(!used[s]&&ansLeft[s]===g){used[s]=true;partial++;break;}
     }
   }
+  return {exact,partial,none:n-exact-partial};
 }
 
-// ===== 염기 진행 =====
-function nextBase(){ pendingBase=BASES[Math.floor(Math.random()*4)]; }
-function onAnswer(base){
-  if(!started||overFlag)return;
-  ac()&&AC.resume&&AC.resume();
-  const correct=PAIR[pendingBase];
-  const leftIsTop=(ladderCount%2===0);
-  const y=SPAWN_Y;
-  if(base===correct){
-    history.push({top:pendingBase,bottom:correct,leftIsTop});
-    ladderCount++;
-    document.getElementById("rungCount").textContent=ladderCount;
-    combo++;
-    const gained=100*combo;
-    addScore(gained,CX,y,combo>1?`x${combo} 콤보!`:null);
-    burst(CX,y,COLOR[pendingBase],10+BOND[pendingBase]*3,4);
-    shake=Math.min(1+combo*.3,6);
-    sGood(combo);
-    if(combo>0&&combo%5===0){
-      addScore(500,CX,y-46,"유전자 완성!");
-      flashAmt=1; flashColor=COLOR[correct];
-      sBonus();
-    }
-    checkMilestone();
-    nextBase();
-  } else {
-    combo=1;
-    timeLeft=Math.max(0,timeLeft-3);
-    shake=10;
-    floats.push({x:CX,y,txt:"돌연변이!",life:1.3,big:true,bad:true});
-    sBad();
-  }
+function starsFor(used,max){
+  const t3=Math.max(2,Math.round(max*0.4)), t2=Math.max(t3+1,Math.round(max*0.7));
+  if(used<=t3)return 3;
+  if(used<=t2)return 2;
+  return 1;
 }
-document.querySelectorAll(".basebtn").forEach(b=>{
-  b.addEventListener("click",()=>onAnswer(b.dataset.base));
-});
 
-// ===== 배경 미립자 (분자 느낌) =====
-const dots=Array.from({length:34},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.3+.4,tw:Math.random()*6.283}));
+// ===== 이중나선 배경 캔버스 =====
+const cv=$("helixCv"), ctx=cv.getContext("2d");
+let cw=0,ch=0,DPR=Math.min(window.devicePixelRatio||1,2), phase=0, flash=0;
+function fitCanvas(){
+  const r=els.helixPanel.getBoundingClientRect();
+  cw=r.width; ch=r.height;
+  cv.width=Math.round(cw*DPR); cv.height=Math.round(ch*DPR);
+}
+addEventListener("resize",fitCanvas);
+addEventListener("orientationchange",()=>setTimeout(fitCanvas,120));
 
-// ===== DNA 사다리 드로잉 =====
-function railX(i,side){ return CX+side*AMPL*Math.sin(i*TWIST_FREQ); }
-function idxAtScreenY(y){ return ladderCount-(y-SPAWN_Y)/RUNG_H; }
-
-function drawBackbone(){
-  ctx.lineWidth=4; ctx.lineCap="round";
-  ctx.strokeStyle="rgba(154,163,207,.5)";
-  for(const side of [1,-1]){
+function drawHelix(dt){
+  phase+=dt*1.1;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,cw,ch);
+  const midY=ch/2, ampl=(ch*0.28)*(1-flash*0.6), freq=6.283/cw*1.6;
+  const cA="rgba(31,227,201,.55)", cB="rgba(255,47,143,.55)";
+  for(const s of [0,1]){
     ctx.beginPath();
-    let first=true;
-    for(let y=SPAWN_Y-30;y<=H;y+=6){
-      const i=idxAtScreenY(y);
-      const x=railX(i,side);
-      if(first){ctx.moveTo(x,y);first=false;} else ctx.lineTo(x,y);
+    ctx.strokeStyle=s===0?cA:cB; ctx.lineWidth=2.4;
+    for(let x=0;x<=cw;x+=6){
+      const y=midY+Math.sin(x*freq+phase+(s?3.14159:0))*ampl;
+      if(x===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
     }
     ctx.stroke();
   }
-}
-function drawBaseCircle(x,y,base,r,ghost){
-  ctx.save();
-  if(ghost)ctx.globalAlpha=.35;
-  ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.fillStyle=COLOR[base];ctx.fill();
-  // 2톤 셀셰이딩
-  ctx.save();ctx.clip();
-  ctx.beginPath();ctx.arc(x+r*.16,y+r*.2,r,0,6.283);
-  ctx.fillStyle="rgba(0,0,0,.16)";ctx.fill();
-  ctx.restore();
-  ctx.fillStyle="#0c1024";
-  ctx.font="800 "+Math.round(r*1.05)+"px 'Baloo 2',sans-serif";
-  ctx.textAlign="center";ctx.textBaseline="middle";
-  ctx.fillText(base,x,y+1);
-  ctx.restore();
-}
-function drawRungs(){
-  const rTop=20,rSpawn=24;
-  const maxVisible=Math.ceil((H-SPAWN_Y)/RUNG_H)+2;
-  const startI=Math.max(0,ladderCount-maxVisible);
-  for(let i=startI;i<ladderCount;i++){
-    const y=SPAWN_Y+(ladderCount-i)*RUNG_H;
-    if(y>H+30)continue;
-    const rung=history[i];
-    const lx=railX(i,1),rx=railX(i,-1);
-    const topX=rung.leftIsTop?lx:rx, botX=rung.leftIsTop?rx:lx;
-    // 결합 점 (수소결합 개수만큼)
-    const bonds=BOND[rung.top];
-    ctx.strokeStyle="rgba(255,255,255,.25)";ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(topX,y);ctx.lineTo(botX,y);ctx.stroke();
-    for(let k=0;k<bonds;k++){
-      const t=(k+1)/(bonds+1);
-      const px=topX+(botX-topX)*t, py=y;
-      ctx.beginPath();ctx.arc(px,py,2.4,0,6.283);ctx.fillStyle="rgba(255,255,255,.65)";ctx.fill();
-    }
-    drawBaseCircle(topX,y,rung.top,rTop,false);
-    drawBaseCircle(botX,y,rung.bottom,rTop,false);
+  // 가로대(짧은 결합선) — 일정 간격
+  ctx.strokeStyle="rgba(234,253,247,.16)"; ctx.lineWidth=1.4;
+  for(let x=8;x<cw;x+=22){
+    const y1=midY+Math.sin(x*freq+phase)*ampl;
+    const y2=midY+Math.sin(x*freq+phase+3.14159)*ampl;
+    ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(x,y2);ctx.stroke();
   }
-  // 대기 중인(다음) 염기 — 화면 상단 고정
-  if(started&&!overFlag){
-    const leftIsTop=(ladderCount%2===0);
-    const px=railX(ladderCount,leftIsTop?1:-1);
-    const gx=railX(ladderCount,leftIsTop?-1:1);
-    // 빈 짝 자리 (점선 원)
-    ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle="rgba(154,163,207,.55)";ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(gx,SPAWN_Y,rSpawn,0,6.283);ctx.stroke();ctx.restore();
-    // 펄스 링
-    const pulse=2+Math.sin(performance.now()/220)*2;
-    ctx.beginPath();ctx.arc(px,SPAWN_Y,rSpawn+4+pulse,0,6.283);
-    ctx.strokeStyle=COLOR[pendingBase];ctx.lineWidth=2;ctx.globalAlpha=.55;ctx.stroke();ctx.globalAlpha=1;
-    drawBaseCircle(px,SPAWN_Y,pendingBase,rSpawn,false);
+  if(flash>0){
+    ctx.fillStyle="rgba(255,224,102,"+(flash*0.35)+")";
+    ctx.fillRect(0,0,cw,ch);
+    flash-=dt*1.6; if(flash<0)flash=0;
   }
 }
-
-// ===== 렌더 루프 =====
 let lastT=performance.now();
-function frame(now){
-  const dt=Math.min((now-lastT)/1000,.05);lastT=now;
-  if(started&&!overFlag){
-    timeLeft-=dt;
-    const tl=Math.max(0,Math.ceil(timeLeft)),tEl=document.getElementById("timer");
-    tEl.textContent=tl;
-    tEl.classList.toggle("low",timeLeft<=10);
-    if(timeLeft<=0)gameOver();
-  }
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  ctx.clearRect(0,0,W,H);
-  if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;if(shake<.4)shake=0;}
-  // 배경 미립자
-  for(const s of dots){s.tw+=dt*1.6;ctx.globalAlpha=.25+Math.sin(s.tw)*.18;
-    ctx.fillStyle="#8fe0b8";ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.283);ctx.fill();}
-  ctx.globalAlpha=1;
-  // 백본 + 가로대
-  drawBackbone();
-  drawRungs();
-  // 콤보 보너스 플래시
-  if(flashAmt>0){
-    ctx.fillStyle=flashColor; ctx.globalAlpha=flashAmt*.28;
-    ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
-    flashAmt-=dt*2.2; if(flashAmt<0)flashAmt=0;
-  }
-  // 파티클
-  for(let i=particles.length-1;i>=0;i--){const p=particles[i];
-    p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.life-=dt*1.6;
-    if(p.life<=0){particles.splice(i,1);continue;}
-    ctx.globalAlpha=p.life;ctx.fillStyle=p.c;
-    ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,6.283);ctx.fill();}
-  ctx.globalAlpha=1;
-  // 점수/텍스트 플로팅
-  for(let i=floats.length-1;i>=0;i--){const f=floats[i];
-    f.y-=dt*46;f.life-=dt*1.1;
-    if(f.life<=0){floats.splice(i,1);continue;}
-    ctx.globalAlpha=Math.min(f.life,1);
-    ctx.font=(f.big?"800 22px":"600 16px")+" 'Baloo 2',sans-serif";
-    ctx.fillStyle=f.bad?"#ff5f5f":(f.big?"#ff9a3c":"#f2f4ff");ctx.textAlign="center";
-    ctx.fillText(f.txt,f.x,f.y);}
-  ctx.globalAlpha=1;
-  requestAnimationFrame(frame);
+function loop(now){
+  const dt=Math.min((now-lastT)/1000,.05); lastT=now;
+  drawHelix(dt);
+  requestAnimationFrame(loop);
 }
 
-// ===== 게임오버 =====
+// ===== 렌더 =====
+function renderSlots(){
+  els.slotRow.innerHTML="";
+  const solved=over;
+  for(let i=0;i<len;i++){
+    const d=document.createElement("div");
+    d.className="slot";
+    const v=current[i];
+    if(v!==undefined){
+      d.classList.add("filled");
+      d.textContent=v;
+      d.style.background=COLOR[v];
+      d.style.color="#04211d";
+      d.style.borderColor=COLOR[v];
+    } else {
+      d.textContent="·";
+    }
+    els.slotRow.appendChild(d);
+  }
+}
+
+// 주형 가닥 줄 — 공개된 자리만 실제 염기와 색을 보여준다(미공개는 "?")
+function renderTemplateRow(justRevealedIdx){
+  els.templateRow.innerHTML="";
+  for(let i=0;i<len;i++){
+    const d=document.createElement("div");
+    const isRevealed=revealed[i];
+    d.className="tSlot"+(isRevealed?" revealed":"");
+    if(isRevealed){
+      d.textContent=template[i];
+      d.style.background=COLOR[template[i]];
+      d.style.borderColor=COLOR[template[i]];
+      if(i===justRevealedIdx) d.classList.add("pop");
+    } else {
+      d.textContent="?";
+    }
+    els.templateRow.appendChild(d);
+  }
+}
+
+// 오답/라운드 시작 때마다 무작위 순서로 주형 한 자리를 추가 공개 — 공개된 자리는 PAIR로 즉시 상보 염기를 확정할 수 있다
+function revealNext(){
+  if(revealCount>=len) return null;
+  const idx=revealOrder[revealCount];
+  revealed[idx]=true;
+  revealCount++;
+  renderTemplateRow(idx);
+  const b=template[idx];
+  return `주형 ${idx+1}번 자리가 ${b}네요 — 상보는?`;
+}
+
+function renderLogRow(guess,result,idx){
+  const row=document.createElement("div");
+  row.className="logRow";
+  const no=document.createElement("span"); no.className="no"; no.textContent=(idx+1)+".";
+  const seq=document.createElement("span"); seq.className="seq";
+  guess.forEach(b=>{
+    const s=document.createElement("span");
+    s.textContent=b; s.style.background=COLOR[b];
+    seq.appendChild(s);
+  });
+  const pegs=document.createElement("span"); pegs.className="pegs";
+  const order=[];
+  for(let i=0;i<result.exact;i++)order.push("ex");
+  for(let i=0;i<result.partial;i++)order.push("pa");
+  for(let i=0;i<result.none;i++)order.push("no");
+  const MARK={ex:"✓",pa:"~",no:"✕"};
+  order.forEach(t=>{
+    const d=document.createElement("span");
+    d.className="pegDot "+t; d.textContent=MARK[t];
+    pegs.appendChild(d);
+  });
+  row.appendChild(no); row.appendChild(seq); row.appendChild(pegs);
+  els.logPane.appendChild(row);
+}
+
+function setStatus(text,cls){
+  els.statusLine.textContent=text;
+  els.statusLine.className="statusLine"+(cls?" "+cls:"");
+}
+
+function updateHud(){
+  els.atCur.textContent=attempts.length;
+  els.roundVal.textContent=round;
+  els.roundLenTxt.textContent=len+"자리";
+  els.bestVal.textContent=bestRound;
+}
+
+function shakePanel(){
+  els.helixPanel.classList.remove("shake");
+  void els.helixPanel.offsetWidth;
+  els.helixPanel.classList.add("shake");
+}
+
+function glowSlots(){
+  els.slotRow.querySelectorAll(".slot").forEach((s,i)=>{
+    setTimeout(()=>{ s.classList.add("glow"); },i*70);
+  });
+}
+
+// ===== 라운드/게임 흐름 =====
+function startRound(r){
+  round=r; len=baseLenForRound(round);
+  template=genTemplate(len);
+  answer=template.map(b=>PAIR[b]); // 상보결합 규칙(A↔T·G↔C)으로 정답을 도출 — 판정이 이 값을 기준으로 이뤄진다
+  current=[]; attempts=[]; over=false;
+  revealed=new Array(len).fill(false); revealOrder=shuffleIdx(len); revealCount=0;
+  document.querySelectorAll(".baseKey,.fnKey").forEach(b=>b.disabled=false);
+  els.logPane.innerHTML="";
+  renderSlots();
+  updateHud();
+  const firstHint=revealNext(); // 시작과 동시에 주형 1자리 공개
+  setStatus(firstHint+" (A/T/G/C 로 상보 염기를 입력하세요)","");
+}
+
+function onAnswerBase(b){
+  if(over)return;
+  ac()&&AC.resume&&AC.resume();
+  if(current.length>=len)return;
+  current.push(b);
+  sClick();
+  renderSlots();
+}
+function onDel(){
+  if(over)return;
+  if(current.length===0)return;
+  current.pop();
+  sDel();
+  renderSlots();
+}
+function onConfirm(){
+  if(over)return;
+  if(current.length<len){
+    sErr(); shakePanel();
+    setStatus(len+"자리를 모두 입력하세요","err");
+    return;
+  }
+  const guess=current.slice();
+  const result=checkGuess(guess,answer);
+  attempts.push({guess,result});
+  current=[];
+  renderSlots();
+  updateHud();
+  renderLogRow(guess,result,attempts.length-1);
+  sPeg(result.exact===len);
+
+  if(result.exact===len){
+    winRound();
+    return;
+  }
+  if(attempts.length>=MAX_ATTEMPTS){
+    loseRound();
+    return;
+  }
+  shakePanel();
+  const summary=`🟢${result.exact} 정확 · 🟡${result.partial} 있지만 위치 다름 · ⚫${result.none} 없음`;
+  const hint=revealNext(); // 오답 시도마다 주형 한 자리를 추가 공개
+  setStatus(
+    hint ? `${summary} — ${hint}` : `${summary} — 주형이 모두 공개됐어요, 상보 규칙(A↔T·G↔C)으로 확정하세요!`,
+    ""
+  );
+}
+
+function winRound(){
+  over=true;
+  document.querySelectorAll(".baseKey,.fnKey").forEach(b=>b.disabled=true);
+  flash=1; sWin(); glowSlots();
+  setStatus("상보 가닥 복원 성공!","win");
+  const used=attempts.length;
+  const stars=starsFor(used,MAX_ATTEMPTS);
+  roundsCleared=round;
+  if(roundsCleared>bestRound){
+    bestRound=roundsCleared;
+    localStorage.setItem(BEST_KEY,String(bestRound));
+  }
+  updateHud();
+  setTimeout(()=>showRoundClear(stars,used),700);
+}
+
+function showRoundClear(stars,used){
+  let s=""; for(let i=0;i<3;i++) s+= i<stars ? '<span class="on">★</span>' : "<span>★</span>";
+  els.rcStars.innerHTML=s;
+  els.rcDesc.textContent=`${used}회 만에 ${len}자리 상보 가닥을 복원했어요`;
+  const f=FACTS[(round-1)%FACTS.length];
+  els.rcFact.innerHTML=`<b>${f.t}</b>${f.body}`;
+  els.roundClear.classList.remove("hide");
+}
+
+function loseRound(){
+  over=true;
+  document.querySelectorAll(".baseKey,.fnKey").forEach(b=>b.disabled=true);
+  sLose(); shakePanel();
+  setStatus("복원 실패…","err");
+  setTimeout(()=>showGameOver(),650);
+}
+
 function grade(){
-  if(score>=12000)return"S · DNA 마스터 🧬";
-  if(score>=7000)return"A · 유전자 연구원 🔬";
-  if(score>=3000)return"B · 실험실 조수 🧪";
+  if(roundsCleared>=5)return"S · 유전자 해독가 🧬";
+  if(roundsCleared>=3)return"A · 수석 연구원 🔬";
+  if(roundsCleared>=1)return"B · 실험실 조수 🧪";
   return"C · 견습 연구원 ✨";
 }
-function countUpScore(final){
-  const el=document.getElementById("finalScore");
-  const dur=700,start=performance.now(),from=0;
-  function step(now){
-    const t=Math.min(1,(now-start)/dur);
-    el.textContent=Math.round(from+(final-from)*(1-Math.pow(1-t,3)));
-    if(t<1)requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-function gameOver(){
-  overFlag=true;sOver();
-  document.getElementById("overTitle").textContent="⏱ 실험 종료!";
-  countUpScore(score);
-  document.getElementById("finalGrade").textContent=grade();
-  document.getElementById("finalMax").textContent=`완성한 사다리 ${ladderCount}칸`;
-  document.getElementById("over").classList.remove("hide");
-  document.querySelectorAll(".basebtn").forEach(b=>b.disabled=true);
-}
-function reset(){
-  score=0;combo=1;ladderCount=0;history=[];timeLeft=TIME_LIMIT;overFlag=false;
-  milestonesShown=new Set();particles.length=0;floats.length=0;shake=0;flashAmt=0;
-  document.getElementById("score").textContent="0";
-  document.getElementById("rungCount").textContent="0";
-  document.getElementById("timer").textContent=TIME_LIMIT;
-  document.getElementById("timer").classList.remove("low");
-  document.querySelectorAll(".basebtn").forEach(b=>b.disabled=false);
-  nextBase();
+
+function showGameOver(){
+  els.finalTemplate.innerHTML="";
+  template.forEach(b=>{
+    const s=document.createElement("span");
+    s.textContent=b; s.style.background=COLOR[b];
+    els.finalTemplate.appendChild(s);
+  });
+  els.finalAnswer.innerHTML="";
+  answer.forEach(b=>{
+    const s=document.createElement("span");
+    s.textContent=b; s.style.background=COLOR[b];
+    els.finalAnswer.appendChild(s);
+  });
+  els.finalGrade.textContent=grade();
+  els.finalMax.textContent=`총 ${roundsCleared}라운드 해독 · 최고기록 ${bestRound}R`;
+  els.over.classList.remove("hide");
 }
 
-// ===== 시작 =====
-document.getElementById("best").textContent="최고 "+best;
+// ===== 이벤트 =====
+document.querySelectorAll(".baseKey").forEach(b=>{
+  b.addEventListener("click",()=>onAnswerBase(b.dataset.base));
+});
+els.delBtn.addEventListener("click",onDel);
+els.okBtn.addEventListener("click",onConfirm);
+els.muteBtn.onclick=function(){muted=!muted;this.textContent=muted?"🔇":"🔊";};
+els.backBtn.onclick=()=>{location.href="h.html";}; // d.html과 동일: 파라미터 없이 h.html로 이동
+
+els.startBtn.onclick=()=>{
+  ac()&&AC.resume&&AC.resume();
+  els.intro.classList.add("hide");
+  startRound(1);
+};
+els.nextBtn.onclick=()=>{
+  els.roundClear.classList.add("hide");
+  startRound(round+1);
+};
+els.retryBtn.onclick=()=>{
+  els.over.classList.add("hide");
+  roundsCleared=0;
+  startRound(1);
+};
+
+// ===== 초기화 =====
+els.bestVal.textContent=bestRound;
 const vTag=document.createElement("div");
 vTag.textContent=VERSION;
-vTag.style.cssText="position:fixed;right:8px;bottom:6px;font-size:10px;color:#4a5180;font-family:var(--num);z-index:50";
+vTag.style.cssText="position:fixed;right:8px;bottom:6px;font-size:10px;color:#2c5a52;font-family:var(--mono);z-index:50";
 document.body.appendChild(vTag);
-document.getElementById("muteBtn").onclick=function(){muted=!muted;this.textContent=muted?"🔇":"🔊";};
-document.getElementById("backBtn").onclick=()=>{location.href="h.html";};
-document.getElementById("startBtn").onclick=()=>{
-  ac()&&AC.resume&&AC.resume();
-  document.getElementById("intro").classList.add("hide");
-  started=true; reset();
-};
-document.getElementById("retryBtn").onclick=()=>{
-  document.getElementById("over").classList.add("hide");reset();
-};
-requestAnimationFrame(frame);
+
+renderSlots();
+renderTemplateRow();
+updateHud();
+fitCanvas();
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
