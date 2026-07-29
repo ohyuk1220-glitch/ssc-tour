@@ -731,7 +731,7 @@ let nearNPC=null;
 function updateNearNPC(){
   let best=null,bd=1e9;
   sceneNPCs().forEach(n=>{
-    const dx=(n.x-player.px)*bgRect.w, dy=(n.y-player.py)*bgRect.h, d=Math.hypot(dx,dy);
+    const d=targetDistancePx(n);
     if(d<135&&d<bd){bd=d;best=n;}
   });
   if(best!==nearNPC){ nearNPC=best; updateFloorTag(); updateAbtn(); }
@@ -752,8 +752,9 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607292026";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
-const INTERACTION_V2=false; // P0-③ 골격: P4 UI 개편(탭 상호작용+walk-in) 상위 플래그 — false면 구 경로 그대로
+const VER="202607292102";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const WALK_IN=true;         // P4-③: 문·게이트·출구(물리 포털 계단 포함) 근접 자동 실행
+const TAP_TO_MOVE=true;     // P4-④⑤: 대상 직접 탭 + 빈 바닥 탭 자동 이동
 /* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
    구 숫자 키(ufo_floor)는 "마이그레이션 시점 순서 동결 테이블"로만 해석·기록 (codex R1: 현재 배열로 읽고 쓰면
    씬 삽입 배포 순간 구 저장값·구 캐시 클라이언트가 전부 오층이 됨). */
@@ -933,6 +934,7 @@ window.addEventListener("pageshow",e=>{ if(e.persisted)safeSet("ufo_room_ctx",""
 
 /* ── 층 진입 ── */
 function enterFloor(idx,instant){
+  clearAutoMove();
   inRoom=null; roomStack=[];
   floorIdx=idx; saveFloor(idx);
   const f=FLOORS[idx];
@@ -942,9 +944,11 @@ function enterFloor(idx,instant){
   player.px=st[0]; player.py=st[1]; player.vx=player.vy=0;
   camX=player.px; camY=player.py;
   nearSpot=null; nearNPC=null; updateFloorTag();
+  resetWalkInArming();
   refreshMiniHud();
 }
 function enterRoom(roomId, fromStack){
+  clearAutoMove();
   if(inRoom && !fromStack) roomStack.push(inRoom);   // 방→방 진입이면 이전 방 저장
   inRoom=roomId; shake=7; const r=ROOMS[roomId];
   markVisited(roomId);
@@ -954,6 +958,7 @@ function enterRoom(roomId, fromStack){
   player.px=st[0]; player.py=st[1]; player.vx=player.vy=0;
   camX=player.px; camY=player.py;
   nearSpot=null; nearNPC=null; updateFloorTag();
+  resetWalkInArming();
   refreshMiniHud();
 }
 /* 전시실에서 나올 때 문 앞 좌표가 장애물 안이면 캐릭터가 영구히 갇힌다(모든 축 이동이 hitObs에 거부됨).
@@ -993,6 +998,7 @@ function floorDoorForExit(f,roomId,exitSpot){
   return entered||first;
 }
 function exitRoom(exitSpot){
+  clearAutoMove();
   if(roomStack.length){ enterRoom(roomStack.pop(), true); return; }   // 이전 방(예: 지진→G전시실)으로 복귀
   const back=inRoom; inRoom=null;
   const f=curScene();
@@ -1002,12 +1008,14 @@ function exitRoom(exitSpot){
   if(d){ const sp=safeSpawn(f,d.x,Math.min(0.9,d.y+0.08)); player.px=sp[0]; player.py=sp[1]; }
   else { const st=f.start||[0.5,0.5]; player.px=st[0]; player.py=st[1]; }
   player.vx=player.vy=0; camX=player.px; camY=player.py; nearSpot=null; nearNPC=null; updateFloorTag();
+  resetWalkInArming();
   refreshMiniHud();
 }
 function updateFloorTag(){
   const s=curScene();
+  const target=nearbyTarget();
   document.getElementById("floortag").innerHTML=s.name+'<span class="rm">'+
-    (nearNPC?nearNPC.name:(nearSpot?spotDisplayName(nearSpot):(inRoom?"전시실 관람":"둘러보기")))+'</span>';
+    (target?(target.type?target.name:spotDisplayName(target)):(inRoom?"전시실 관람":"둘러보기"))+'</span>';
 }
 
 /* ══════════ 렌더 ══════════ */
@@ -1093,7 +1101,7 @@ function render(){
   f.spots.forEach(sp=>{
     const x=s2x(sp.x), y=s2y(sp.y);
     const done=(sp.kind==="game"&&isDone(sp.best))||(sp.kind==="exhibit"&&!!seenRenderCache[sp.name]);
-    const isNear=(sp===nearSpot);
+    const isNear=(sp===nearbyTarget());
     const s=isNear?1.28:1;
     const hop=isNear?Math.abs(Math.sin(t*0.12))*5:0;
     const edge=done?"#f6b93b":(isNear?(sp.color||"#f6b93b"):"#2a2620"); // 완료 금색이 근접 강조보다 우선
@@ -1242,7 +1250,7 @@ function drawNPC(npc){
   ctx.fillStyle="rgba(16,13,10,.78)"; ctx.fill();
   ctx.lineWidth=1; ctx.strokeStyle="rgba(255,255,255,.32)"; ctx.stroke();
   ctx.fillStyle="#fff"; ctx.fillText(npcLabel,x,nameY);
-  if(npc===nearNPC){
+  if(npc===nearbyTarget()){
     // 근접 표시: 발밑 링 대신 머리 위 말풍선 (발밑 그림자·타원 겹침 정리, 2026-07-26)
     const hop=Math.abs(Math.sin(t*0.12))*4;
     ctx.font="17px var(--font-sans)"; ctx.textAlign="center"; ctx.textBaseline="middle";
@@ -1253,11 +1261,335 @@ function drawNPC(npc){
 /* ══════════ 페이드 전환 ══════════ */
 const FADE_MAX=18; let fadeAlpha=0, fadeState=0; // 0 none,1 out,2 in
 let fadeAction=null;
-function startFade(action){ if(fadeState)return; fadeState=1; fadeAction=action; }
+function startFade(action){
+  clearAutoMove();   // P4: 전환 요청 시점부터 이전 씬 자동 경로를 폐기
+  if(fadeState)return;
+  fadeState=1; fadeAction=action;
+}
 function updateFade(){
   if(fadeState===1){ fadeAlpha+=1/FADE_MAX; if(fadeAlpha>=1){fadeAlpha=1; if(fadeAction)fadeAction(); fadeState=2;} }
   else if(fadeState===2){ fadeAlpha-=1/FADE_MAX; if(fadeAlpha<=0){fadeAlpha=0; fadeState=0;} }
 }
+
+/* ══════════ P4 ① 단일 대상 실행: A·walk-in·탭이 모두 이 함수 경유 ══════════ */
+function activateTarget(target){
+  if(!target||fadeState||anyModalOpen())return false;
+  const isNPC=target.type==="guide"||target.type==="security"||target.type==="cleaning";
+  if(isNPC){
+    if(!sceneNPCs().includes(target))return false;   // 이동 NPC는 탭한 그 객체만 실행
+    clearAutoMove();
+    sfx(587,0.1,"triangle",0.12); npcDialogue(target);
+    return true;
+  }
+  if(!curScene().spots.includes(target))return false;
+  clearAutoMove();
+  const sp=target;
+  if(sp.kind==="game"){
+    sfx(660,0.1,"square",0.15);
+    startFade(()=>{ saveFloor(floorIdx); safeSet("ufo_room_ctx",JSON.stringify({r:inRoom||"",s:roomStack,d:lastFloorDoor})); location.href=sp.file; });   // 미니게임 복귀용 — 방+스택+들어온 문 통째 기억 (codex R1)
+  }else if(sp.kind==="elevator"){
+    sfx(520,0.09,"triangle"); openElevator(sp);
+  }else if(sp.kind==="stair"||sp.kind==="gate"){   // gate=외부↔로비(층 전환 재활용)
+    sfx(600,0.10,"triangle"); const ti=FLOORS.findIndex(f=>f.id===sp.to);
+    if(ti>=0)startFade(()=>enterFloor(ti));
+  }else if(sp.kind==="door"){
+    if(!inRoom) lastFloorDoor={room:sp.room,x:sp.x,y:sp.y};   // 층→방 진입만 기억 (방→방은 roomStack 소관)
+    sfx(587,0.12,"triangle"); startFade(()=>enterRoom(sp.room));
+  }else if(sp.kind==="exit"){
+    sfx(392,0.12,"triangle"); startFade(()=>exitRoom(sp));
+  }else if(sp.kind==="exhibit"||sp.kind==="info"){
+    sfx(784,0.07,"sine",0.12); showExhibit(sp);
+  }else{
+    sfx(300,0.1,"sine",0.1); toast((sp.icon||"📍")+" "+sp.name+" — 준비 중이에요");
+  }
+  return true;
+}
+
+/* ══════════ P4 ② 스팟·NPC 통합 최근접: npcWins가 유일한 거리 중재자 ══════════ */
+function targetDistancePx(target,x,y){
+  const px=x==null?player.px:x, py=y==null?player.py:y;
+  return Math.hypot((target.x-px)*bgRect.w,(target.y-py)*bgRect.h);
+}
+function npcWins(){   // 기존 최근접 로직 완성: 스팟·NPC 중 실제로 가까운 한 대상만 선택
+  if(!nearNPC)return false;
+  if(!nearSpot)return true;
+  return targetDistancePx(nearNPC)<targetDistancePx(nearSpot);
+}
+function nearbyTarget(){ return npcWins()?nearNPC:nearSpot; }
+function targetIcon(target){
+  if(target.type)return target.type==="guide"?"🧑‍🏫":target.type==="cleaning"?"🧹":"👮";
+  if(target.kind==="elevator")return "🛗";
+  if(target.kind==="stair")return "🪜";
+  if(target.kind==="game")return "🎮";
+  if(target.kind==="door"||target.kind==="exit")return "🚪";
+  if(target.kind==="gate")return target.icon||"🚪";
+  return "🔍";
+}
+function updateAbtn(){
+  const a=document.getElementById("abtn"), lb=document.getElementById("alabel"), ic=a.querySelector(".ai");
+  const target=nearbyTarget();
+  if(target){
+    a.classList.add("on");
+    ic.textContent=targetIcon(target);
+    lb.textContent=target.name;   // 행동명이 아니라 현재 선택된 단일 대상 이름
+  }else{
+    a.classList.remove("on"); ic.textContent="🚪"; lb.textContent="입장";
+  }
+}
+
+/* ══════════ P4 ③ walk-in: 물리 포털만, 이탈 거리로 재무장 ══════════ */
+const INTERACT_RADIUS_PX=135;
+const WALK_IN_REARM_PX=INTERACT_RADIUS_PX*1.3;
+let walkInDisarmed=new Set(), walkInNeedsInit=true;
+function isWalkInSpot(sp,scene){
+  if(sp.kind==="door"||sp.kind==="gate"||sp.kind==="exit")return true;
+  if(sp.kind!=="stair")return false;
+  return !(scene.zones||[]).some(z=>z.to===sp.to);   // 같은 목적지 zone이 있으면 표지판일 뿐
+}
+function resetWalkInArming(){
+  walkInDisarmed=new Set();
+  walkInNeedsInit=true;   // 새 씬 bgRect로 첫 update 때 진입 반경 스팟을 disarm
+}
+function initializeWalkInArming(){
+  const scene=curScene();
+  scene.spots.forEach(sp=>{
+    if(isWalkInSpot(sp,scene)&&targetDistancePx(sp)<=INTERACT_RADIUS_PX)walkInDisarmed.add(sp);
+  });
+  walkInNeedsInit=false;
+}
+function suppressOtherWalkIns(target){
+  const scene=curScene();
+  scene.spots.forEach(sp=>{
+    if(sp!==target&&isWalkInSpot(sp,scene))walkInDisarmed.add(sp);
+  });
+}
+function updateWalkIns(){
+  if(!WALK_IN||fadeState||anyModalOpen())return;
+  if(walkInNeedsInit)initializeWalkInArming();
+  const scene=curScene();
+  if(autoTarget)suppressOtherWalkIns(autoTarget);   // 명시 타깃 경로 중 다른 포털 오발동 방지
+  else if(autoPath.length)suppressOtherWalkIns(null);   // 빈 바닥 탭 이동 중엔 전 포털 억제 (code-reviewer 🔴2: 경로가 문을 스치면 강제 입장되던 버그)
+  for(const sp of scene.spots){
+    if(!isWalkInSpot(sp,scene))continue;
+    const suppressed=!!autoTarget&&sp!==autoTarget;
+    const distance=targetDistancePx(sp);
+    if(walkInDisarmed.has(sp)){
+      if(!suppressed&&distance>WALK_IN_REARM_PX)walkInDisarmed.delete(sp);
+      continue;
+    }
+    if(distance<=INTERACT_RADIUS_PX){
+      walkInDisarmed.add(sp);
+      activateTarget(sp);
+      break;
+    }
+  }
+}
+
+/* ══════════ P4 ④ 대상 탭: 100 스케일 BFS + 가시선 축약 + 이동 NPC 추적 ══════════ */
+const AUTO_GRID=100, AUTO_GRID_WIDTH=AUTO_GRID+1, AUTO_REACH=0.02;
+const TAP_HIT_RADIUS_PX=90, AUTO_MAX_REPLANS=3;
+let autoPath=[], autoTarget=null, autoReplans=0;
+function clearAutoMove(){
+  autoPath=[];
+  autoTarget=null;
+  autoReplans=0;
+  player.vx=player.vy=0;
+}
+function sceneHasTarget(target){
+  return target.type?sceneNPCs().includes(target):curScene().spots.includes(target);
+}
+function pointWalkable(scene,x,y){
+  const wa=scene.walkable||[0.02,0.02,0.98,0.98];
+  return x>=wa[0]&&x<=wa[2]&&y>=wa[1]&&y<=wa[3]&&!hitObs(scene.obstacles,x,y);
+}
+function nearestPassableGrid(scene,x,y){
+  let best=null, bestD=Infinity;
+  for(let iy=0;iy<=AUTO_GRID;iy++)for(let ix=0;ix<=AUTO_GRID;ix++){
+    const px=ix/AUTO_GRID, py=iy/AUTO_GRID;
+    if(!pointWalkable(scene,px,py))continue;
+    const d=(px-x)*(px-x)+(py-y)*(py-y);
+    if(d<bestD){bestD=d;best=[ix,iy];}
+  }
+  return best;
+}
+function lineWalkable(scene,a,b){
+  const steps=Math.max(1,Math.ceil(Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1]))*AUTO_GRID*2));
+  for(let i=0;i<=steps;i++){
+    const p=i/steps, x=a[0]+(b[0]-a[0])*p, y=a[1]+(b[1]-a[1])*p;
+    if(!pointWalkable(scene,x,y))return false;
+  }
+  return true;
+}
+function simplifyWaypoints(scene,raw){
+  if(raw.length<=2)return raw.slice(1);
+  const reduced=[raw[0]];
+  let anchor=0;
+  while(anchor<raw.length-1){
+    let next=raw.length-1;
+    while(next>anchor+1&&!lineWalkable(scene,raw[anchor],raw[next]))next--;
+    reduced.push(raw[next]);
+    anchor=next;
+  }
+  return reduced.slice(1);
+}
+function bfsAutoPath(point,interactionRadius){
+  const scene=curScene();
+  const start=nearestPassableGrid(scene,player.px,player.py);
+  if(!start)return null;
+  const exactGoal=[Math.round(point.x*AUTO_GRID),Math.round(point.y*AUTO_GRID)];
+  if(interactionRadius==null){
+    if(exactGoal[0]<0||exactGoal[0]>AUTO_GRID||exactGoal[1]<0||exactGoal[1]>AUTO_GRID||
+       !pointWalkable(scene,exactGoal[0]/AUTO_GRID,exactGoal[1]/AUTO_GRID))return null;
+  }
+  const total=AUTO_GRID_WIDTH*AUTO_GRID_WIDTH;
+  const parent=new Int32Array(total); parent.fill(-1);
+  const queue=new Int32Array(total);
+  const startIndex=start[1]*AUTO_GRID_WIDTH+start[0];
+  parent[startIndex]=startIndex;
+  let head=0,tail=0,found=-1;
+  queue[tail++]=startIndex;
+  const isGoal=(ix,iy)=>{
+    if(interactionRadius==null)return ix===exactGoal[0]&&iy===exactGoal[1];
+    return Math.hypot((ix/AUTO_GRID-point.x)*bgRect.w,(iy/AUTO_GRID-point.y)*bgRect.h)<=interactionRadius;
+  };
+  while(head<tail){
+    const current=queue[head++], ix=current%AUTO_GRID_WIDTH, iy=Math.floor(current/AUTO_GRID_WIDTH);
+    if(isGoal(ix,iy)){found=current;break;}
+    for(const d of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=ix+d[0],ny=iy+d[1];
+      if(nx<0||nx>AUTO_GRID||ny<0||ny>AUTO_GRID)continue;
+      const ni=ny*AUTO_GRID_WIDTH+nx;
+      if(parent[ni]!==-1||!pointWalkable(scene,nx/AUTO_GRID,ny/AUTO_GRID))continue;
+      parent[ni]=current;
+      queue[tail++]=ni;
+    }
+  }
+  if(found<0)return null;   // 직선 폴백 없음
+  const cells=[];
+  for(let at=found;;at=parent[at]){
+    cells.push([at%AUTO_GRID_WIDTH,Math.floor(at/AUTO_GRID_WIDTH)]);
+    if(at===startIndex)break;
+  }
+  cells.reverse();
+  const raw=[[player.px,player.py]];
+  cells.forEach(cell=>{
+    const point2=[cell[0]/AUTO_GRID,cell[1]/AUTO_GRID];
+    const last=raw[raw.length-1];
+    if(Math.hypot(point2[0]-last[0],point2[1]-last[1])>1e-6)raw.push(point2);
+  });
+  return simplifyWaypoints(scene,raw);
+}
+function startAutoTarget(target){
+  if(!TAP_TO_MOVE||!sceneHasTarget(target))return false;
+  if(targetDistancePx(target)<=INTERACT_RADIUS_PX)return activateTarget(target);
+  const path=bfsAutoPath({x:target.x,y:target.y},INTERACT_RADIUS_PX);
+  if(!path||!path.length){
+    clearAutoMove(); toast("가까이 갈 수 없는 대상이에요");
+    return false;
+  }
+  autoTarget=target; autoPath=path; autoReplans=0;
+  suppressOtherWalkIns(target);
+  return true;
+}
+function replanMovingTarget(){
+  if(!autoTarget)return false;
+  if(autoReplans>=AUTO_MAX_REPLANS){
+    clearAutoMove(); toast("대상을 따라갈 수 없어요");
+    return false;
+  }
+  autoReplans++;
+  const path=bfsAutoPath({x:autoTarget.x,y:autoTarget.y},INTERACT_RADIUS_PX);
+  if(path&&path.length){autoPath=path;return true;}
+  autoPath=[];
+  return false;
+}
+function updateAutoMove(){
+  if(!autoTarget&&!autoPath.length)return false;
+  if(anyModalOpen()){clearAutoMove();return false;}
+  if(autoTarget&&!sceneHasTarget(autoTarget)){clearAutoMove();return false;}
+  if(autoTarget&&targetDistancePx(autoTarget)<=INTERACT_RADIUS_PX){
+    const target=autoTarget;
+    clearAutoMove();
+    return activateTarget(target);
+  }
+  while(autoPath.length){
+    const waypoint=autoPath[0];
+    const dx=waypoint[0]-player.px,dy=waypoint[1]-player.py,distance=Math.hypot(dx,dy);
+    if(distance>=AUTO_REACH){
+      player.vx=dx/distance*SPEED; player.vy=dy/distance*SPEED;
+      return false;
+    }
+    player.px=waypoint[0]; player.py=waypoint[1];
+    autoPath.shift();
+    if(autoTarget&&targetDistancePx(autoTarget)<=INTERACT_RADIUS_PX){
+      const target=autoTarget;
+      clearAutoMove();
+      return activateTarget(target);
+    }
+  }
+  player.vx=player.vy=0;
+  if(autoTarget)replanMovingTarget();   // 현재 NPC 좌표로만, 소진 때 최대 3회
+  else clearAutoMove();
+  return false;
+}
+function tappedTarget(sx,sy){
+  let best=null,bestDistance=Infinity;
+  const candidates=curScene().spots.concat(sceneNPCs());
+  candidates.forEach(target=>{
+    const distance=Math.hypot(s2x(target.x)-sx,s2y(target.y)-sy);
+    if(distance<=TAP_HIT_RADIUS_PX&&distance<bestDistance){
+      best=target; bestDistance=distance;
+    }
+  });
+  return best;
+}
+function handleTargetTap(sx,sy){
+  const target=tappedTarget(sx,sy);
+  if(!target)return false;
+  startAutoTarget(target);
+  return true;   // 막힌 대상도 빈 바닥 이동으로 바꾸지 않는다
+}
+
+/* ══════════ P4 ⑤ 빈 바닥 탭 이동: TAP_TO_MOVE 독립 플래그의 마지막 단계 ══════════ */
+function canvasWorldPoint(sx,sy){
+  // bgRect 직접 역변환 — 카메라 클램프(가장자리)에서도 정확 (code-reviewer 🔴1: 중앙 가정 역변환은 클램프 시 37.5px 오차 실측)
+  const rect=cv.getBoundingClientRect();
+  return {
+    x:(sx-rect.left-bgRect.x)/bgRect.w,
+    y:(sy-rect.top-bgRect.y)/bgRect.h,
+  };
+}
+function startAutoFloorMove(point){
+  if(!TAP_TO_MOVE)return false;
+  const path=bfsAutoPath(point,null);
+  if(!path){
+    clearAutoMove(); toast("이곳으로는 이동할 수 없어요");
+    return false;
+  }
+  clearAutoMove();
+  autoPath=path;
+  return true;
+}
+let canvasTap=null;
+function tapBlockedByUI(target){
+  return target!==cv||!!target.closest("#stick,#abtn,button,.iconbtn,#miniHud,.modal");
+}
+cv.addEventListener("pointerdown",e=>{
+  if(!TAP_TO_MOVE||tapBlockedByUI(e.target)||e.button!==0||fadeState||anyModalOpen())return;
+  if(canvasTap!==null)return;   // 멀티터치 가드 — 두 번째 손가락이 탭 추적을 덮어쓰지 않게 (조이스틱 pid 가드와 동일 패턴)
+  canvasTap={id:e.pointerId,x:e.clientX,y:e.clientY};
+  try{cv.setPointerCapture(e.pointerId);}catch(_){}
+});
+cv.addEventListener("pointerup",e=>{
+  if(!canvasTap||e.pointerId!==canvasTap.id)return;
+  const tap=canvasTap; canvasTap=null;
+  if(Math.hypot(e.clientX-tap.x,e.clientY-tap.y)>=12||fadeState||anyModalOpen())return;
+  e.preventDefault();
+  computeBgRect();
+  if(handleTargetTap(e.clientX,e.clientY))return;
+  startAutoFloorMove(canvasWorldPoint(e.clientX,e.clientY));
+});
+cv.addEventListener("pointercancel",e=>{if(canvasTap&&e.pointerId===canvasTap.id)canvasTap=null;});
 
 /* ══════════ 이동 업데이트 ══════════ */
 const SPEED=0.003375;  // 2026-07-28 마스터 지시: 1.5배 상향(0.00225→0.003375) — "맵이 방대해 이동이 느리다"
@@ -1267,8 +1599,10 @@ function update(){
   updatePops();
   updateAmbientParticles();
   computeBgRect();   // clamp가 현재 화면 배치를 알아야 함(cover 시 캐릭터 화면이탈 방지)
+  let autoActivated=false;
   if(fadeState){ player.vx=player.vy=0; }
   else{
+    autoActivated=updateAutoMove();
     // 이동 방향 → 스프라이트 방향
     if(Math.abs(player.vx)>0.0004||Math.abs(player.vy)>0.0004){
       if(Math.abs(player.vx)>Math.abs(player.vy)) player.dir=player.vx>0?"right":"left";
@@ -1295,17 +1629,17 @@ function update(){
         }
       }
     }
+    if(!fadeState&&!autoActivated)updateWalkIns();
   }
-  // 근접 핫스팟 (확대된 맵 기준이라 화면상 100px 이내를 근접으로)
+  // 근접 핫스팟 (확대된 맵 기준이라 화면상 135px 이내를 근접으로)
   let best=null,bd=1e9;
   const f=curScene();
   f.spots.forEach(sp=>{
-    const dx=(sp.x-player.px)*bgRect.w, dy=(sp.y-player.py)*bgRect.h;
-    const d=Math.hypot(dx,dy);
-    if(d<135&&d<bd){bd=d;best=sp;}
+    const d=targetDistancePx(sp);
+    if(d<INTERACT_RADIUS_PX&&d<bd){bd=d;best=sp;}
   });
   if(best!==nearSpot){ nearSpot=best; updateFloorTag(); updateAbtn(); }
-  // NPC: 보안 순찰 이동 + 근접 감지(nearSpot과 별개, 공존)
+  // NPC: 보안 순찰 이동 + 근접 감지(nearSpot과 별개, npcWins가 단일 대상으로 중재)
   updateNPCs();
   updateNearNPC();
   // 카메라 부드럽게 따라옴(공간감)
@@ -1313,28 +1647,6 @@ function update(){
   // 화면 흔들림 감쇠
   if(shake>0.3){ shake*=0.85; shX=(Math.random()-0.5)*shake; shY=(Math.random()-0.5)*shake; }
   else { shake=0; shX=shY=0; }
-}
-function npcWins(){   // 최근접 우선(2026-07-28): 스팟·NPC 중 가까운 쪽이 A버튼 차지
-  if(!nearNPC)return false;
-  if(!nearSpot)return true;
-  const dN=Math.hypot((nearNPC.x-player.px)*bgRect.w,(nearNPC.y-player.py)*bgRect.h);
-  const dS=Math.hypot((nearSpot.x-player.px)*bgRect.w,(nearSpot.y-player.py)*bgRect.h);
-  return dN<dS;
-}
-function updateAbtn(){
-  const a=document.getElementById("abtn"), lb=document.getElementById("alabel"), ic=a.querySelector(".ai");
-  if(npcWins()){
-    a.classList.add("on"); ic.textContent=nearNPC.type==="guide"?"🧑‍🏫":nearNPC.type==="cleaning"?"🧹":"👮"; lb.textContent="대화";
-  }else if(nearSpot){
-    a.classList.add("on");
-    if(nearSpot.kind==="elevator"){ic.textContent="🛗";lb.textContent="층 이동";}
-    else if(nearSpot.kind==="stair"){ic.textContent="🪜";lb.textContent="계단";}
-    else if(nearSpot.kind==="gate"){ic.textContent=nearSpot.icon||"🚪";lb.textContent=nearSpot.label||"이동";}
-    else if(nearSpot.kind==="game"){ic.textContent="🎮";lb.textContent="플레이";}
-    else if(nearSpot.kind==="door"){ic.textContent="🚪";lb.textContent="입장";}
-    else if(nearSpot.kind==="exit"){ic.textContent="🚪";lb.textContent="나가기";}
-    else{ic.textContent="🔍";lb.textContent="살펴보기";}
-  }else{ a.classList.remove("on"); ic.textContent="🚪"; lb.textContent="입장"; }
 }
 
 /* ══════════ 루프 ══════════ */
@@ -1346,6 +1658,7 @@ function loop(){ update(); render(); requestAnimationFrame(loop); }
   let pid=null, cx=0, cy=0, R=44;   // pid=이 조이스틱을 잡은 포인터만 처리
   function start(e){
     if(pid!==null)return;           // 이미 다른 손가락이 조이스틱 잡음
+    clearAutoMove();                // 수동 조이스틱 입력은 자동 경로보다 우선
     pid=e.pointerId;
     const r=stick.getBoundingClientRect(); cx=r.left+r.width/2; cy=r.top+r.height/2;
     try{stick.setPointerCapture(pid);}catch(_){}
@@ -1368,8 +1681,13 @@ function loop(){ update(); render(); requestAnimationFrame(loop); }
   stick.addEventListener("pointercancel",end);
   // 키보드(테스트)
   const keys={};
-  window.addEventListener("keydown",e=>{keys[e.key]=1;applyKeys();});
-  window.addEventListener("keyup",e=>{keys[e.key]=0;applyKeys();});
+  const moveKeys=new Set(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","a","d","w","s"]);
+  window.addEventListener("keydown",e=>{
+    const key=e.key.length===1?e.key.toLowerCase():e.key;
+    if(moveKeys.has(key))clearAutoMove();
+    keys[key]=1; applyKeys();
+  });
+  window.addEventListener("keyup",e=>{const key=e.key.length===1?e.key.toLowerCase():e.key;keys[key]=0;applyKeys();});
   function applyKeys(){
     let vx=0,vy=0;
     if(keys.ArrowLeft||keys.a)vx-=1; if(keys.ArrowRight||keys.d)vx+=1;
@@ -1379,31 +1697,10 @@ function loop(){ update(); render(); requestAnimationFrame(loop); }
   }
 })();
 
-/* ══════════ A 버튼 액션 (pointerdown = 지연/누락 방지, 페이드·모달 중 잠금) ══════════ */
-document.getElementById("abtn").addEventListener("pointerdown",(e)=>{
+/* ══════════ A 버튼: 통합 최근접 단일 대상을 activateTarget로 실행 ══════════ */
+document.getElementById("abtn").addEventListener("pointerdown",e=>{
   e.preventDefault();
-  if(fadeState||anyModalOpen())return;   // 전환·모달 중 입력 잠금
-  if(npcWins()){ sfx(587,0.1,"triangle",0.12); npcDialogue(nearNPC); return; }   // 최근접 우선 — NPC 무조건 우선이 문·데스크를 가리던 클래스 해소
-  if(!nearSpot)return;
-  const sp=nearSpot;
-  if(sp.kind==="game"){
-    sfx(660,0.1,"square",0.15);
-    startFade(()=>{ saveFloor(floorIdx); safeSet("ufo_room_ctx",JSON.stringify({r:inRoom||"",s:roomStack,d:lastFloorDoor})); location.href=sp.file; });   // 미니게임 복귀용 — 방+스택+들어온 문 통째 기억 (codex R1)
-  }else if(sp.kind==="elevator"){
-    sfx(520,0.09,"triangle"); openElevator(sp);
-  }else if(sp.kind==="stair"||sp.kind==="gate"){   // gate=외부↔로비(층 전환 재활용)
-    sfx(600,0.10,"triangle"); const ti=FLOORS.findIndex(f=>f.id===sp.to);
-    if(ti>=0)startFade(()=>enterFloor(ti));
-  }else if(sp.kind==="door"){
-    if(!inRoom) lastFloorDoor={room:sp.room,x:sp.x,y:sp.y};   // 층→방 진입만 기억 (방→방은 roomStack 소관)
-    sfx(587,0.12,"triangle"); startFade(()=>enterRoom(sp.room));
-  }else if(sp.kind==="exit"){
-    sfx(392,0.12,"triangle"); startFade(()=>exitRoom(sp));
-  }else if(sp.kind==="exhibit"||sp.kind==="info"){
-    sfx(784,0.07,"sine",0.12); showExhibit(sp);
-  }else{
-    sfx(300,0.1,"sine",0.1); toast(sp.icon+" "+sp.name+" — 준비 중이에요");
-  }
+  activateTarget(nearbyTarget());
 });
 
 /* ══════════ 엘리베이터(층 선택) ══════════ */
