@@ -752,7 +752,7 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607292118";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const VER="202607292129";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
 const WALK_IN=true;         // P4-③: 문·게이트·출구(물리 포털 계단 포함) 근접 자동 실행
 const TAP_TO_MOVE=true;     // P4-④⑤: 대상 직접 탭 + 빈 바닥 탭 자동 이동
 /* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
@@ -2339,6 +2339,9 @@ function showExhibit(sp){
       if(lore.science.length)renderLoreScience(0);
       else renderLoreFact();
     });
+  }
+  if(sp.name==="뒤틀림-토러스"){   // 3D 보상 레이어 1호 — 상징전시물만 (도감 보상 콘셉트, 복귀는 뷰어의 "← 도감으로")
+    appendLoreButton(document.getElementById("exhibitExtra"),"🌌 3D로 보기",()=>{ location.href="torus3d.html"; });
   }
   document.getElementById("exhibit").classList.add("show");
 }

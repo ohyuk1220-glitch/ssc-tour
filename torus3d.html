@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#08060d">
+  <title>뒤틀림-토러스 · 과학관의 상징</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08060d;
+      --panel: rgba(16, 12, 24, 0.84);
+      --panel-strong: rgba(11, 8, 17, 0.94);
+      --gold: #d8a45e;
+      --gold-soft: #f0cc91;
+      --copper: #b87333;
+      --text: #f7efe3;
+      --muted: #c8bcae;
+      --line: rgba(216, 164, 94, 0.28);
+      --safe-top: max(14px, env(safe-area-inset-top));
+      --safe-right: max(14px, env(safe-area-inset-right));
+      --safe-bottom: max(14px, env(safe-area-inset-bottom));
+      --safe-left: max(14px, env(safe-area-inset-left));
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+        "Noto Sans KR", "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100svh;
+    }
+
+    button,
+    summary {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    #viewer {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(94, 52, 117, 0.13), transparent 38%),
+        radial-gradient(circle at 30% 72%, rgba(93, 54, 26, 0.11), transparent 34%),
+        linear-gradient(180deg, #0b0812 0%, #07050b 72%, #050408 100%);
+    }
+
+    #stage {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    #stage.is-dragging {
+      cursor: grabbing;
+    }
+
+    #stage canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    .ui {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding:
+        var(--safe-top)
+        var(--safe-right)
+        var(--safe-bottom)
+        var(--safe-left);
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .back {
+      min-height: 42px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(10, 7, 15, 0.68);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      pointer-events: auto;
+      transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        transform 160ms ease;
+    }
+
+    .back:hover {
+      border-color: rgba(240, 204, 145, 0.58);
+      background: rgba(30, 20, 39, 0.82);
+    }
+
+    .back:active {
+      transform: scale(0.97);
+    }
+
+    .back:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--gold-soft);
+      outline-offset: 3px;
+    }
+
+    h1 {
+      margin: 0;
+      overflow: hidden;
+      color: var(--text);
+      font-size: clamp(15px, 4vw, 22px);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      text-align: center;
+      text-overflow: ellipsis;
+      text-shadow: 0 2px 18px rgba(0, 0, 0, 0.78);
+      white-space: nowrap;
+    }
+
+    .topbar::after {
+      width: 82px;
+      content: "";
+    }
+
+    .bottom-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .gesture-hint {
+      margin: 0;
+      padding: 6px 11px;
+      border: 1px solid rgba(240, 204, 145, 0.14);
+      border-radius: 999px;
+      background: rgba(8, 6, 13, 0.48);
+      color: rgba(247, 239, 227, 0.7);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: opacity 500ms ease;
+    }
+
+    .has-interacted .gesture-hint {
+      opacity: 0;
+    }
+
+    details.info-card {
+      width: min(100%, 560px);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(184, 115, 51, 0.08), transparent 45%),
+        var(--panel);
+      box-shadow:
+        0 18px 60px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.035);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      pointer-events: auto;
+    }
+
+    summary {
+      display: flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 17px;
+      color: var(--gold-soft);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary::after {
+      width: 8px;
+      height: 8px;
+      border-right: 1.5px solid currentColor;
+      border-bottom: 1.5px solid currentColor;
+      content: "";
+      transform: rotate(45deg) translateY(-2px);
+      transition: transform 180ms ease;
+    }
+
+    details[open] summary::after {
+      transform: rotate(225deg) translate(-2px, -2px);
+    }
+
+    .facts {
+      margin: 0;
+      padding: 0 17px 17px;
+      list-style: none;
+    }
+
+    .facts li {
+      position: relative;
+      margin: 0;
+      padding: 10px 0 10px 18px;
+      border-top: 1px solid rgba(216, 164, 94, 0.13);
+      color: var(--muted);
+      font-size: clamp(12px, 3.35vw, 14px);
+      line-height: 1.55;
+      letter-spacing: -0.02em;
+    }
+
+    .facts li::before {
+      position: absolute;
+      top: 17px;
+      left: 1px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 10px rgba(216, 164, 94, 0.68);
+      content: "";
+    }
+
+    #loading {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 44%, rgba(103, 58, 125, 0.15), transparent 34%),
+        var(--bg);
+      opacity: 1;
+      visibility: visible;
+      transition:
+        opacity 550ms ease,
+        visibility 550ms ease;
+    }
+
+    #loading.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .loader-content {
+      display: grid;
+      justify-items: center;
+      gap: 15px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 42px;
+      height: 42px;
+      border: 2px solid rgba(216, 164, 94, 0.18);
+      border-top-color: var(--gold-soft);
+      border-radius: 50%;
+      box-shadow: 0 0 26px rgba(184, 115, 51, 0.14);
+      animation: spin 900ms linear infinite;
+    }
+
+    #loading.is-error .spinner {
+      display: none;
+    }
+
+    #loading p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 420px) {
+      .ui {
+        padding-right: max(10px, env(safe-area-inset-right));
+        padding-left: max(10px, env(safe-area-inset-left));
+      }
+
+      .topbar {
+        gap: 8px;
+      }
+
+      .back {
+        min-height: 40px;
+        padding: 0 11px;
+        font-size: 12px;
+      }
+
+      .topbar::after {
+        width: 68px;
+      }
+
+      details.info-card {
+        border-radius: 17px;
+      }
+    }
+
+    @media (max-height: 620px) {
+      .gesture-hint {
+        display: none;
+      }
+
+      summary {
+        min-height: 42px;
+      }
+
+      .facts li {
+        padding-top: 7px;
+        padding-bottom: 7px;
+        line-height: 1.4;
+      }
+
+      .facts li::before {
+        top: 14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .spinner {
+        animation-duration: 1800ms;
+      }
+
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="viewer">
+    <div
+      id="stage"
+      role="img"
+      aria-label="뒤틀림-토러스 3D 모형. 드래그해 회전하고 두 손가락으로 확대하거나 축소할 수 있습니다."
+      aria-describedby="viewer-instructions"
+    ></div>
+
+    <div class="ui">
+      <header class="topbar">
+        <button class="back" id="back-button" type="button" aria-label="도감으로 돌아가기">
+          ← 도감으로
+        </button>
+        <h1>뒤틀림-토러스 · 과학관의 상징</h1>
+      </header>
+
+      <div class="bottom-area">
+        <p class="gesture-hint" aria-hidden="true">드래그로 회전 · 핀치로 확대</p>
+        <details class="info-card" open>
+          <summary>전시 정보</summary>
+          <ul class="facts">
+            <li>위상수학 개념으로 우주 공간을 형상화</li>
+            <li>구리선과 LED 5,000개 이상</li>
+            <li>피보나치 나선 — 솔방울 나선(8줄·13줄)과 같은 원리</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+
+    <p class="sr-only" id="viewer-instructions">
+      한 손가락이나 마우스로 드래그하면 회전합니다. 두 손가락을 벌리거나 모으면 확대 또는 축소됩니다.
+    </p>
+
+    <div id="loading" role="status" aria-live="polite">
+      <div class="loader-content">
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="loading-message">3D 전시를 불러오는 중…</p>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    const POINTS = 5000; // 저사양 기기에서는 이 값을 낮춰 조정할 수 있습니다.
+    const MAX_PIXEL_RATIO = 2;
+    const CDN_URL = "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
+
+    const viewer = document.getElementById("viewer");
+    const stage = document.getElementById("stage");
+    const loading = document.getElementById("loading");
+    const loadingMessage = document.getElementById("loading-message");
+    const backButton = document.getElementById("back-button");
+
+    backButton.addEventListener("click", () => {
+      let pageDidHide = false;
+      window.addEventListener("pagehide", () => {
+        pageDidHide = true;
+      }, { once: true });
+
+      if (window.history.length > 1) {
+        window.history.back();
+        window.setTimeout(() => {
+          if (!pageDidHide) window.location.href = "h.html";
+        }, 500);
+      } else {
+        window.location.href = "h.html";
+      }
+    });
+
+    const showError = (message) => {
+      loading.classList.remove("is-hidden");
+      loading.classList.add("is-error");
+      loadingMessage.textContent = message;
+    };
+
+    try {
+      const THREE = await import(CDN_URL);
+
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance"
+      });
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.18;
+      stage.appendChild(renderer.domElement);
+
+      renderer.domElement.addEventListener("webglcontextlost", (event) => {
+        event.preventDefault();
+        showError("3D 화면 연결이 잠시 중단되었습니다. 페이지를 새로고침해 주세요.");
+      });
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x08060d, 0.026);
+
+      const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 60);
+      let cameraDistance = 18;
+      camera.position.set(0, 0.25, cameraDistance);
+
+      const exhibit = new THREE.Group();
+      exhibit.rotation.order = "YXZ";
+      exhibit.rotation.set(0.36, -0.42, -0.08);
+      exhibit.scale.setScalar(0.62);
+      scene.add(exhibit);
+
+      scene.add(new THREE.HemisphereLight(0x7288bb, 0x24130c, 1.15));
+
+      const keyLight = new THREE.DirectionalLight(0xffd39b, 4.1);
+      keyLight.position.set(4.5, 5.5, 7);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0x5d8ee8, 2.35);
+      rimLight.position.set(-5, 1.5, -5);
+      scene.add(rimLight);
+
+      const copperLight = new THREE.PointLight(0xc86f2e, 24, 16, 2);
+      copperLight.position.set(1.5, -2.5, 4.5);
+      scene.add(copperLight);
+
+      const starCount = 1250;
+      const starPositions = new Float32Array(starCount * 3);
+      const starColors = new Float32Array(starCount * 3);
+      const warmStar = new THREE.Color(0xe7d3b5);
+      const coolStar = new THREE.Color(0x91aee8);
+      const starColor = new THREE.Color();
+
+      for (let i = 0; i < starCount; i += 1) {
+        const radius = 13 + Math.random() * 18;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const index = i * 3;
+
+        starPositions[index] = radius * Math.sin(phi) * Math.cos(theta);
+        starPositions[index + 1] = radius * Math.cos(phi);
+        starPositions[index + 2] = radius * Math.sin(phi) * Math.sin(theta);
+
+        starColor.copy(warmStar).lerp(coolStar, Math.random() * 0.8);
+        starColors[index] = starColor.r;
+        starColors[index + 1] = starColor.g;
+        starColors[index + 2] = starColor.b;
+      }
+
+      const starGeometry = new THREE.BufferGeometry();
+      starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+      starGeometry.setAttribute("color", new THREE.BufferAttribute(starColors, 3));
+
+      const starMaterial = new THREE.PointsMaterial({
+        size: 0.038,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 0.68,
+        depthWrite: false,
+        vertexColors: true,
+        blending: THREE.AdditiveBlending
+      });
+
+      const stars = new THREE.Points(starGeometry, starMaterial);
+      scene.add(stars);
+
+      const KNOT_RADIUS = 3.12;
+      const TUBE_RADIUS = 0.7;
+      const P = 2;
+      const Q = 3;
+      const FRAME_SEGMENTS = 720;
+
+      const torusGeometry = new THREE.TorusKnotGeometry(
+        KNOT_RADIUS,
+        TUBE_RADIUS,
+        360,
+        28,
+        P,
+        Q
+      );
+
+      const torusMaterial = new THREE.MeshStandardMaterial({
+        color: 0x201421,
+        emissive: 0x10070d,
+        emissiveIntensity: 0.68,
+        metalness: 0.82,
+        roughness: 0.3,
+        transparent: true,
+        opacity: 0.92,
+        side: THREE.DoubleSide
+      });
+
+      const torus = new THREE.Mesh(torusGeometry, torusMaterial);
+      exhibit.add(torus);
+
+      const centerAt = (t, target = new THREE.Vector3()) => {
+        const u = t * P * Math.PI * 2;
+        const cu = Math.cos(u);
+        const su = Math.sin(u);
+        const quOverP = (Q / P) * u;
+        const cs = Math.cos(quOverP);
+
+        return target.set(
+          KNOT_RADIUS * (2 + cs) * 0.5 * cu,
+          KNOT_RADIUS * (2 + cs) * 0.5 * su,
+          KNOT_RADIUS * 0.5 * Math.sin(quOverP)
+        );
+      };
+
+      const centers = [];
+      const tangents = [];
+      const normals = [];
+      const binormals = [];
+      const previousPoint = new THREE.Vector3();
+      const nextPoint = new THREE.Vector3();
+
+      for (let i = 0; i <= FRAME_SEGMENTS; i += 1) {
+        const t = i / FRAME_SEGMENTS;
+        centers.push(centerAt(t));
+        centerAt((t - 0.0001 + 1) % 1, previousPoint);
+        centerAt((t + 0.0001) % 1, nextPoint);
+        tangents.push(nextPoint.clone().sub(previousPoint).normalize());
+      }
+
+      const referenceAxis = Math.abs(tangents[0].y) < 0.9
+        ? new THREE.Vector3(0, 1, 0)
+        : new THREE.Vector3(1, 0, 0);
+
+      binormals[0] = new THREE.Vector3()
+        .crossVectors(tangents[0], referenceAxis)
+        .normalize();
+      normals[0] = new THREE.Vector3()
+        .crossVectors(binormals[0], tangents[0])
+        .normalize();
+
+      const transportAxis = new THREE.Vector3();
+      for (let i = 1; i <= FRAME_SEGMENTS; i += 1) {
+        normals[i] = normals[i - 1].clone();
+        transportAxis.crossVectors(tangents[i - 1], tangents[i]);
+
+        if (transportAxis.lengthSq() > Number.EPSILON) {
+          transportAxis.normalize();
+          const tangentDot = THREE.MathUtils.clamp(
+            tangents[i - 1].dot(tangents[i]),
+            -1,
+            1
+          );
+          normals[i].applyAxisAngle(transportAxis, Math.acos(tangentDot));
+        }
+
+        binormals[i] = new THREE.Vector3()
+          .crossVectors(tangents[i], normals[i])
+          .normalize();
+        normals[i].crossVectors(binormals[i], tangents[i]).normalize();
+      }
+
+      let closureAngle = Math.acos(
+        THREE.MathUtils.clamp(normals[0].dot(normals[FRAME_SEGMENTS]), -1, 1)
+      );
+      const closureCross = new THREE.Vector3().crossVectors(
+        normals[0],
+        normals[FRAME_SEGMENTS]
+      );
+
+      if (tangents[0].dot(closureCross) > 0) closureAngle = -closureAngle;
+
+      for (let i = 1; i <= FRAME_SEGMENTS; i += 1) {
+        normals[i].applyAxisAngle(
+          tangents[i],
+          closureAngle * (i / FRAME_SEGMENTS)
+        );
+        binormals[i].crossVectors(tangents[i], normals[i]).normalize();
+      }
+
+      const interpolatedCenter = new THREE.Vector3();
+      const interpolatedNormal = new THREE.Vector3();
+      const interpolatedBinormal = new THREE.Vector3();
+      const surfacePoint = new THREE.Vector3();
+
+      const pointOnThread = (descriptor, t, radius, target = new THREE.Vector3()) => {
+        const wrappedT = ((t % 1) + 1) % 1;
+        const framePosition = wrappedT * FRAME_SEGMENTS;
+        const frameIndex = Math.floor(framePosition);
+        const frameMix = framePosition - frameIndex;
+        const nextIndex = Math.min(frameIndex + 1, FRAME_SEGMENTS);
+        const angle = descriptor.phase + descriptor.turns * Math.PI * 2 * wrappedT;
+
+        interpolatedCenter
+          .copy(centers[frameIndex])
+          .lerp(centers[nextIndex], frameMix);
+        interpolatedNormal
+          .copy(normals[frameIndex])
+          .lerp(normals[nextIndex], frameMix)
+          .normalize();
+        interpolatedBinormal
+          .copy(binormals[frameIndex])
+          .lerp(binormals[nextIndex], frameMix)
+          .normalize();
+
+        surfacePoint
+          .copy(interpolatedNormal)
+          .multiplyScalar(Math.cos(angle) * radius)
+          .addScaledVector(interpolatedBinormal, Math.sin(angle) * radius)
+          .add(interpolatedCenter);
+
+        return target.copy(surfacePoint);
+      };
+
+      const threads = [];
+
+      // 피보나치의 이웃한 수 8·13을 서로 반대 방향의 나선 묶음으로 배치합니다.
+      for (let i = 0; i < 8; i += 1) {
+        threads.push({
+          phase: (i / 8) * Math.PI * 2,
+          turns: 13,
+          family: 0
+        });
+      }
+
+      for (let i = 0; i < 13; i += 1) {
+        threads.push({
+          phase: (i / 13) * Math.PI * 2 + Math.PI / 13,
+          turns: -8,
+          family: 1
+        });
+      }
+
+      const linePositions = [];
+      const lineColors = [];
+      const lineStart = new THREE.Vector3();
+      const lineEnd = new THREE.Vector3();
+      const brightCopper = new THREE.Color(0xc88749);
+      const deepCopper = new THREE.Color(0x8d4828);
+
+      threads.forEach((thread) => {
+        const threadColor = thread.family === 0 ? brightCopper : deepCopper;
+
+        for (let i = 0; i < FRAME_SEGMENTS; i += 1) {
+          pointOnThread(thread, i / FRAME_SEGMENTS, TUBE_RADIUS * 1.022, lineStart);
+          pointOnThread(
+            thread,
+            (i + 1) / FRAME_SEGMENTS,
+            TUBE_RADIUS * 1.022,
+            lineEnd
+          );
+
+          linePositions.push(
+            lineStart.x, lineStart.y, lineStart.z,
+            lineEnd.x, lineEnd.y, lineEnd.z
+          );
+          lineColors.push(
+            threadColor.r, threadColor.g, threadColor.b,
+            threadColor.r, threadColor.g, threadColor.b
+          );
+        }
+      });
+
+      const lineGeometry = new THREE.BufferGeometry();
+      lineGeometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(linePositions, 3)
+      );
+      lineGeometry.setAttribute(
+        "color",
+        new THREE.Float32BufferAttribute(lineColors, 3)
+      );
+
+      const lineMaterial = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.86,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+
+      const copperThreads = new THREE.LineSegments(lineGeometry, lineMaterial);
+      copperThreads.renderOrder = 2;
+      exhibit.add(copperThreads);
+
+      const ledGeometry = new THREE.SphereGeometry(0.046, 5, 4);
+      const phases = new Float32Array(POINTS);
+      const seeds = new Float32Array(POINTS);
+      ledGeometry.setAttribute(
+        "aPhase",
+        new THREE.InstancedBufferAttribute(phases, 1)
+      );
+      ledGeometry.setAttribute(
+        "aSeed",
+        new THREE.InstancedBufferAttribute(seeds, 1)
+      );
+
+      const ledMaterial = new THREE.RawShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uMotionScale: { value: prefersReducedMotion.matches ? 0 : 1 }
+        },
+        vertexShader: `
+          precision highp float;
+
+          uniform mat4 modelViewMatrix;
+          uniform mat4 projectionMatrix;
+
+          attribute vec3 position;
+          attribute vec3 normal;
+          attribute mat4 instanceMatrix;
+          attribute vec3 instanceColor;
+          attribute float aPhase;
+          attribute float aSeed;
+
+          varying vec3 vColor;
+          varying vec3 vNormal;
+          varying vec3 vViewPosition;
+          varying float vPhase;
+          varying float vSeed;
+
+          void main() {
+            mat4 instanceModelView = modelViewMatrix * instanceMatrix;
+            vec4 viewPosition = instanceModelView * vec4(position, 1.0);
+
+            vColor = instanceColor;
+            vNormal = normalize(mat3(instanceModelView) * normal);
+            vViewPosition = viewPosition.xyz;
+            vPhase = aPhase;
+            vSeed = aSeed;
+
+            gl_Position = projectionMatrix * viewPosition;
+          }
+        `,
+        fragmentShader: `
+          precision highp float;
+
+          uniform float uTime;
+          uniform float uMotionScale;
+
+          varying vec3 vColor;
+          varying vec3 vNormal;
+          varying vec3 vViewPosition;
+          varying float vPhase;
+          varying float vSeed;
+
+          const float TAU = 6.28318530718;
+
+          void main() {
+            float movingTime = uTime * uMotionScale;
+            float waveBase = 0.5 + 0.5 * sin(
+              vPhase * TAU - movingTime * 2.15 + vSeed * 0.65
+            );
+            float wave = pow(waveBase, 11.0);
+            float shimmer = 0.84 + 0.16 * sin(
+              movingTime * (1.35 + vSeed * 0.9) + vSeed * 17.0
+            );
+            float rim = pow(
+              1.0 - abs(dot(normalize(vNormal), normalize(-vViewPosition))),
+              2.0
+            );
+            float intensity = (0.62 + wave * 1.9) * shimmer;
+            float alpha = (0.3 + wave * 0.7) * (0.72 + rim * 0.28);
+
+            gl_FragColor = vec4(vColor * intensity, alpha);
+          }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+
+      const leds = new THREE.InstancedMesh(ledGeometry, ledMaterial, POINTS);
+      leds.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+      leds.frustumCulled = false;
+      leds.renderOrder = 3;
+
+      const dummy = new THREE.Object3D();
+      const ledPosition = new THREE.Vector3();
+      const ledColor = new THREE.Color();
+      const goldenRatioConjugate = 0.6180339887498948;
+      const pointsPerThread = Math.ceil(POINTS / threads.length);
+
+      for (let i = 0; i < POINTS; i += 1) {
+        const threadIndex = i % threads.length;
+        const sequenceIndex = Math.floor(i / threads.length);
+        const t = (
+          sequenceIndex / pointsPerThread +
+          threadIndex * goldenRatioConjugate
+        ) % 1;
+        const seed = (Math.sin((i + 1) * 91.3458) * 47453.5453) % 1;
+        const normalizedSeed = seed < 0 ? seed + 1 : seed;
+
+        pointOnThread(
+          threads[threadIndex],
+          t,
+          TUBE_RADIUS * 1.066,
+          ledPosition
+        );
+
+        dummy.position.copy(ledPosition);
+        dummy.scale.setScalar(0.68 + normalizedSeed * 0.7);
+        dummy.updateMatrix();
+        leds.setMatrixAt(i, dummy.matrix);
+
+        if (i % 19 === 0 || i % 43 === 0) {
+          ledColor.setRGB(0.28, 0.64 + normalizedSeed * 0.16, 1);
+        } else if (i % 7 === 0) {
+          ledColor.setRGB(1, 0.58 + normalizedSeed * 0.18, 0.16);
+        } else {
+          ledColor.setRGB(1, 0.79 + normalizedSeed * 0.16, 0.49 + normalizedSeed * 0.3);
+        }
+
+        leds.setColorAt(i, ledColor);
+        phases[i] = (t + threadIndex / threads.length) % 1;
+        seeds[i] = normalizedSeed;
+      }
+
+      leds.instanceMatrix.needsUpdate = true;
+      leds.instanceColor.needsUpdate = true;
+      ledGeometry.getAttribute("aPhase").needsUpdate = true;
+      ledGeometry.getAttribute("aSeed").needsUpdate = true;
+      exhibit.add(leds);
+
+      let rotationVelocityX = 0;
+      let rotationVelocityY = 0;
+      let lastInteractionTime = performance.now();
+      const activePointers = new Map();
+      let pinchStartDistance = 0;
+      let pinchStartCameraDistance = cameraDistance;
+
+      const markInteraction = () => {
+        lastInteractionTime = performance.now();
+        viewer.classList.add("has-interacted");
+      };
+
+      const getPinchDistance = () => {
+        const pointers = Array.from(activePointers.values());
+        if (pointers.length < 2) return 0;
+        return Math.hypot(
+          pointers[0].x - pointers[1].x,
+          pointers[0].y - pointers[1].y
+        );
+      };
+
+      stage.addEventListener("pointerdown", (event) => {
+        activePointers.set(event.pointerId, {
+          x: event.clientX,
+          y: event.clientY
+        });
+        stage.setPointerCapture(event.pointerId);
+        stage.classList.add("is-dragging");
+        markInteraction();
+
+        if (activePointers.size === 2) {
+          pinchStartDistance = getPinchDistance();
+          pinchStartCameraDistance = cameraDistance;
+        }
+      });
+
+      stage.addEventListener("pointermove", (event) => {
+        const previous = activePointers.get(event.pointerId);
+        if (!previous) return;
+
+        const current = { x: event.clientX, y: event.clientY };
+        activePointers.set(event.pointerId, current);
+        markInteraction();
+
+        if (activePointers.size === 1) {
+          const deltaX = current.x - previous.x;
+          const deltaY = current.y - previous.y;
+          const dragScale = 0.006;
+
+          exhibit.rotation.y += deltaX * dragScale;
+          exhibit.rotation.x = THREE.MathUtils.clamp(
+            exhibit.rotation.x + deltaY * dragScale,
+            -1.2,
+            1.2
+          );
+          rotationVelocityY = deltaX * dragScale;
+          rotationVelocityX = deltaY * dragScale;
+        } else if (activePointers.size === 2) {
+          const pinchDistance = getPinchDistance();
+          if (pinchStartDistance > 0) {
+            cameraDistance = THREE.MathUtils.clamp(
+              pinchStartCameraDistance * (pinchStartDistance / pinchDistance),
+              10,
+              28
+            );
+          }
+        }
+      });
+
+      const releasePointer = (event) => {
+        activePointers.delete(event.pointerId);
+
+        if (stage.hasPointerCapture(event.pointerId)) {
+          stage.releasePointerCapture(event.pointerId);
+        }
+
+        if (activePointers.size < 2) {
+          pinchStartDistance = 0;
+        }
+
+        if (activePointers.size === 0) {
+          stage.classList.remove("is-dragging");
+        }
+      };
+
+      stage.addEventListener("pointerup", releasePointer);
+      stage.addEventListener("pointercancel", releasePointer);
+
+      stage.addEventListener("wheel", (event) => {
+        event.preventDefault();
+        cameraDistance = THREE.MathUtils.clamp(
+          cameraDistance + event.deltaY * 0.008,
+          10,
+          28
+        );
+        markInteraction();
+      }, { passive: false });
+
+      const resize = () => {
+        const width = Math.max(1, stage.clientWidth);
+        const height = Math.max(1, stage.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      };
+
+      const resizeObserver = new ResizeObserver(resize);
+      resizeObserver.observe(stage);
+      resize();
+
+      prefersReducedMotion.addEventListener("change", (event) => {
+        ledMaterial.uniforms.uMotionScale.value = event.matches ? 0 : 1;
+      });
+
+      let previousFrameTime = performance.now();
+      let firstFrame = true;
+
+      const animate = (now) => {
+        const deltaSeconds = Math.min((now - previousFrameTime) / 1000, 0.05);
+        previousFrameTime = now;
+
+        const frameDamping = Math.pow(0.91, deltaSeconds * 60);
+        if (activePointers.size === 0) {
+          exhibit.rotation.x = THREE.MathUtils.clamp(
+            exhibit.rotation.x + rotationVelocityX,
+            -1.2,
+            1.2
+          );
+          exhibit.rotation.y += rotationVelocityY;
+          rotationVelocityX *= frameDamping;
+          rotationVelocityY *= frameDamping;
+
+          const idleFor = now - lastInteractionTime;
+          if (idleFor > 2200 && !prefersReducedMotion.matches) {
+            exhibit.rotation.y += deltaSeconds * 0.095;
+          }
+        }
+
+        camera.position.z += (cameraDistance - camera.position.z) * Math.min(1, deltaSeconds * 9);
+        camera.lookAt(0, 0, 0);
+
+        stars.rotation.y += deltaSeconds * 0.004;
+        stars.rotation.x = Math.sin(now * 0.000025) * 0.03;
+        ledMaterial.uniforms.uTime.value = now * 0.001;
+
+        renderer.render(scene, camera);
+
+        if (firstFrame) {
+          firstFrame = false;
+          window.requestAnimationFrame(() => {
+            loading.classList.add("is-hidden");
+          });
+        }
+
+        window.requestAnimationFrame(animate);
+      };
+
+      window.requestAnimationFrame(animate);
+    } catch (error) {
+      console.error(error);
+      showError("3D 전시를 불러오지 못했습니다. 네트워크 연결 후 다시 시도해 주세요.");
+    }
+  </script>
+</body>
+</html>
