@@ -752,8 +752,8 @@ function npcDialogue(npc){
 /* ══════════ 상태 ══════════ */
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,DPR=1;
-const VER="202607292129";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
-const WALK_IN=true;         // P4-③: 문·게이트·출구(물리 포털 계단 포함) 근접 자동 실행
+const VER="202607300922";   // 배포 시 deploy.sh가 타임스탬프로 자동 치환(폰 캐시 무효화)
+const WALK_IN=false;        // P4-③ 마스터 폰 판정(7/30 새벽): "의도 안 했는데 들어가짐" → 오프. 탭 자동이동·A버튼으로 진입 (플래그 분리해둔 이유)
 const TAP_TO_MOVE=true;     // P4-④⑤: 대상 직접 탭 + 빈 바닥 탭 자동 이동
 /* 층 저장 = 씬 id 우선 (2026-07-28 P0 마이그레이션 — 인덱스 저장은 씬 삽입 시 이용자 위치가 통째로 밀리는 치명 구조).
    구 숫자 키(ufo_floor)는 "마이그레이션 시점 순서 동결 테이블"로만 해석·기록 (codex R1: 현재 배열로 읽고 쓰면
