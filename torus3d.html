@@ -438,8 +438,12 @@
   </main>
 
   <script type="module">
-    const POINTS = 5000; // 저사양 기기에서는 이 값을 낮춰 조정할 수 있습니다.
+    const LED_COUNT = 5000;
+    const AMBIENT_LED_COUNT = 1350;
     const MAX_PIXEL_RATIO = 2;
+    const SHEET_HALF_WIDTH = 8.6;
+    const SHEET_HALF_DEPTH = 4.45;
+    const TAU = Math.PI * 2;
     const CDN_URL = "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
 
     const viewer = document.getElementById("viewer");
@@ -470,9 +474,338 @@
       loadingMessage.textContent = message;
     };
 
+    const seededRandom = (seed) => {
+      let value = seed >>> 0;
+      return () => {
+        value += 0x6d2b79f5;
+        let mixed = value;
+        mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
+        mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+        return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+      };
+    };
+
+    const random = seededRandom(0x5c1e7a11);
+
+    const gaussianRandom = () => {
+      const first = Math.max(Number.EPSILON, random());
+      const second = random();
+      return Math.sqrt(-2 * Math.log(first)) * Math.cos(TAU * second);
+    };
+
+    const poissonSample = (width, depth, minimumDistance, attempts = 24) => {
+      const halfWidth = width * 0.5;
+      const halfDepth = depth * 0.5;
+      const cellSize = minimumDistance / Math.SQRT2;
+      const columns = Math.ceil(width / cellSize);
+      const rows = Math.ceil(depth / cellSize);
+      const grid = new Int32Array(columns * rows);
+      grid.fill(-1);
+
+      const points = [];
+      const active = [];
+      const minimumDistanceSquared = minimumDistance * minimumDistance;
+
+      const insertPoint = (x, z) => {
+        const pointIndex = points.length;
+        const point = { x, z };
+        points.push(point);
+        active.push(pointIndex);
+
+        const column = Math.min(columns - 1, Math.floor((x + halfWidth) / cellSize));
+        const row = Math.min(rows - 1, Math.floor((z + halfDepth) / cellSize));
+        grid[row * columns + column] = pointIndex;
+      };
+
+      insertPoint(
+        (random() - 0.5) * width,
+        (random() - 0.5) * depth
+      );
+
+      while (active.length > 0) {
+        const activeSlot = Math.floor(random() * active.length);
+        const origin = points[active[activeSlot]];
+        let accepted = false;
+
+        for (let attempt = 0; attempt < attempts; attempt += 1) {
+          const angle = random() * TAU;
+          const radius = minimumDistance * (1 + random());
+          const x = origin.x + Math.cos(angle) * radius;
+          const z = origin.z + Math.sin(angle) * radius;
+
+          if (
+            x <= -halfWidth ||
+            x >= halfWidth ||
+            z <= -halfDepth ||
+            z >= halfDepth
+          ) {
+            continue;
+          }
+
+          const column = Math.floor((x + halfWidth) / cellSize);
+          const row = Math.floor((z + halfDepth) / cellSize);
+          let isClear = true;
+
+          for (
+            let nearbyRow = Math.max(0, row - 2);
+            nearbyRow <= Math.min(rows - 1, row + 2) && isClear;
+            nearbyRow += 1
+          ) {
+            for (
+              let nearbyColumn = Math.max(0, column - 2);
+              nearbyColumn <= Math.min(columns - 1, column + 2);
+              nearbyColumn += 1
+            ) {
+              const pointIndex = grid[nearbyRow * columns + nearbyColumn];
+              if (pointIndex < 0) continue;
+
+              const nearbyPoint = points[pointIndex];
+              const deltaX = nearbyPoint.x - x;
+              const deltaZ = nearbyPoint.z - z;
+              if (deltaX * deltaX + deltaZ * deltaZ < minimumDistanceSquared) {
+                isClear = false;
+                break;
+              }
+            }
+          }
+
+          if (isClear) {
+            insertPoint(x, z);
+            accepted = true;
+            break;
+          }
+        }
+
+        if (!accepted) {
+          active[activeSlot] = active[active.length - 1];
+          active.pop();
+        }
+      }
+
+      return points;
+    };
+
+    const makeTriangle = (pointA, pointB, pointC, points) => {
+      const a = points[pointA];
+      const b = points[pointB];
+      const c = points[pointC];
+      const divisor = 2 * (
+        a.x * (b.z - c.z) +
+        b.x * (c.z - a.z) +
+        c.x * (a.z - b.z)
+      );
+
+      if (Math.abs(divisor) < 1e-9) return null;
+
+      const aLength = a.x * a.x + a.z * a.z;
+      const bLength = b.x * b.x + b.z * b.z;
+      const cLength = c.x * c.x + c.z * c.z;
+      const centerX = (
+        aLength * (b.z - c.z) +
+        bLength * (c.z - a.z) +
+        cLength * (a.z - b.z)
+      ) / divisor;
+      const centerZ = (
+        aLength * (c.x - b.x) +
+        bLength * (a.x - c.x) +
+        cLength * (b.x - a.x)
+      ) / divisor;
+      const deltaX = centerX - a.x;
+      const deltaZ = centerZ - a.z;
+
+      return {
+        a: pointA,
+        b: pointB,
+        c: pointC,
+        centerX,
+        centerZ,
+        radiusSquared: deltaX * deltaX + deltaZ * deltaZ
+      };
+    };
+
+    const delaunayTriangulate = (sourcePoints) => {
+      const points = sourcePoints.map((point) => ({ ...point }));
+      const superStart = points.length;
+      const span = Math.max(SHEET_HALF_WIDTH, SHEET_HALF_DEPTH) * 12;
+      points.push(
+        { x: -span, z: -span },
+        { x: 0, z: span },
+        { x: span, z: -span }
+      );
+
+      const superTriangle = makeTriangle(
+        superStart,
+        superStart + 1,
+        superStart + 2,
+        points
+      );
+      let triangles = [superTriangle];
+
+      for (let pointIndex = 0; pointIndex < superStart; pointIndex += 1) {
+        const point = points[pointIndex];
+        const badTriangleIndexes = [];
+
+        for (let triangleIndex = 0; triangleIndex < triangles.length; triangleIndex += 1) {
+          const triangle = triangles[triangleIndex];
+          const deltaX = point.x - triangle.centerX;
+          const deltaZ = point.z - triangle.centerZ;
+          if (
+            deltaX * deltaX + deltaZ * deltaZ <=
+            triangle.radiusSquared + 1e-8
+          ) {
+            badTriangleIndexes.push(triangleIndex);
+          }
+        }
+
+        const boundaryEdges = new Map();
+        for (const triangleIndex of badTriangleIndexes) {
+          const triangle = triangles[triangleIndex];
+          const edges = [
+            [triangle.a, triangle.b],
+            [triangle.b, triangle.c],
+            [triangle.c, triangle.a]
+          ];
+
+          for (const [start, end] of edges) {
+            const low = Math.min(start, end);
+            const high = Math.max(start, end);
+            const key = `${low}:${high}`;
+            const edge = boundaryEdges.get(key);
+            if (edge) {
+              edge.count += 1;
+            } else {
+              boundaryEdges.set(key, { start, end, count: 1 });
+            }
+          }
+        }
+
+        const badSet = new Set(badTriangleIndexes);
+        triangles = triangles.filter((_, index) => !badSet.has(index));
+
+        for (const edge of boundaryEdges.values()) {
+          if (edge.count !== 1) continue;
+          const triangle = makeTriangle(edge.start, edge.end, pointIndex, points);
+          if (triangle) triangles.push(triangle);
+        }
+      }
+
+      return triangles.filter(
+        (triangle) =>
+          triangle.a < superStart &&
+          triangle.b < superStart &&
+          triangle.c < superStart
+      );
+    };
+
+    const clipSegmentToSheet = (startX, startZ, endX, endZ) => {
+      const deltaX = endX - startX;
+      const deltaZ = endZ - startZ;
+      const p = [-deltaX, deltaX, -deltaZ, deltaZ];
+      const q = [
+        startX + SHEET_HALF_WIDTH,
+        SHEET_HALF_WIDTH - startX,
+        startZ + SHEET_HALF_DEPTH,
+        SHEET_HALF_DEPTH - startZ
+      ];
+      let minimum = 0;
+      let maximum = 1;
+
+      for (let index = 0; index < 4; index += 1) {
+        if (Math.abs(p[index]) < 1e-10) {
+          if (q[index] < 0) return null;
+          continue;
+        }
+
+        const ratio = q[index] / p[index];
+        if (p[index] < 0) {
+          minimum = Math.max(minimum, ratio);
+        } else {
+          maximum = Math.min(maximum, ratio);
+        }
+        if (minimum > maximum) return null;
+      }
+
+      return {
+        startX: startX + deltaX * minimum,
+        startZ: startZ + deltaZ * minimum,
+        endX: startX + deltaX * maximum,
+        endZ: startZ + deltaZ * maximum
+      };
+    };
+
+    const buildVoronoiSegments = () => {
+      const sites = poissonSample(
+        SHEET_HALF_WIDTH * 2,
+        SHEET_HALF_DEPTH * 2,
+        0.53
+      );
+      const ghostMargin = 1.25;
+      const ghostSpacing = 0.72;
+
+      for (
+        let x = -SHEET_HALF_WIDTH - ghostMargin;
+        x <= SHEET_HALF_WIDTH + ghostMargin;
+        x += ghostSpacing
+      ) {
+        sites.push(
+          { x, z: -SHEET_HALF_DEPTH - ghostMargin },
+          { x, z: SHEET_HALF_DEPTH + ghostMargin }
+        );
+      }
+
+      for (
+        let z = -SHEET_HALF_DEPTH - ghostMargin + ghostSpacing;
+        z < SHEET_HALF_DEPTH + ghostMargin;
+        z += ghostSpacing
+      ) {
+        sites.push(
+          { x: -SHEET_HALF_WIDTH - ghostMargin, z },
+          { x: SHEET_HALF_WIDTH + ghostMargin, z }
+        );
+      }
+
+      const triangles = delaunayTriangulate(sites);
+      const edgeCenters = new Map();
+
+      for (const triangle of triangles) {
+        const edges = [
+          [triangle.a, triangle.b],
+          [triangle.b, triangle.c],
+          [triangle.c, triangle.a]
+        ];
+
+        for (const [start, end] of edges) {
+          const key = `${Math.min(start, end)}:${Math.max(start, end)}`;
+          const centers = edgeCenters.get(key) || [];
+          centers.push({ x: triangle.centerX, z: triangle.centerZ });
+          edgeCenters.set(key, centers);
+        }
+      }
+
+      const segments = [];
+      for (const centers of edgeCenters.values()) {
+        if (centers.length !== 2) continue;
+        const clipped = clipSegmentToSheet(
+          centers[0].x,
+          centers[0].z,
+          centers[1].x,
+          centers[1].z
+        );
+        if (!clipped) continue;
+
+        const deltaX = clipped.endX - clipped.startX;
+        const deltaZ = clipped.endZ - clipped.startZ;
+        const length = Math.hypot(deltaX, deltaZ);
+        if (length < 0.045 || length > 3.4) continue;
+
+        segments.push({ ...clipped, length });
+      }
+
+      return segments;
+    };
+
     try {
       const THREE = await import(CDN_URL);
-
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -483,7 +816,7 @@
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.18;
+      renderer.toneMappingExposure = 1.16;
       stage.appendChild(renderer.domElement);
 
       renderer.domElement.addEventListener("webglcontextlost", (event) => {
@@ -492,53 +825,86 @@
       });
 
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x08060d, 0.026);
+      scene.fog = new THREE.FogExp2(0x050812, 0.011);
 
-      const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 60);
-      let cameraDistance = 18;
-      camera.position.set(0, 0.25, cameraDistance);
+      const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 140);
+      const cameraTarget = new THREE.Vector3(0, -0.1, 0);
+      let cameraDistance = 28;
+      let renderedCameraDistance = cameraDistance;
+      let fitDistance = cameraDistance;
+      let minimumCameraDistance = 15;
+      let maximumCameraDistance = 54;
 
       const exhibit = new THREE.Group();
       exhibit.rotation.order = "YXZ";
-      exhibit.rotation.set(0.36, -0.42, -0.08);
-      exhibit.scale.setScalar(0.62);
+      exhibit.rotation.set(0.04, -0.11, -0.025);
       scene.add(exhibit);
 
-      scene.add(new THREE.HemisphereLight(0x7288bb, 0x24130c, 1.15));
+      const mapToSheet = (parameterX, parameterZ, target = new THREE.Vector3()) => {
+        const normalizedX = parameterX / SHEET_HALF_WIDTH;
+        const normalizedZ = parameterZ / SHEET_HALF_DEPTH;
+        let x = parameterX;
+        let z = parameterZ;
+        let y =
+          Math.sin(parameterX * 0.47 + parameterZ * 0.18) * 0.19 +
+          Math.sin(parameterZ * 0.86 - parameterX * 0.13) * 0.13 +
+          Math.sin(parameterX * 0.18 - parameterZ * 0.61) * 0.09 -
+          (1 - normalizedX * normalizedX) *
+          (1 - normalizedZ * normalizedZ) *
+          0.28;
 
-      const keyLight = new THREE.DirectionalLight(0xffd39b, 4.1);
-      keyLight.position.set(4.5, 5.5, 7);
-      scene.add(keyLight);
+        const twists = [
+          { x: -2.65, z: 0.65, radius: 2.4, turn: 0.3, lift: 0.28 },
+          { x: 3.35, z: -0.55, radius: 2.15, turn: -0.26, lift: -0.23 }
+        ];
 
-      const rimLight = new THREE.DirectionalLight(0x5d8ee8, 2.35);
-      rimLight.position.set(-5, 1.5, -5);
-      scene.add(rimLight);
+        for (const twist of twists) {
+          const deltaX = parameterX - twist.x;
+          const deltaZ = parameterZ - twist.z;
+          const distanceSquared = deltaX * deltaX + deltaZ * deltaZ;
+          const influence = Math.exp(
+            -distanceSquared / (twist.radius * twist.radius)
+          );
+          const angle = twist.turn * influence;
+          const cosine = Math.cos(angle);
+          const sine = Math.sin(angle);
+          const rotatedX = deltaX * cosine - deltaZ * sine;
+          const rotatedZ = deltaX * sine + deltaZ * cosine;
+          const polarAngle = Math.atan2(deltaZ, deltaX);
+          const radius = Math.sqrt(distanceSquared);
 
-      const copperLight = new THREE.PointLight(0xc86f2e, 24, 16, 2);
-      copperLight.position.set(1.5, -2.5, 4.5);
-      scene.add(copperLight);
+          x += (rotatedX - deltaX) * 0.72;
+          z += (rotatedZ - deltaZ) * 0.72;
+          y +=
+            Math.sin(polarAngle * 2.0 + radius * 2.1) *
+            influence *
+            twist.lift;
+        }
 
-      const starCount = 1250;
+        return target.set(x, y, z);
+      };
+
+      const starCount = 950;
       const starPositions = new Float32Array(starCount * 3);
       const starColors = new Float32Array(starCount * 3);
-      const warmStar = new THREE.Color(0xe7d3b5);
-      const coolStar = new THREE.Color(0x91aee8);
+      const warmStar = new THREE.Color(0xf3e9d9);
+      const coolStar = new THREE.Color(0xa7b9e4);
       const starColor = new THREE.Color();
 
-      for (let i = 0; i < starCount; i += 1) {
-        const radius = 13 + Math.random() * 18;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        const index = i * 3;
+      for (let index = 0; index < starCount; index += 1) {
+        const radius = 36 + random() * 54;
+        const theta = random() * TAU;
+        const phi = Math.acos(2 * random() - 1);
+        const offset = index * 3;
 
-        starPositions[index] = radius * Math.sin(phi) * Math.cos(theta);
-        starPositions[index + 1] = radius * Math.cos(phi);
-        starPositions[index + 2] = radius * Math.sin(phi) * Math.sin(theta);
+        starPositions[offset] = radius * Math.sin(phi) * Math.cos(theta);
+        starPositions[offset + 1] = radius * Math.cos(phi);
+        starPositions[offset + 2] = radius * Math.sin(phi) * Math.sin(theta);
 
-        starColor.copy(warmStar).lerp(coolStar, Math.random() * 0.8);
-        starColors[index] = starColor.r;
-        starColors[index + 1] = starColor.g;
-        starColors[index + 2] = starColor.b;
+        starColor.copy(warmStar).lerp(coolStar, random() * 0.72);
+        starColors[offset] = starColor.r;
+        starColors[offset + 1] = starColor.g;
+        starColors[offset + 2] = starColor.b;
       }
 
       const starGeometry = new THREE.BufferGeometry();
@@ -546,10 +912,10 @@
       starGeometry.setAttribute("color", new THREE.BufferAttribute(starColors, 3));
 
       const starMaterial = new THREE.PointsMaterial({
-        size: 0.038,
+        size: 0.045,
         sizeAttenuation: true,
         transparent: true,
-        opacity: 0.68,
+        opacity: 0.34,
         depthWrite: false,
         vertexColors: true,
         blending: THREE.AdditiveBlending
@@ -558,229 +924,137 @@
       const stars = new THREE.Points(starGeometry, starMaterial);
       scene.add(stars);
 
-      const KNOT_RADIUS = 3.12;
-      const TUBE_RADIUS = 0.7;
-      const P = 2;
-      const Q = 3;
-      const FRAME_SEGMENTS = 720;
-
-      const torusGeometry = new THREE.TorusKnotGeometry(
-        KNOT_RADIUS,
-        TUBE_RADIUS,
-        360,
-        28,
-        P,
-        Q
-      );
-
-      const torusMaterial = new THREE.MeshStandardMaterial({
-        color: 0x201421,
-        emissive: 0x10070d,
-        emissiveIntensity: 0.68,
-        metalness: 0.82,
-        roughness: 0.3,
-        transparent: true,
-        opacity: 0.92,
-        side: THREE.DoubleSide
-      });
-
-      const torus = new THREE.Mesh(torusGeometry, torusMaterial);
-      exhibit.add(torus);
-
-      const centerAt = (t, target = new THREE.Vector3()) => {
-        const u = t * P * Math.PI * 2;
-        const cu = Math.cos(u);
-        const su = Math.sin(u);
-        const quOverP = (Q / P) * u;
-        const cs = Math.cos(quOverP);
-
-        return target.set(
-          KNOT_RADIUS * (2 + cs) * 0.5 * cu,
-          KNOT_RADIUS * (2 + cs) * 0.5 * su,
-          KNOT_RADIUS * 0.5 * Math.sin(quOverP)
-        );
-      };
-
-      const centers = [];
-      const tangents = [];
-      const normals = [];
-      const binormals = [];
-      const previousPoint = new THREE.Vector3();
-      const nextPoint = new THREE.Vector3();
-
-      for (let i = 0; i <= FRAME_SEGMENTS; i += 1) {
-        const t = i / FRAME_SEGMENTS;
-        centers.push(centerAt(t));
-        centerAt((t - 0.0001 + 1) % 1, previousPoint);
-        centerAt((t + 0.0001) % 1, nextPoint);
-        tangents.push(nextPoint.clone().sub(previousPoint).normalize());
+      const voronoiSegments = buildVoronoiSegments();
+      if (voronoiSegments.length < 100) {
+        throw new Error("와이어 네트워크 생성에 실패했습니다.");
       }
 
-      const referenceAxis = Math.abs(tangents[0].y) < 0.9
-        ? new THREE.Vector3(0, 1, 0)
-        : new THREE.Vector3(1, 0, 0);
+      const wirePositions = [];
+      const mappedStart = new THREE.Vector3();
+      const mappedEnd = new THREE.Vector3();
 
-      binormals[0] = new THREE.Vector3()
-        .crossVectors(tangents[0], referenceAxis)
-        .normalize();
-      normals[0] = new THREE.Vector3()
-        .crossVectors(binormals[0], tangents[0])
-        .normalize();
+      for (const segment of voronoiSegments) {
+        const subdivisions = Math.max(1, Math.ceil(segment.length / 0.24));
 
-      const transportAxis = new THREE.Vector3();
-      for (let i = 1; i <= FRAME_SEGMENTS; i += 1) {
-        normals[i] = normals[i - 1].clone();
-        transportAxis.crossVectors(tangents[i - 1], tangents[i]);
+        for (let step = 0; step < subdivisions; step += 1) {
+          const startMix = step / subdivisions;
+          const endMix = (step + 1) / subdivisions;
+          mapToSheet(
+            THREE.MathUtils.lerp(segment.startX, segment.endX, startMix),
+            THREE.MathUtils.lerp(segment.startZ, segment.endZ, startMix),
+            mappedStart
+          );
+          mapToSheet(
+            THREE.MathUtils.lerp(segment.startX, segment.endX, endMix),
+            THREE.MathUtils.lerp(segment.startZ, segment.endZ, endMix),
+            mappedEnd
+          );
+          wirePositions.push(
+            mappedStart.x, mappedStart.y, mappedStart.z,
+            mappedEnd.x, mappedEnd.y, mappedEnd.z
+          );
+        }
+      }
 
-        if (transportAxis.lengthSq() > Number.EPSILON) {
-          transportAxis.normalize();
-          const tangentDot = THREE.MathUtils.clamp(
-            tangents[i - 1].dot(tangents[i]),
-            -1,
+      const wireGeometry = new THREE.BufferGeometry();
+      wireGeometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(wirePositions, 3)
+      );
+      wireGeometry.computeBoundingSphere();
+
+      const wireMaterial = new THREE.LineBasicMaterial({
+        color: 0x5e6572,
+        transparent: true,
+        opacity: 0.32,
+        depthWrite: false
+      });
+
+      const wireNet = new THREE.LineSegments(wireGeometry, wireMaterial);
+      wireNet.frustumCulled = false;
+      wireNet.renderOrder = 1;
+      exhibit.add(wireNet);
+
+      const segmentCumulativeLengths = [];
+      let totalSegmentLength = 0;
+      for (const segment of voronoiSegments) {
+        totalSegmentLength += segment.length;
+        segmentCumulativeLengths.push(totalSegmentLength);
+      }
+
+      const pickWeightedSegment = () => {
+        const targetLength = random() * totalSegmentLength;
+        let low = 0;
+        let high = segmentCumulativeLengths.length - 1;
+
+        while (low < high) {
+          const middle = (low + high) >> 1;
+          if (segmentCumulativeLengths[middle] < targetLength) {
+            low = middle + 1;
+          } else {
+            high = middle;
+          }
+        }
+
+        return voronoiSegments[low];
+      };
+
+      const snapToWire = (targetX, targetZ) => {
+        let closestX = targetX;
+        let closestZ = targetZ;
+        let closestDistanceSquared = Infinity;
+
+        for (const segment of voronoiSegments) {
+          const deltaX = segment.endX - segment.startX;
+          const deltaZ = segment.endZ - segment.startZ;
+          const lengthSquared = deltaX * deltaX + deltaZ * deltaZ;
+          const mix = THREE.MathUtils.clamp(
+            (
+              (targetX - segment.startX) * deltaX +
+              (targetZ - segment.startZ) * deltaZ
+            ) / lengthSquared,
+            0,
             1
           );
-          normals[i].applyAxisAngle(transportAxis, Math.acos(tangentDot));
+          const candidateX = segment.startX + deltaX * mix;
+          const candidateZ = segment.startZ + deltaZ * mix;
+          const distanceX = candidateX - targetX;
+          const distanceZ = candidateZ - targetZ;
+          const distanceSquared =
+            distanceX * distanceX + distanceZ * distanceZ;
+
+          if (distanceSquared < closestDistanceSquared) {
+            closestDistanceSquared = distanceSquared;
+            closestX = candidateX;
+            closestZ = candidateZ;
+          }
         }
 
-        binormals[i] = new THREE.Vector3()
-          .crossVectors(tangents[i], normals[i])
-          .normalize();
-        normals[i].crossVectors(binormals[i], tangents[i]).normalize();
-      }
-
-      let closureAngle = Math.acos(
-        THREE.MathUtils.clamp(normals[0].dot(normals[FRAME_SEGMENTS]), -1, 1)
-      );
-      const closureCross = new THREE.Vector3().crossVectors(
-        normals[0],
-        normals[FRAME_SEGMENTS]
-      );
-
-      if (tangents[0].dot(closureCross) > 0) closureAngle = -closureAngle;
-
-      for (let i = 1; i <= FRAME_SEGMENTS; i += 1) {
-        normals[i].applyAxisAngle(
-          tangents[i],
-          closureAngle * (i / FRAME_SEGMENTS)
-        );
-        binormals[i].crossVectors(tangents[i], normals[i]).normalize();
-      }
-
-      const interpolatedCenter = new THREE.Vector3();
-      const interpolatedNormal = new THREE.Vector3();
-      const interpolatedBinormal = new THREE.Vector3();
-      const surfacePoint = new THREE.Vector3();
-
-      const pointOnThread = (descriptor, t, radius, target = new THREE.Vector3()) => {
-        const wrappedT = ((t % 1) + 1) % 1;
-        const framePosition = wrappedT * FRAME_SEGMENTS;
-        const frameIndex = Math.floor(framePosition);
-        const frameMix = framePosition - frameIndex;
-        const nextIndex = Math.min(frameIndex + 1, FRAME_SEGMENTS);
-        const angle = descriptor.phase + descriptor.turns * Math.PI * 2 * wrappedT;
-
-        interpolatedCenter
-          .copy(centers[frameIndex])
-          .lerp(centers[nextIndex], frameMix);
-        interpolatedNormal
-          .copy(normals[frameIndex])
-          .lerp(normals[nextIndex], frameMix)
-          .normalize();
-        interpolatedBinormal
-          .copy(binormals[frameIndex])
-          .lerp(binormals[nextIndex], frameMix)
-          .normalize();
-
-        surfacePoint
-          .copy(interpolatedNormal)
-          .multiplyScalar(Math.cos(angle) * radius)
-          .addScaledVector(interpolatedBinormal, Math.sin(angle) * radius)
-          .add(interpolatedCenter);
-
-        return target.copy(surfacePoint);
+        return { x: closestX, z: closestZ };
       };
 
-      const threads = [];
+      const clusterDefinitions = [
+        { x: -5.35, z: -0.7, count: 900, radius: 1.2, angle: -0.32, phase: 0.4 },
+        { x: -1.75, z: 1.15, count: 940, radius: 1.12, angle: 0.25, phase: 2.2 },
+        { x: 2.15, z: -0.9, count: 930, radius: 1.22, angle: -0.18, phase: 4.1 },
+        { x: 5.25, z: 0.8, count: 880, radius: 1.04, angle: 0.38, phase: 1.25 }
+      ];
 
-      // 피보나치의 이웃한 수 8·13을 서로 반대 방향의 나선 묶음으로 배치합니다.
-      for (let i = 0; i < 8; i += 1) {
-        threads.push({
-          phase: (i / 8) * Math.PI * 2,
-          turns: 13,
-          family: 0
-        });
-      }
-
-      for (let i = 0; i < 13; i += 1) {
-        threads.push({
-          phase: (i / 13) * Math.PI * 2 + Math.PI / 13,
-          turns: -8,
-          family: 1
-        });
-      }
-
-      const linePositions = [];
-      const lineColors = [];
-      const lineStart = new THREE.Vector3();
-      const lineEnd = new THREE.Vector3();
-      const brightCopper = new THREE.Color(0xc88749);
-      const deepCopper = new THREE.Color(0x8d4828);
-
-      threads.forEach((thread) => {
-        const threadColor = thread.family === 0 ? brightCopper : deepCopper;
-
-        for (let i = 0; i < FRAME_SEGMENTS; i += 1) {
-          pointOnThread(thread, i / FRAME_SEGMENTS, TUBE_RADIUS * 1.022, lineStart);
-          pointOnThread(
-            thread,
-            (i + 1) / FRAME_SEGMENTS,
-            TUBE_RADIUS * 1.022,
-            lineEnd
-          );
-
-          linePositions.push(
-            lineStart.x, lineStart.y, lineStart.z,
-            lineEnd.x, lineEnd.y, lineEnd.z
-          );
-          lineColors.push(
-            threadColor.r, threadColor.g, threadColor.b,
-            threadColor.r, threadColor.g, threadColor.b
-          );
-        }
-      });
-
-      const lineGeometry = new THREE.BufferGeometry();
-      lineGeometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(linePositions, 3)
-      );
-      lineGeometry.setAttribute(
-        "color",
-        new THREE.Float32BufferAttribute(lineColors, 3)
-      );
-
-      const lineMaterial = new THREE.LineBasicMaterial({
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.86,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
-      });
-
-      const copperThreads = new THREE.LineSegments(lineGeometry, lineMaterial);
-      copperThreads.renderOrder = 2;
-      exhibit.add(copperThreads);
-
-      const ledGeometry = new THREE.SphereGeometry(0.046, 5, 4);
-      const phases = new Float32Array(POINTS);
-      const seeds = new Float32Array(POINTS);
+      const ledGeometry = new THREE.SphereGeometry(0.034, 5, 4);
+      const phases = new Float32Array(LED_COUNT);
+      const brightnesses = new Float32Array(LED_COUNT);
+      const rates = new Float32Array(LED_COUNT);
       ledGeometry.setAttribute(
         "aPhase",
         new THREE.InstancedBufferAttribute(phases, 1)
       );
       ledGeometry.setAttribute(
-        "aSeed",
-        new THREE.InstancedBufferAttribute(seeds, 1)
+        "aBrightness",
+        new THREE.InstancedBufferAttribute(brightnesses, 1)
+      );
+      ledGeometry.setAttribute(
+        "aRate",
+        new THREE.InstancedBufferAttribute(rates, 1)
       );
 
       const ledMaterial = new THREE.RawShaderMaterial({
@@ -799,13 +1073,15 @@
           attribute mat4 instanceMatrix;
           attribute vec3 instanceColor;
           attribute float aPhase;
-          attribute float aSeed;
+          attribute float aBrightness;
+          attribute float aRate;
 
           varying vec3 vColor;
           varying vec3 vNormal;
           varying vec3 vViewPosition;
           varying float vPhase;
-          varying float vSeed;
+          varying float vBrightness;
+          varying float vRate;
 
           void main() {
             mat4 instanceModelView = modelViewMatrix * instanceMatrix;
@@ -815,7 +1091,8 @@
             vNormal = normalize(mat3(instanceModelView) * normal);
             vViewPosition = viewPosition.xyz;
             vPhase = aPhase;
-            vSeed = aSeed;
+            vBrightness = aBrightness;
+            vRate = aRate;
 
             gl_Position = projectionMatrix * viewPosition;
           }
@@ -830,25 +1107,33 @@
           varying vec3 vNormal;
           varying vec3 vViewPosition;
           varying float vPhase;
-          varying float vSeed;
+          varying float vBrightness;
+          varying float vRate;
 
           const float TAU = 6.28318530718;
 
           void main() {
             float movingTime = uTime * uMotionScale;
-            float waveBase = 0.5 + 0.5 * sin(
-              vPhase * TAU - movingTime * 2.15 + vSeed * 0.65
+            float wave = 0.5 + 0.5 * sin(
+              vPhase * TAU + movingTime * vRate
             );
-            float wave = pow(waveBase, 11.0);
-            float shimmer = 0.84 + 0.16 * sin(
-              movingTime * (1.35 + vSeed * 0.9) + vSeed * 17.0
+            float sparkle = pow(
+              0.5 + 0.5 * sin(vPhase * 31.0 - movingTime * (vRate * 1.7)),
+              18.0
             );
-            float rim = pow(
-              1.0 - abs(dot(normalize(vNormal), normalize(-vViewPosition))),
-              2.0
+            float facing = 0.72 + 0.28 * abs(
+              dot(normalize(vNormal), normalize(-vViewPosition))
             );
-            float intensity = (0.62 + wave * 1.9) * shimmer;
-            float alpha = (0.3 + wave * 0.7) * (0.72 + rim * 0.28);
+            float intensity =
+              vBrightness *
+              (0.72 + wave * 0.26 + sparkle * 0.82) *
+              facing;
+            float alpha = clamp(
+              (0.48 + wave * 0.34 + sparkle * 0.5) *
+              (0.7 + vBrightness * 0.25),
+              0.0,
+              1.0
+            );
 
             gl_FragColor = vec4(vColor * intensity, alpha);
           }
@@ -858,56 +1143,106 @@
         blending: THREE.AdditiveBlending
       });
 
-      const leds = new THREE.InstancedMesh(ledGeometry, ledMaterial, POINTS);
+      const leds = new THREE.InstancedMesh(ledGeometry, ledMaterial, LED_COUNT);
       leds.instanceMatrix.setUsage(THREE.StaticDrawUsage);
       leds.frustumCulled = false;
-      leds.renderOrder = 3;
+      leds.renderOrder = 2;
 
       const dummy = new THREE.Object3D();
       const ledPosition = new THREE.Vector3();
       const ledColor = new THREE.Color();
-      const goldenRatioConjugate = 0.6180339887498948;
-      const pointsPerThread = Math.ceil(POINTS / threads.length);
+      let ledIndex = 0;
 
-      for (let i = 0; i < POINTS; i += 1) {
-        const threadIndex = i % threads.length;
-        const sequenceIndex = Math.floor(i / threads.length);
-        const t = (
-          sequenceIndex / pointsPerThread +
-          threadIndex * goldenRatioConjugate
-        ) % 1;
-        const seed = (Math.sin((i + 1) * 91.3458) * 47453.5453) % 1;
-        const normalizedSeed = seed < 0 ? seed + 1 : seed;
+      const placeLed = (parameterX, parameterZ, brightness) => {
+        mapToSheet(parameterX, parameterZ, ledPosition);
+        ledPosition.y += 0.026 + random() * 0.024;
 
-        pointOnThread(
-          threads[threadIndex],
-          t,
-          TUBE_RADIUS * 1.066,
-          ledPosition
-        );
-
+        const sizeVariation = 0.72 + random() * 0.42 + brightness * 0.18;
         dummy.position.copy(ledPosition);
-        dummy.scale.setScalar(0.68 + normalizedSeed * 0.7);
+        dummy.scale.setScalar(sizeVariation);
         dummy.updateMatrix();
-        leds.setMatrixAt(i, dummy.matrix);
+        leds.setMatrixAt(ledIndex, dummy.matrix);
 
-        if (i % 19 === 0 || i % 43 === 0) {
-          ledColor.setRGB(0.28, 0.64 + normalizedSeed * 0.16, 1);
-        } else if (i % 7 === 0) {
-          ledColor.setRGB(1, 0.58 + normalizedSeed * 0.18, 0.16);
+        if (random() < 0.22) {
+          const warmth = random();
+          ledColor.setRGB(
+            1,
+            0.965 + warmth * 0.035,
+            0.905 + warmth * 0.08
+          );
         } else {
-          ledColor.setRGB(1, 0.79 + normalizedSeed * 0.16, 0.49 + normalizedSeed * 0.3);
+          const coolness = random() * 0.035;
+          ledColor.setRGB(0.965 + coolness, 0.98 + coolness * 0.5, 1);
         }
+        leds.setColorAt(ledIndex, ledColor);
 
-        leds.setColorAt(i, ledColor);
-        phases[i] = (t + threadIndex / threads.length) % 1;
-        seeds[i] = normalizedSeed;
+        phases[ledIndex] = random();
+        brightnesses[ledIndex] = brightness;
+        rates[ledIndex] = 0.72 + random() * 1.65;
+        ledIndex += 1;
+      };
+
+      for (let index = 0; index < AMBIENT_LED_COUNT; index += 1) {
+        const segment = pickWeightedSegment();
+        const atJunction = random() < 0.24;
+        const mix = atJunction
+          ? (random() < 0.5 ? 0 : 1)
+          : random();
+        const x = THREE.MathUtils.lerp(segment.startX, segment.endX, mix);
+        const z = THREE.MathUtils.lerp(segment.startZ, segment.endZ, mix);
+        placeLed(x, z, 0.56 + random() * 0.3);
+      }
+
+      for (const cluster of clusterDefinitions) {
+        const cosine = Math.cos(cluster.angle);
+        const sine = Math.sin(cluster.angle);
+
+        for (let index = 0; index < cluster.count; index += 1) {
+          const arm = index % 3;
+          const radialSeed = Math.sqrt(-2 * Math.log(Math.max(random(), 1e-7)));
+          const radius = radialSeed * cluster.radius * 0.52;
+          const cloudMix = random();
+          const spiralAngle = cloudMix < 0.72
+            ? cluster.phase +
+              arm * (TAU / 3) +
+              radius * 2.35 +
+              gaussianRandom() * 0.22
+            : cluster.phase + random() * TAU;
+          const localX = Math.cos(spiralAngle) * radius * 1.18;
+          const localZ = Math.sin(spiralAngle) * radius * 0.62;
+          const targetX = THREE.MathUtils.clamp(
+            cluster.x + localX * cosine - localZ * sine,
+            -SHEET_HALF_WIDTH + 0.08,
+            SHEET_HALF_WIDTH - 0.08
+          );
+          const targetZ = THREE.MathUtils.clamp(
+            cluster.z + localX * sine + localZ * cosine,
+            -SHEET_HALF_DEPTH + 0.08,
+            SHEET_HALF_DEPTH - 0.08
+          );
+          const snapped = snapToWire(targetX, targetZ);
+          const centerStrength = Math.exp(
+            -(radius * radius) /
+            (2 * cluster.radius * cluster.radius)
+          );
+
+          placeLed(
+            snapped.x,
+            snapped.z,
+            0.72 + centerStrength * 0.55 + random() * 0.12
+          );
+        }
+      }
+
+      if (ledIndex !== LED_COUNT) {
+        throw new Error(`LED 개수 불일치: ${ledIndex}`);
       }
 
       leds.instanceMatrix.needsUpdate = true;
       leds.instanceColor.needsUpdate = true;
       ledGeometry.getAttribute("aPhase").needsUpdate = true;
-      ledGeometry.getAttribute("aSeed").needsUpdate = true;
+      ledGeometry.getAttribute("aBrightness").needsUpdate = true;
+      ledGeometry.getAttribute("aRate").needsUpdate = true;
       exhibit.add(leds);
 
       let rotationVelocityX = 0;
@@ -957,23 +1292,23 @@
         if (activePointers.size === 1) {
           const deltaX = current.x - previous.x;
           const deltaY = current.y - previous.y;
-          const dragScale = 0.006;
+          const dragScale = 0.0055;
 
           exhibit.rotation.y += deltaX * dragScale;
           exhibit.rotation.x = THREE.MathUtils.clamp(
             exhibit.rotation.x + deltaY * dragScale,
-            -1.2,
-            1.2
+            -1.15,
+            1.15
           );
           rotationVelocityY = deltaX * dragScale;
           rotationVelocityX = deltaY * dragScale;
         } else if (activePointers.size === 2) {
           const pinchDistance = getPinchDistance();
-          if (pinchStartDistance > 0) {
+          if (pinchStartDistance > 0 && pinchDistance > 0) {
             cameraDistance = THREE.MathUtils.clamp(
               pinchStartCameraDistance * (pinchStartDistance / pinchDistance),
-              10,
-              28
+              minimumCameraDistance,
+              maximumCameraDistance
             );
           }
         }
@@ -1001,29 +1336,64 @@
       stage.addEventListener("wheel", (event) => {
         event.preventDefault();
         cameraDistance = THREE.MathUtils.clamp(
-          cameraDistance + event.deltaY * 0.008,
-          10,
-          28
+          cameraDistance + event.deltaY * 0.018,
+          minimumCameraDistance,
+          maximumCameraDistance
         );
         markInteraction();
       }, { passive: false });
 
+      let hasSized = false;
       const resize = () => {
         const width = Math.max(1, stage.clientWidth);
         const height = Math.max(1, stage.clientHeight);
+        const previousFitDistance = fitDistance;
+
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
         renderer.setSize(width, height, false);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
+
+        const halfFieldOfView = THREE.MathUtils.degToRad(camera.fov * 0.5);
+        const verticalFit =
+          (SHEET_HALF_DEPTH + 1.0) / Math.tan(halfFieldOfView);
+        const horizontalFit =
+          (SHEET_HALF_WIDTH + 0.65) /
+          (Math.tan(halfFieldOfView) * camera.aspect);
+        fitDistance = THREE.MathUtils.clamp(
+          Math.max(verticalFit, horizontalFit) * 1.08,
+          17,
+          62
+        );
+        minimumCameraDistance = fitDistance * 0.6;
+        maximumCameraDistance = Math.min(112, fitDistance * 1.85);
+
+        if (!hasSized) {
+          cameraDistance = fitDistance * 0.68;   // 첫인상 보정: 기본 프레이밍이 멀어 그물이 작게 보임 → 시작 줌 당김 (핀치로 자유 조절)
+          renderedCameraDistance = cameraDistance;
+          hasSized = true;
+        } else {
+          const relativeZoom = cameraDistance / previousFitDistance;
+          cameraDistance = THREE.MathUtils.clamp(
+            fitDistance * relativeZoom,
+            minimumCameraDistance,
+            maximumCameraDistance
+          );
+        }
       };
 
       const resizeObserver = new ResizeObserver(resize);
       resizeObserver.observe(stage);
       resize();
 
-      prefersReducedMotion.addEventListener("change", (event) => {
+      const syncMotionPreference = (event) => {
         ledMaterial.uniforms.uMotionScale.value = event.matches ? 0 : 1;
-      });
+      };
+      if (typeof prefersReducedMotion.addEventListener === "function") {
+        prefersReducedMotion.addEventListener("change", syncMotionPreference);
+      } else {
+        prefersReducedMotion.addListener(syncMotionPreference);
+      }
 
       let previousFrameTime = performance.now();
       let firstFrame = true;
@@ -1032,12 +1402,12 @@
         const deltaSeconds = Math.min((now - previousFrameTime) / 1000, 0.05);
         previousFrameTime = now;
 
-        const frameDamping = Math.pow(0.91, deltaSeconds * 60);
+        const frameDamping = Math.pow(0.9, deltaSeconds * 60);
         if (activePointers.size === 0) {
           exhibit.rotation.x = THREE.MathUtils.clamp(
             exhibit.rotation.x + rotationVelocityX,
-            -1.2,
-            1.2
+            -1.15,
+            1.15
           );
           exhibit.rotation.y += rotationVelocityY;
           rotationVelocityX *= frameDamping;
@@ -1045,15 +1415,24 @@
 
           const idleFor = now - lastInteractionTime;
           if (idleFor > 2200 && !prefersReducedMotion.matches) {
-            exhibit.rotation.y += deltaSeconds * 0.095;
+            exhibit.rotation.y += deltaSeconds * 0.032;
+            exhibit.rotation.z =
+              -0.025 + Math.sin(now * 0.00011) * 0.018;
           }
         }
 
-        camera.position.z += (cameraDistance - camera.position.z) * Math.min(1, deltaSeconds * 9);
-        camera.lookAt(0, 0, 0);
+        renderedCameraDistance +=
+          (cameraDistance - renderedCameraDistance) *
+          Math.min(1, deltaSeconds * 8);
+        camera.position.set(
+          0,
+          -renderedCameraDistance * 0.52,
+          renderedCameraDistance * 0.854
+        );
+        camera.lookAt(cameraTarget);
 
-        stars.rotation.y += deltaSeconds * 0.004;
-        stars.rotation.x = Math.sin(now * 0.000025) * 0.03;
+        stars.rotation.y += deltaSeconds * 0.0025;
+        stars.rotation.x = Math.sin(now * 0.000018) * 0.018;
         ledMaterial.uniforms.uTime.value = now * 0.001;
 
         renderer.render(scene, camera);
